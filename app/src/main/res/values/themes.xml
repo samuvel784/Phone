@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <!-- no white or grey flash before the first frame is drawn -->
+        <item name="android:windowBackground">@color/nova_window_background</item>
+        <item name="android:colorBackground">@color/nova_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Invisible, non-exported activity used by the favourites widget to place a call -->
+    <style name="Theme.MyApplication.Translucent" parent="android:Theme.Translucent.NoTitleBar" />
+</resources>

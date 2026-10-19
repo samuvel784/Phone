@@ -1,0 +1,198 @@
+package com.example
+
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
+import com.example.ui.viewmodel.DialerViewModel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class DialerViewModelTest {
+
+    private lateinit var viewModel: DialerViewModel
+    private lateinit var context: Application
+
+    @Before
+    fun setup() {
+        context = ApplicationProvider.getApplicationContext()
+        viewModel = DialerViewModel(context)
+    }
+
+    @Test
+    fun `initial state is correct`() {
+        assertFalse(viewModel.isDialpadVisible.value)
+        assertEquals("", viewModel.dialpadInput.value)
+        assertEquals(1, viewModel.selectedTab.intValue)
+    }
+
+    @Test
+    fun `onSearchQueryChange updates searchQuery state`() {
+        val query = "John"
+        viewModel.onSearchQueryChange(query)
+        assertEquals(query, viewModel.searchQuery.value)
+    }
+
+    @Test
+    fun `toggle dialpad visibility`() {
+        viewModel.isDialpadVisible.value = true
+        assertTrue(viewModel.isDialpadVisible.value)
+        viewModel.isDialpadVisible.value = false
+        assertFalse(viewModel.isDialpadVisible.value)
+    }
+
+    @Test
+    fun `dialpad tones and vibrate on click settings persist across ViewModel recreation`() {
+        viewModel.updateDialpadTonesEnabled(false)
+        viewModel.updateVibrateOnClickEnabled(false)
+        viewModel.updateFlipToSilenceEnabled(true)
+        viewModel.updateCallWaitingEnabled(false)
+        viewModel.updateRecordingEnabled(true)
+        viewModel.updateFlashAlertsEnabled(true)
+        viewModel.updateBiometricLockEnabled(true)
+        viewModel.updatePocketProtectionEnabled(true)
+        viewModel.updateCallbackRemindersEnabled(false)
+        viewModel.updateCallNotesEnabled(false)
+        viewModel.updateFakeCallSimulatorEnabled(false)
+        viewModel.onAccountFilterChange("Google:test@gmail.com")
+        viewModel.updateDefaultContactAccount("Google:test@gmail.com", "com.google")
+
+        assertFalse(viewModel.dialpadTonesEnabled.value)
+        assertFalse(viewModel.vibrateOnClickEnabled.value)
+        assertTrue(viewModel.flipToSilenceEnabled.value)
+        assertFalse(viewModel.callWaitingEnabled.value)
+        assertTrue(viewModel.recordingEnabled.value)
+        assertTrue(viewModel.flashAlertsEnabled.value)
+        assertTrue(viewModel.isBiometricLockEnabled.value)
+        assertTrue(viewModel.isPocketProtectionEnabled.value)
+        assertFalse(viewModel.isCallbackRemindersEnabled.value)
+        assertFalse(viewModel.isCallNotesEnabled.value)
+        assertFalse(viewModel.isFakeCallSimulatorEnabled.value)
+        assertEquals("Google:test@gmail.com", viewModel.selectedAccountFilter.value)
+        assertEquals("Google:test@gmail.com", viewModel.defaultContactAccountName.value)
+
+        // Recreate ViewModel simulating app restart
+        val newViewModel = DialerViewModel(context)
+        assertFalse(newViewModel.dialpadTonesEnabled.value)
+        assertFalse(newViewModel.vibrateOnClickEnabled.value)
+        assertTrue(newViewModel.flipToSilenceEnabled.value)
+        assertFalse(newViewModel.callWaitingEnabled.value)
+        assertTrue(newViewModel.recordingEnabled.value)
+        assertTrue(newViewModel.flashAlertsEnabled.value)
+        assertTrue(newViewModel.isBiometricLockEnabled.value)
+        assertTrue(newViewModel.isPocketProtectionEnabled.value)
+        assertFalse(newViewModel.isCallbackRemindersEnabled.value)
+        assertFalse(newViewModel.isCallNotesEnabled.value)
+        assertFalse(newViewModel.isFakeCallSimulatorEnabled.value)
+        assertEquals("Google:test@gmail.com", newViewModel.selectedAccountFilter.value)
+        assertEquals("Google:test@gmail.com", newViewModel.defaultContactAccountName.value)
+    }
+
+    @Test
+    fun `inspect call logs dates`() {
+        val repo = com.example.DialerRepository(context)
+        runBlocking {
+            repo.syncCallLogs()
+            val callLogs = repo.getAllCallHistoryFlow()
+            val firstList = callLogs.first()
+            println("DIALER_TEST_LOGS_COUNT: ${firstList.size}")
+            if (firstList.isNotEmpty()) {
+                val f = firstList.first()
+                val l = firstList.last()
+                println("FIRST_LOG_TIMESTAMP: ${f.timestamp}, timestampMs: ${f.timestampMs}")
+                println("LAST_LOG_TIMESTAMP: ${l.timestamp}, timestampMs: ${l.timestampMs}")
+            }
+        }
+    }
+
+    @Test
+    fun `clearAllCallLogs clears the local and flow records`() {
+        runBlocking {
+            viewModel.clearAllCallLogs()
+            val callHistory = viewModel.allCallHistoryFlow.value
+            assertTrue(callHistory.isEmpty())
+        }
+    }
+
+    @Test
+    fun `dialpad digits are grouped in fives while the raw value stays unformatted`() {
+        viewModel.onDialpadInputChange("9876543210")
+        // Canonical value (used for dialing/searching) stays raw...
+        assertEquals("9876543210", viewModel.dialpadInput.value)
+        // ...while the on-screen field shows the spaced form.
+        assertEquals("98765 43210", viewModel.dialpadTextFieldValue.value.text)
+        assertEquals(11, viewModel.dialpadTextFieldValue.value.selection.start)
+    }
+
+    @Test
+    fun `backspace removes the last digit and reformats`() {
+        viewModel.onDialpadInputChange("123456")
+        viewModel.backspaceDialpad()
+        assertEquals("12345", viewModel.dialpadInput.value)
+        assertEquals("12345", viewModel.dialpadTextFieldValue.value.text)
+        assertEquals(5, viewModel.dialpadTextFieldValue.value.selection.start)
+    }
+
+    @Test
+    fun `pasting replaces the number and sanitizes it`() {
+        viewModel.onDialpadInputChange("12995")
+        assertEquals("12995", viewModel.dialpadInput.value)
+
+        // The paste path replaces the whole value; letters and stray characters are stripped.
+        viewModel.onDialpadInputChange("+91 98765 43210abc")
+        assertEquals("+919876543210", viewModel.dialpadInput.value)
+        assertEquals("+91 98765 43210", viewModel.dialpadTextFieldValue.value.text)
+        assertEquals(15, viewModel.dialpadTextFieldValue.value.selection.start)
+    }
+
+    @Test
+    fun `openAddContactWithNumber pre-fills state properly`() {
+        viewModel.openAddContactWithNumber("+15551234567")
+        assertTrue(viewModel.isAddContactDialogVisible.value)
+        assertEquals("+15551234567", viewModel.newContactNumber.value)
+        assertEquals("", viewModel.newContactName.value)
+    }
+
+    @Test
+    fun `out-of-bounds selection in TextFieldValue is sanitized defensively without crash`() {
+        // Simulate corrupted cursor position exceeding text length
+        val tfvExceeding = androidx.compose.ui.text.input.TextFieldValue(
+            text = "123",
+            selection = androidx.compose.ui.text.TextRange(10, 20)
+        )
+        viewModel.onDialpadTextFieldValueChange(tfvExceeding)
+        assertEquals("123", viewModel.dialpadInput.value)
+        assertEquals(3, viewModel.dialpadTextFieldValue.value.selection.start)
+        assertEquals(3, viewModel.dialpadTextFieldValue.value.selection.end)
+
+        // Simulate selection beyond end of shortened text
+        val tfvBeyond = androidx.compose.ui.text.input.TextFieldValue(
+            text = "1",
+            selection = androidx.compose.ui.text.TextRange(5, 5)
+        )
+        viewModel.onDialpadTextFieldValueChange(tfvBeyond)
+        assertEquals(1, viewModel.dialpadTextFieldValue.value.selection.start)
+        assertEquals(1, viewModel.dialpadTextFieldValue.value.selection.end)
+    }
+
+    @Test
+    fun `rapid digit entry and backspaces never produce index errors`() {
+        for (i in 1..9) {
+            viewModel.insertDialpadDigit(i.toString())
+        }
+        assertEquals("123456789", viewModel.dialpadInput.value)
+        for (i in 1..12) {
+            viewModel.backspaceDialpad()
+        }
+        assertEquals("", viewModel.dialpadInput.value)
+        assertEquals(0, viewModel.dialpadTextFieldValue.value.selection.start)
+    }
+}

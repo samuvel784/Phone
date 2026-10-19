@@ -1,0 +1,148 @@
+/*
+ * Copyright (C) 2026 MovStore
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.example.ui.components
+
+import com.example.ui.theme.NovaTheme
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.ContactCache
+import com.example.model.Contact
+import com.example.model.getInitials
+import com.example.ui.theme.AppShapes
+
+@Composable
+fun InCallAvatarDisplay(
+    participants: List<Pair<String, String>>,
+    contactName: String,
+    contactNumber: String,
+    contacts: List<Contact>,
+    avatarShapeType: String = "squircle",
+    isConference: Boolean = false,
+    isSpam: Boolean = false
+) {
+    val context = LocalContext.current
+
+    val matchedContact = remember(contactNumber, contacts) {
+        if (contactNumber.isNotBlank()) {
+            ContactCache.getContact(contactNumber) ?: contacts.find { it.number == contactNumber }
+        } else null
+    }
+
+    val pName = participants.firstOrNull()?.first ?: contactName
+    val isSaved = matchedContact != null || (pName != contactNumber && pName != "Unknown" && pName.isNotBlank() && pName.any { it.isLetter() })
+    var imageLoadFailed by remember(matchedContact?.photoUri) { mutableStateOf(false) }
+
+    val isMultiParty = isConference || participants.size > 1
+
+    val bgColor = when {
+        isMultiParty -> MaterialTheme.colorScheme.primaryContainer
+        matchedContact != null -> matchedContact.avatarBg
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val textColor = when {
+        isMultiParty -> MaterialTheme.colorScheme.onPrimaryContainer
+        matchedContact != null -> matchedContact.avatarTextColor
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val nova = NovaTheme.colors
+    Surface(
+        modifier = Modifier
+            .size(120.dp)
+            .shadow(
+                elevation = 18.dp,
+                shape = AppShapes.Avatar,
+                ambientColor = nova.glow,
+                spotColor = nova.glow
+            ),
+        shape = AppShapes.Avatar,
+        color = bgColor,
+        border = if (isSpam) BorderStroke(3.dp, Color.Red) else BorderStroke(3.dp, nova.brand)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (isMultiParty) {
+                Text(text = "👥", fontSize = 48.sp)
+            } else if (matchedContact != null && matchedContact.photoUri.isNotEmpty() && !imageLoadFailed) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(matchedContact.photoUri)
+                        .size(256, 256)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = pName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onError = { imageLoadFailed = true }
+                )
+            } else {
+                if (isSaved) {
+                    Text(
+                        text = getInitials(pName),
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 44.sp),
+                        color = textColor
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = textColor,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
+
+            if (isSpam) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Red.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Spam Call Warning",
+                        tint = Color.Red,
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
+            }
+        }
+    }
+}

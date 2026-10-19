@@ -1,0 +1,29 @@
+# Baseline profile for NovaDial.
+# Install-time compilation of the code that runs at startup and while scrolling, so the first launch and the
+# first swipes are smooth instead of being interpreted. Rules: H = hot, S = startup, P = post-startup.
+
+# --- the app ---
+HSPLcom/example/**;->**(**)**
+
+# --- Compose core: composition, layout, drawing, gestures ---
+HSPLandroidx/compose/runtime/**;->**(**)**
+HSPLandroidx/compose/ui/**;->**(**)**
+HSPLandroidx/compose/foundation/**;->**(**)**
+HSPLandroidx/compose/animation/**;->**(**)**
+HSPLandroidx/compose/material3/**;->**(**)**
+HSPLandroidx/compose/material/ripple/**;->**(**)**
+
+# --- Activity, lifecycle, ViewModel ---
+HSPLandroidx/activity/**;->**(**)**
+HSPLandroidx/lifecycle/**;->**(**)**
+
+# --- Image loading used for contact photos ---
+HSPLcoil/**;->**(**)**
+
+# --- Classes that are always needed at startup ---
+Lcom/example/**;
+Landroidx/compose/runtime/**;
+Landroidx/compose/ui/**;
+Landroidx/compose/foundation/**;
+Landroidx/compose/animation/**;
+Landroidx/compose/material3/**;

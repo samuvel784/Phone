@@ -1,0 +1,880 @@
+/*
+ * Copyright (C) 2026 MovStore
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.example.ui.components
+
+import android.content.Intent
+import android.media.MediaPlayer
+import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CallMade
+import androidx.compose.material.icons.automirrored.filled.CallMissed
+import androidx.compose.material.icons.automirrored.filled.CallReceived
+import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.R
+import com.example.model.CallRecord
+import com.example.model.CallRecording
+import com.example.model.CallType
+import com.example.model.Contact
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.ui.theme.*
+import com.example.ui.viewmodel.DialerViewModel
+import com.example.util.MultiSimManager
+import com.example.util.RichHapticEngine
+import kotlinx.coroutines.delay
+import java.io.File
+import java.util.Locale
+import androidx.core.net.toUri
+import kotlin.time.Duration.Companion.milliseconds
+
+@Composable
+fun RecentCallRow(
+    group: CallGroup,
+    onCallClick: () -> Unit,
+    onDeleteRecord: (Int) -> Unit,
+    getHistory: suspend (String) -> List<CallRecord>,
+    viewModel: DialerViewModel,
+    onHistoryClick: (String) -> Unit
+) {
+    val record = group.primary
+    val context = LocalContext.current
+    var isExpanded by remember { mutableStateOf(false) }
+
+    val isExpressive = LocalM3Expressive.current
+    val isAmoled = LocalAmoledMode.current
+
+    // SQUIRCLE ARCHITECTURE: Strictly enforce AppShapes.Avatar (percent = 32)
+    val avatarShape = AppShapes.Avatar
+
+    // Cards sit one tone above the page and get a soft hairline border, so lists look crisp in every theme.
+    val baseCard = MaterialTheme.colorScheme.surfaceContainerLow
+    val expandedCard = MaterialTheme.colorScheme.surfaceContainer
+    val containerColor by animateColorAsState(
+        targetValue = if (isExpanded) expandedCard else baseCard,
+        animationSpec = NovaMotion.fade(NovaMotion.QUICK),
+        label = "recentCardColor"
+    )
+    val cardSource = remember { MutableInteractionSource() }
+
+    val isRowSwipeEnabled by viewModel.isRowSwipeEnabled
+
+    // Prepared once for the whole list (see RecentsLookup): a row only does cheap map lookups.
+    val lookup = LocalRecentsLookup.current
+    val matchingRecordings = remember(lookup, record.number, record.name) {
+        lookup.recordingsFor(record.number, record.name)
+    }
+    var showPlaybackDialog by remember { mutableStateOf(false) }
+
+    val spamEntity = remember(lookup, record.number) { lookup.spamFor(record.number) }
+    val isSpam = spamEntity != null
+
+    val rowCardContent = @Composable {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressScale(cardSource, 0.985f)
+                .animateContentSize(animationSpec = NovaMotion.smooth())
+                .clickable(interactionSource = cardSource, indication = LocalIndication.current) {
+                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                    isExpanded = !isExpanded
+                },
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            shape = AppShapes.Card
+        ) {
+            Column {
+                ListItem(
+                    headlineContent = {
+                        Column(
+                            modifier = Modifier.offset(x = (-8).dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (record.name == "Unknown" || record.name.isBlank() || record.name in listOf("-1", "-2", "-3")) {
+                                        stringResource(R.string.unknown)
+                                    } else {
+                                        record.name
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 18.sp,
+                                    color = if (record.type == CallType.MISSED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (group.calls.size > 1) {
+                                    Text(
+                                        text = " (${group.calls.size})",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                val (icon, iconColor) = when (record.type) {
+                                    CallType.MISSED -> Icons.AutoMirrored.Filled.CallMissed to getMissedCallColor()
+                                    CallType.OUTGOING -> Icons.AutoMirrored.Filled.CallMade to getDialedCallColor()
+                                    CallType.INCOMING -> Icons.AutoMirrored.Filled.CallReceived to getReceivedCallColor()
+                                }
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = iconColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+
+                                val physicalSimCount = lookup.physicalSimCount
+                                if (physicalSimCount > 1) {
+                                    val isSim1 = record.simSlot <= 1
+                                    Surface(
+                                        shape = AppShapes.Chip,
+                                        color = if (isSim1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+                                        border = if (!isSim1) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)) else null
+                                    ) {
+                                        Text(
+                                            text = stringResource(if (isSim1) R.string.sim_1 else R.string.sim_2),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (isSim1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(horizontal = 4.5.dp, vertical = 0.5.dp)
+                                        )
+                                    }
+                                }
+
+                                if (record.isVerified) {
+                                    val verifiedGreen = getCallGreenColor()
+                                    Surface(
+                                        shape = AppShapes.Chip,
+                                        color = verifiedGreen.copy(alpha = 0.15f),
+                                        border = BorderStroke(0.5.dp, verifiedGreen.copy(alpha = 0.5f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = verifiedGreen,
+                                                modifier = Modifier.size(10.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.caller_verified),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = verifiedGreen
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (isSpam) {
+                                    Surface(
+                                        shape = AppShapes.Chip,
+                                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
+                                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Report,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(10.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.spam_label),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (matchingRecordings.isNotEmpty()) {
+                                    Surface(
+                                        shape = AppShapes.Chip,
+                                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                                        modifier = Modifier.clickable {
+                                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                            showPlaybackDialog = true
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 4.5.dp, vertical = 1.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Mic,
+                                                contentDescription = stringResource(R.string.recording),
+                                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                modifier = Modifier.size(10.dp)
+                                            )
+                                            Text(
+                                                text = "Rec",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+
+                                val extraInfo = when {
+                                    record.isVerified && record.number.isNotBlank() -> "${record.number} • "
+                                    record.label.isNotBlank() && !record.label.equals("Mobile", ignoreCase = true) -> "${localizeContactLabel(record.label)} • "
+                                    else -> ""
+                                }
+                                Text(
+                                    text = "$extraInfo${record.timestamp}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    },
+                    supportingContent = null,
+                    leadingContent = {
+                        Box(
+                            modifier = Modifier
+                                .offset(x = (-8).dp)
+                                .size(42.dp)
+                                .clip(avatarShape)
+                                .background(record.avatarBg.copy(alpha = 0.85f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // A stale/removed photo URI falls back to initials instead of a blank circle.
+                            var imageFailed by remember(record.photoUri) { mutableStateOf(false) }
+                            if (record.photoUri.isNotEmpty() && !imageFailed) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(record.photoUri)
+                                        .size(128, 128)
+                                        .crossfade(false)
+                                        .build(),
+                                    contentDescription = record.name,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                    onError = { imageFailed = true }
+                                )
+                            } else {
+                                val isSaved = record.name != record.number && record.name != "Unknown" && record.name.isNotBlank()
+                                if (isSaved) {
+                                    Text(
+                                        text = record.avatarText,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = record.avatarTextColor,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = record.avatarTextColor,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        IconButton(onClick = {
+                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.SUCCESS)
+                            onCallClick()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = stringResource(R.string.action_call),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                val blockedNumbersEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
+                val isBlocked = remember(blockedNumbersEntities, record.number) {
+                    blockedNumbersEntities.any { it.number == record.number }
+                }
+
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val isContact = record.name != record.number
+
+                            DetailActionItem(
+                                icon = Icons.AutoMirrored.Filled.Message,
+                                label = stringResource(R.string.send_sms),
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                            data = "smsto:${record.number}".toUri()
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, context.getString(R.string.error_open_messages), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+
+                            DetailActionItem(
+                                icon = Icons.Default.Block,
+                                label = if (isBlocked) stringResource(R.string.unblock) else stringResource(R.string.block),
+                                containerColor = if (isBlocked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                                contentColor = if (isBlocked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.error,
+                                onClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    if (isBlocked) {
+                                        viewModel.removeBlockedNumber(record.number)
+                                    } else {
+                                        viewModel.addBlockedNumber(record.number)
+                                    }
+                                }
+                            )
+
+                            DetailActionItem(
+                                icon = if (isSpam) Icons.Default.ReportOff else Icons.Default.Report,
+                                label = if (isSpam) stringResource(R.string.remove_spam) else stringResource(R.string.mark_spam),
+                                containerColor = if (isSpam) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                contentColor = if (isSpam) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.error,
+                                onClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    if (isSpam && spamEntity != null) {
+                                        viewModel.deleteSpamNumber(spamEntity)
+                                        Toast.makeText(context, context.getString(R.string.spam_unmarked), Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        viewModel.addSpamNumber(record.number, context.getString(R.string.spam_label))
+                                        Toast.makeText(context, context.getString(R.string.spam_marked), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+
+                            DetailActionItem(
+                                icon = Icons.Default.History,
+                                label = stringResource(R.string.history),
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                onClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    onHistoryClick(record.number)
+                                }
+                            )
+
+                            DetailActionItem(
+                                icon = if (isContact) Icons.Default.Edit else Icons.Default.PersonAdd,
+                                label = if (isContact) stringResource(R.string.btn_edit) else stringResource(R.string.action_add_contact),
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                onClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    if (isContact) {
+                                        viewModel.oldContactToEdit.value = Contact(
+                                            number = record.number,
+                                            name = record.name,
+                                            label = record.label,
+                                            favorite = false,
+                                            avatarText = record.avatarText,
+                                            avatarBgValue = record.avatarBgValue,
+                                            avatarTextColorValue = record.avatarTextColorValue,
+                                            email = ""
+                                        )
+                                        viewModel.editContactName.value = record.name
+                                        viewModel.editContactNumber.value = record.number
+                                        viewModel.editContactLabel.value = record.label
+                                        viewModel.isEditContactDialogVisible.value = true
+                                    } else {
+                                        viewModel.newContactName.value = ""
+                                        viewModel.newContactNumber.value = record.number
+                                        viewModel.newContactLabel.value = "Mobile"
+                                        viewModel.isAddContactDialogVisible.value = true
+                                    }
+                                }
+                            )
+
+                            if (matchingRecordings.isNotEmpty()) {
+                                DetailActionItem(
+                                    icon = Icons.Default.Mic,
+                                    label = stringResource(R.string.recording),
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    onClick = {
+                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                        showPlaybackDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (isRowSwipeEnabled) {
+        val dismissState = rememberSwipeToDismissBoxState(
+            positionalThreshold = { totalDistance -> totalDistance * 0.75f },
+            confirmValueChange = { dismissValue ->
+                when (dismissValue) {
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.SUCCESS)
+                        onCallClick()
+                        false
+                    }
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                        try {
+                            val intent = Intent(Intent.ACTION_SENDTO, "smsto:${record.number}".toUri()).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            Toast.makeText(context, context.getString(R.string.error_open_messages), Toast.LENGTH_SHORT).show()
+                        }
+                        false
+                    }
+                    else -> false
+                }
+            }
+        )
+
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                val direction = dismissState.dismissDirection
+                val bgContainerColor = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> getCallGreenColor()
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
+                    else -> Color.Transparent
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(bgContainerColor)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+                ) {
+                    if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Call, contentDescription = stringResource(R.string.action_swipe_call), tint = Color.White)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.action_swipe_call), color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    } else if (direction == SwipeToDismissBoxValue.EndToStart) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.action_swipe_message), color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(Icons.Default.Email, contentDescription = stringResource(R.string.action_swipe_message), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                    }
+                }
+            }
+        ) {
+            rowCardContent()
+        }
+    } else {
+        rowCardContent()
+    }
+
+    if (showPlaybackDialog && matchingRecordings.isNotEmpty()) {
+        DirectRecordingPlayerDialog(
+            recordings = matchingRecordings,
+            onDismiss = { showPlaybackDialog = false },
+            viewModel = viewModel
+        )
+    }
+}
+
+@Composable
+fun DirectRecordingPlayerDialog(
+    recordings: List<CallRecording>,
+    onDismiss: () -> Unit,
+    viewModel: DialerViewModel
+) {
+    val context = LocalContext.current
+    var selectedIndex by remember { mutableIntStateOf(0) }
+    val currentRecording = recordings.getOrNull(selectedIndex) ?: recordings.firstOrNull()
+
+    if (currentRecording == null) {
+        onDismiss()
+        return
+    }
+
+    var isPlaying by remember { mutableStateOf(false) }
+    var currentPositionMs by remember { mutableIntStateOf(0) }
+    var totalDurationMs by remember { mutableIntStateOf((currentRecording.duration * 1000).toInt()) }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isEditingNote by remember { mutableStateOf(false) }
+    var noteInput by remember(currentRecording.id) { mutableStateOf(currentRecording.note) }
+
+    fun stopPlayer() {
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (_: Exception) {}
+        mediaPlayer = null
+        isPlaying = false
+        currentPositionMs = 0
+    }
+
+    fun startPlaying(rec: CallRecording) {
+        stopPlayer()
+        val file = File(rec.filePath)
+        if (!file.exists() || file.length() == 0L) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val mp = MediaPlayer().apply {
+                setDataSource(file.absolutePath)
+                prepare()
+                totalDurationMs = duration.coerceAtLeast(1000)
+                setOnCompletionListener {
+                    isPlaying = false
+                    currentPositionMs = 0
+                }
+                start()
+            }
+            mediaPlayer = mp
+            isPlaying = true
+        } catch (_: Exception) {
+            stopPlayer()
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    DisposableEffect(currentRecording.id) {
+        onDispose {
+            stopPlayer()
+        }
+    }
+
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            delay(100.milliseconds)
+            mediaPlayer?.let { mp ->
+                try {
+                    if (mp.isPlaying) {
+                        currentPositionMs = mp.currentPosition
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = {
+            stopPlayer()
+            onDismiss()
+        },
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = stringResource(R.string.settings_recordings_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "${currentRecording.name.ifEmpty { currentRecording.number }} • ${currentRecording.timestamp}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                if (recordings.size > 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        recordings.forEachIndexed { idx, rec ->
+                            FilterChip(
+                                selected = selectedIndex == idx,
+                                onClick = {
+                                    stopPlayer()
+                                    selectedIndex = idx
+                                },
+                                label = { Text("#${idx + 1} (${rec.duration}s)") }
+                            )
+                        }
+                    }
+                }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = AppShapes.Card,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            FilledIconButton(
+                                onClick = {
+                                    if (isPlaying) {
+                                        stopPlayer()
+                                    } else {
+                                        startPlaying(currentRecording)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = stringResource(if (isPlaying) R.string.btn_pause else R.string.btn_play)
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                val progress = if (totalDurationMs > 0) currentPositionMs.toFloat() / totalDurationMs.toFloat() else 0f
+                                LinearProgressIndicator(
+                                    progress = { progress.coerceIn(0f, 1f) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(AppShapes.Chip)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    val currentSec = currentPositionMs / 1000
+                                    val totalSec = totalDurationMs / 1000
+                                    Text(
+                                        text = String.format(Locale.ROOT, "%02d:%02d", currentSec / 60, currentSec % 60),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = String.format(Locale.ROOT, "%02d:%02d", totalSec / 60, totalSec % 60),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (isEditingNote) {
+                    OutlinedTextField(
+                        value = noteInput,
+                        onValueChange = { noteInput = it },
+                        label = { Text(stringResource(R.string.jot_call_note_title)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = false
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { isEditingNote = false }) {
+                            Text(stringResource(R.string.btn_cancel))
+                        }
+                        Button(
+                            onClick = {
+                                viewModel.updateCallRecordingNote(currentRecording.id, noteInput.trim())
+                                if (noteInput.isNotBlank() && currentRecording.number.isNotBlank()) {
+                                    viewModel.saveCallNote(currentRecording.number, noteInput.trim())
+                                }
+                                isEditingNote = false
+                                Toast.makeText(context, context.getString(R.string.note_saved), Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text(stringResource(R.string.btn_save_note))
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                noteInput = currentRecording.note
+                                isEditingNote = true
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (currentRecording.note.isNotBlank()) "📝 ${currentRecording.note}" else "➕ ${stringResource(R.string.jot_call_note_title)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (currentRecording.note.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        IconButton(onClick = {
+                            noteInput = currentRecording.note
+                            isEditingNote = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.btn_edit),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = {
+                            val file = File(currentRecording.filePath)
+                            if (file.exists()) {
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider",
+                                    file
+                                )
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "audio/*"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_recording)))
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.share_recording))
+                    }
+
+                    TextButton(
+                        onClick = {
+                            stopPlayer()
+                            viewModel.deleteCallRecording(currentRecording.id)
+                            try {
+                                val file = File(currentRecording.filePath)
+                                if (file.exists()) file.delete()
+                            } catch (_: Exception) {}
+                            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.delete_recording))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    stopPlayer()
+                    onDismiss()
+                }
+            ) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    )
+}

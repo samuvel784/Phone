@@ -1,0 +1,24 @@
+# Gradle / build output
+.gradle/
+build/
+.kotlin/
+*.apk
+*.aab
+app/release/
+
+# Local agent artifacts
+.artifacts/
+
+# IDE and local files
+.idea/
+*.iml
+local.properties
+.env
+
+# Signing
+*.jks
+*.keystore
+*.p12
+*.pfx
+/key.properties
+/key.properties*

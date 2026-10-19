@@ -1,0 +1,711 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2026 MovStore
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  -->
+<resources>
+
+    <!-- Application Identity -->
+    <string name="app_name">NovaDial</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_home">首页</string>
+    <string name="tab_favorites">收藏</string>
+    <string name="tab_recents">最近</string>
+    <string name="tab_contacts">联系人</string>
+    <string name="tab_dialpad">拨号盘</string>
+    <string name="home_call_analytics">通话分析</string>
+    <string name="cat_call_analytics_sub">通话总数、未接来电和通话时长分析</string>
+
+    <!-- Search & General UI -->
+    <string name="search_placeholder">搜索联系人和号码</string>
+    <string name="search_settings_placeholder">搜索设置�</string>
+    <string name="search_clear">清除</string>
+    <string name="search_results_count">搜索结果 (%1$d)</string>
+    <string name="no_matching_settings">没有匹配的设置项</string>
+    <string name="no_matching_settings_desc">尝试搜索深色模式、SIM 卡、拦截或录音等关键词。</string>
+    <string name="no_results_title">未找到结果</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_missed">未接</string>
+    <string name="filter_dialed">已拨</string>
+    <string name="filter_received">已接</string>
+    <string name="default_dialer_warning">设为默认拨号应用即可启用全部功能。</string>
+
+    <!-- Permissions -->
+    <string name="enable_contacts_perm">启用手机联系人</string>
+    <string name="enable_call_log_perm">启用通话记录</string>
+    <string name="contacts_perm_desc">若要访问、加载、编辑手机上的真实联系人并拨打电话，请授予联系人权限。</string>
+    <string name="call_log_perm_desc">若要访问、加载手机上的真实通话记录并拨打电话，请授予通话记录权限。</string>
+
+    <!-- Contacts Management & Details -->
+    <string name="no_contacts_title">未找到联系人</string>
+    <string name="no_contacts_subtitle">点按“新建”以创建联系人</string>
+    <string name="action_add_contact">添加联系人</string>
+    <string name="label_phone_number">电话号码</string>
+    <string name="label_first_name">名字</string>
+    <string name="label_last_name">姓氏</string>
+    <string name="label_email">电子邮件</string>
+    <string name="label_mobile">手机</string>
+    <string name="label_home">住宅</string>
+    <string name="label_work">工作</string>
+    <string name="label_other">其他</string>
+    <string name="label_address">地址</string>
+    <string name="contact_source_select">选择账户</string>
+    <string name="contact_source_phone">手机存储</string>
+    <string name="contact_source_label">保存到账户</string>
+    <string name="add_contact_dialog_title">添加联系人</string>
+    <string name="edit_contact_dialog_title">编辑联系人</string>
+    <string name="select_number_to_call">选择要拨打的号码</string>
+    <string name="select_number_to_message">选择要发送信息的号码</string>
+    <string name="dialog_call_contact">呼叫 %1$s</string>
+    <string name="dialog_message_contact">给 %1$s 发送信息</string>
+
+    <!-- Recents & Call History -->
+    <string name="no_call_log_title">通话记录为空</string>
+    <string name="no_call_log_subtitle">最近的通话将显示在这里</string>
+    <string name="clear_call_log_confirm_title">清除通话记录？</string>
+    <string name="clear_call_log_confirm_desc">这将从本设备和其他拨号应用中永久删除所有通话记录。此操作无法撤销。</string>
+    <string name="clear_history_with_number">清除与此号码的通话记录</string>
+    <string name="call_type_incoming">呼入电话</string>
+    <string name="call_type_outgoing">呼出电话</string>
+    <string name="call_type_missed">未接来电</string>
+    <string name="unknown">未知</string>
+    <string name="recent_label_format">最近 • %1$s</string>
+    <string name="calls_count">%1$d 次通话</string>
+    <string name="call_count_label">来电次数：</string>
+    <string name="call_summary_prefix">%1$s通话摘要</string>
+    <string name="today_call_summary">今日通话摘要</string>
+
+    <!-- Dialpad & T9 Search -->
+    <string name="dialpad_enter_number">输入号码</string>
+    <string name="dialpad_create_contact">新建联系人</string>
+    <string name="dialpad_add_to_existing">添加到现有联系人</string>
+    <string name="dialpad_select_contact_title">选择联系人</string>
+    <string name="dialpad_search_contact_hint">搜索联系人...</string>
+    <string name="dialpad_no_contacts_found">未找到匹配的联系人</string>
+    <string name="dialpad_no_matches">没有匹配的联系人</string>
+    <string name="dialpad_clear">清除</string>
+    <string name="dialpad_paste">粘贴</string>
+    <string name="dialpad_copy">复制号码</string>
+
+    <!-- In-Call Actions & States -->
+    <string name="btn_answer">接听</string>
+    <string name="btn_decline">拒接</string>
+    <string name="btn_swap">切换</string>
+    <string name="btn_merge">合并</string>
+    <string name="btn_call">呼叫</string>
+    <string name="btn_unhold">取消保持</string>
+    <string name="btn_answer_hold">接听并保持</string>
+    <string name="second_call_connecting">正在接通第二个通话...</string>
+    <string name="second_call_ringing">第二个通话正在响铃...</string>
+    <string name="second_call_dialing">正在拨打...</string>
+    <string name="second_call_active">通话中</string>
+    <string name="second_call_held">保持中</string>
+    <string name="second_call_failed">第二个通话已结束</string>
+    <string name="call_status_ongoing">通话中</string>
+    <string name="call_status_dialing">正在拨号...</string>
+    <string name="call_status_ringing">来电中...</string>
+    <string name="call_status_connecting">正在接通...</string>
+    <string name="call_status_hold">通话保持中</string>
+    <string name="call_status_ended">通话已结束</string>
+    <string name="btn_end_call">结束通话</string>
+    <string name="btn_expand">展开</string>
+    <string name="btn_collapse">折叠</string>
+    <string name="btn_play">播放</string>
+    <string name="btn_pause">暂停</string>
+    <string name="btn_minimize_call">最小化通话</string>
+    <string name="in_call_spoof_warning">可能的伪造号码</string>
+    <string name="app_locked_title">NovaDial 已锁定</string>
+    <string name="app_locked_message">此应用已加密以保护您的隐私。请使用设备锁进行验证以继续。</string>
+    <string name="btn_unlock_app">解锁拨号器</string>
+    <string name="call_status_conference">多方通话</string>
+    <string name="mute">静音</string>
+    <string name="speaker">免提</string>
+    <string name="bluetooth">蓝牙</string>
+    <string name="hold">保持</string>
+    <string name="keypad">键盘</string>
+    <string name="record">录音</string>
+    <string name="recording">录音中</string>
+    <string name="recording_saved">录音已安全保存</string>
+    <string name="recording_started">⏺️ 通话录音已开始</string>
+    <string name="action_call">拨打</string>
+    <string name="action_message">发信息</string>
+    <string name="action_swipe_call">拨打</string>
+    <string name="action_swipe_message">发信息</string>
+    <string name="toast_number_copied">号码已复制到剪贴板</string>
+    <string name="number_copied">已复制号码</string>
+    <string name="send_sms">发送短信</string>
+    <string name="sms_sent">短信已发送</string>
+    <string name="sms_failed">短信发送失败</string>
+    <string name="call_waiting_title">呼叫等待</string>
+    <string name="call_waiting_notice">接听会将当前通话置于保持状态。</string>
+    <string name="call_waiting_incoming_from">来电来自：</string>
+    <string name="caller_verified">已验证</string>
+    <string name="no_answer">无人接听</string>
+
+    <!-- Favorites & Voicemail -->
+    <string name="no_favorites_title">暂无收藏</string>
+    <string name="no_favorites_subtitle">为联系人加星标，方便快速找到</string>
+    <string name="voicemail_header">语音信箱</string>
+    <string name="no_voicemails_title">暂无语音留言</string>
+    <string name="no_voicemails_subtitle">您已全部处理完毕</string>
+    <string name="voicemail_settings">语音信箱设置</string>
+    <string name="voicemail_directory_number">语音信箱号码</string>
+    <string name="voicemail_sample_transcript">转录：“嘿，就是打个电话问候一下。今晚有空的话告诉我一声！”</string>
+
+    <!-- Settings Categories -->
+    <string name="cat_sound_gestures">声音与手势</string>
+    <string name="cat_calling_accounts">SIM 卡与通话</string>
+    <string name="cat_speed_dial_quick_responses">快速拨号与快捷回复</string>
+    <string name="cat_call_blocking">骚扰与拦截</string>
+    <string name="cat_contacts_data">联系人与数据</string>
+    <string name="cat_advanced_features">高级工具</string>
+    <string name="cat_privacy_security_about">隐私与关于</string>
+    <string name="cat_appearance_color">外观</string>
+    <string name="cat_appearance_color_sub">动态取色、深色模式与配色</string>
+    <string name="cat_sound_gestures_sub">铃声、提示音与手势</string>
+    <string name="cat_calling_accounts_sub">SIM 卡、呼叫等待与语音信箱</string>
+    <string name="cat_speed_dial_quick_responses_sub">快速拨号与快捷回复</string>
+    <string name="cat_call_blocking_sub">拦截号码与来电识别</string>
+    <string name="cat_contacts_data_sub">同步、导入与备份</string>
+    <string name="cat_advanced_features_sub">通话录音、备注、模拟来电与回拨</string>
+    <string name="cat_privacy_security_about_sub">应用锁、安全与应用信息</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+
+    <!-- Settings Headers -->
+    <string name="header_sim_carrier">SIM 卡与运营商配置</string>
+    <string name="header_incoming_alerts">来电提醒</string>
+    <string name="header_carrier_voicemail">运营商语音信箱</string>
+    <string name="header_contacts_management">联系人管理</string>
+    <string name="header_data_backup">数据与备份</string>
+    <string name="header_privacy_protection">隐私保护</string>
+    <string name="header_call_recording">通话录音</string>
+    <string name="header_app_specs">应用规格</string>
+    <string name="header_navigation_layout">导航与布局</string>
+    <string name="header_community">社区</string>
+
+    <!-- Settings - General & Appearance -->
+    <string name="settings_carrier_call_settings">运营商通话设置</string>
+    <string name="settings_carrier_call_settings_sub">呼叫等待、呼叫转移及其他补充电话服务</string>
+    <string name="settings_theme_mode">外观模式</string>
+    <string name="settings_theme_mode_sub">浅色（白色）、默认（蓝色）或夜间（纯黑）— 全局应用</string>
+    <string name="theme_day">浅色</string>
+    <string name="theme_day_sub">白色</string>
+    <string name="theme_default">默认</string>
+    <string name="theme_default_sub">蓝色</string>
+    <string name="theme_night">夜间</string>
+    <string name="theme_night_sub">黑色</string>
+    <string name="settings_m3_expressive">Material 3 表现力设计</string>
+    <string name="settings_m3_expressive_sub">鲜艳的配色、更圆润的方圆形外观与动态样式</string>
+    <string name="settings_accent_color">强调色</string>
+    <string name="accent_color_system">System</string>
+    <string name="accent_color_custom">Custom</string>
+    <string name="accent_palette_aurora">Aurora</string>
+    <string name="accent_palette_nebula">Nebula</string>
+    <string name="accent_palette_glacier">Glacier</string>
+    <string name="accent_palette_ember">Ember</string>
+    <string name="accent_palette_forest">Forest</string>
+    <string name="accent_palette_mono">Mono</string>
+    <string name="theme_custom_title">自定义主题种子颜色</string>
+    <string name="theme_custom_desc">输入任意 HEX 颜色代码（例如 #FF5722 或 #00E676）以动态生成 M3 配色方案。</string>
+    <string name="theme_hex_code_label">HEX 颜色代码</string>
+    <string name="theme_hex_code_chip">十六进制代码</string>
+    <string name="theme_apply">应用主题</string>
+    <string name="settings_default_startup_tab">默认启动标签页</string>
+
+    <!-- Settings - Sound, Vibration & Gestures -->
+    <string name="settings_dialpad_tones">拨号盘按键音</string>
+    <string name="settings_dialpad_tones_sub">按下拨号按键时播放声音</string>
+    <string name="settings_vibrate">点击振动</string>
+    <string name="settings_vibrate_sub">操作拨号盘时提供触感反馈</string>
+    <string name="settings_flip_to_silence">翻转静音</string>
+    <string name="settings_flip_to_silence_sub">将手机屏幕朝下放置即可静音来电铃声</string>
+    <string name="settings_swipe_actions">滑动列表项拨号／发信息</string>
+    <string name="settings_swipe_actions_sub">在通话记录上向右滑动拨号，向左滑动发信息。会禁用标签页拖动以避免手势冲突。</string>
+    <string name="settings_flash_alerts">来电闪光提醒</string>
+    <string name="settings_flash_alerts_sub">有来电铃声时闪烁相机闪光灯</string>
+    <string name="settings_auto_tune_volume">录音时自动调节扬声器音量</string>
+    <string name="settings_auto_tune_volume_sub" formatted="false">录音时自动将扬声器音量平衡在 55%，以获得清晰的双向声音采集。</string>
+    <string name="header_theme_styling">主题与样式</string>
+    <string name="header_sound_haptics">声音与触感</string>
+
+    <!-- Settings - Calling Accounts, SIM & Telephony -->
+    <string name="settings_call_waiting">呼叫等待</string>
+    <string name="settings_call_waiting_sub">通话中收到来电时通知</string>
+    <string name="settings_preferred_sim">首选 SIM 卡</string>
+    <string name="settings_preferred_sim_sub">选择用于拨出电话的 SIM 卡</string>
+    <string name="sim_1">SIM 1</string>
+    <string name="sim_2">SIM 2</string>
+    <string name="sim_ask">每次询问</string>
+    <string name="select_sim_card">选择 SIM 卡</string>
+    <string name="choose_sim_card">选择用于拨打 %1$s 的 SIM 卡：</string>
+
+    <!-- Settings - Outgoing Caller ID, Privacy & CLIR -->
+    <string name="header_caller_id_privacy">去电主叫号码与隐私 (CLIR)</string>
+    <string name="settings_hide_caller_id">隐藏主叫号码</string>
+    <string name="settings_hide_caller_id_sub">在去电号码前添加运营商隐私前缀以隐藏您的手机号</string>
+    <string name="settings_clir_prefix">运营商隐私前缀</string>
+    <string name="settings_clir_prefix_sub">当前代码：%1$s</string>
+    <string name="settings_clir_warning_title">运营商与监管提示</string>
+    <string name="settings_clir_warning_desc">CLIR 隐私支持因运营商和地区而异。紧急求助电话绝不会被隐藏。</string>
+    <string name="settings_system_sim_caller_id">系统 SIM 卡设置</string>
+    <string name="settings_system_sim_caller_id_sub">打开 Android 系统电话主叫号码偏好设置</string>
+    <string name="settings_clir_prefix_dialog_title">选择 CLIR 前缀代码</string>
+    <string name="settings_clir_prefix_gsm">GSM 标准 (#31#)</string>
+    <string name="settings_clir_prefix_us">北美 (*67)</string>
+    <string name="settings_clir_prefix_uk">英国 (141)</string>
+    <string name="settings_clir_prefix_japan">日本 (1831)</string>
+    <string name="settings_clir_prefix_custom">自定义前缀</string>
+    <string name="settings_clir_custom_label">输入自定义运营商 CLIR 代码</string>
+
+    <!-- Settings - Speed Dial & Quick Responses -->
+    <string name="settings_speed_dial">快速拨号</string>
+    <string name="settings_speed_dial_sub">为 1-9 号按键分配快速拨号</string>
+    <string name="speed_dial">快速拨号</string>
+    <string name="speed_dial_desc">长按拨号盘上的 1-9 号按键，即可快速拨打已分配的号码。</string>
+    <string name="assign_speed_dial_key">分配快速拨号键 %1$d</string>
+    <string name="assign_key">分配按键</string>
+    <string name="unassigned_key">未分配的按键</string>
+    <string name="press_and_hold_dialpad">在拨号盘上长按 %1$d</string>
+    <string name="edit_key">编辑按键 %1$d</string>
+    <string name="delete_key">删除按键 %1$d</string>
+    <string name="settings_quick_responses">快捷回复</string>
+    <string name="quick_responses">快捷回复</string>
+    <string name="quick_decline_messages">快捷拒接短信</string>
+    <string name="create_custom_reply">创建自定义回复</string>
+    <string name="add_message_template">添加短信模板</string>
+    <string name="no_responses_saved_title">暂无已保存的回复</string>
+    <string name="no_responses_saved_desc">添加自定义短信模板，以便在拒接来电时快速发送。</string>
+    <string name="delete_response">删除回复</string>
+    <string name="send_quick_response">💬 发送快捷回复</string>
+
+    <!-- Settings - Carrier Voicemail & Preferences -->
+    <string name="settings_voicemail_num">语音信箱号码</string>
+    <string name="settings_voicemail_num_sub">配置快速拨号 1 的目标号码</string>
+    <string name="settings_voicemail_setup_title">语音信箱设置</string>
+    <string name="voicemail_setup_desc">设置长按拨号盘上的“1”键时拨出的电话号码。</string>
+    <string name="save_voicemail_number">保存语音信箱号码</string>
+
+    <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
+    <string name="settings_blocked_numbers">已拦截号码</string>
+    <string name="settings_blocked_numbers_sub">管理被限制的来电号码</string>
+    <string name="enter_number_to_block">输入要拦截的号码</string>
+    <string name="block_this_number">拦截此号码</string>
+    <string name="blocked_callers_header">已拦截的来电</string>
+    <string name="no_blocked_numbers_title">暂无已拦截号码</string>
+    <string name="no_blocked_numbers_desc">您拦截的号码会显示在这里，他们将无法给您打电话。</string>
+    <string name="block">拦截</string>
+    <string name="unblock">取消拦截</string>
+    <string name="block_number">拦截该号码</string>
+    <string name="unblock_number">取消拦截该号码</string>
+    <string name="call_blocked_toast">🚫 已拦截来电</string>
+    <string name="settings_spam_protection">离线骚扰防护</string>
+    <string name="local_offline_protection">本地离线防护</string>
+    <string name="spam_entries_label">骚扰条目</string>
+    <string name="spam_numbers_blocked">已拦截 %1$d 个号码</string>
+    <string name="add_spam_manually_title">手动添加骚扰号码</string>
+    <string name="label_phone_number_hint">电话号码</string>
+    <string name="label_spam_label_hint">标签</string>
+    <string name="btn_add_to_offline_db">添加到离线数据库</string>
+    <string name="blocklist_empty_title">拦截名单为空</string>
+    <string name="blocklist_empty_desc">导入 CSV 拦截名单或手动添加号码，即可在本地拦截推销电话和诈骗电话。</string>
+    <string name="blocked_offline_numbers_title">已拦截的离线号码</string>
+    <string name="btn_clear_all">全部清除</string>
+    <string name="btn_export_blocklist">导出拦截名单</string>
+    <string name="btn_import_blocklist">导入文件</string>
+    <string name="btn_export_spam_csv">导出 CSV</string>
+    <string name="btn_import_spam_file">导入文件</string>
+    <string name="blocklist_import_count_success">已导入 %1$d 个拦截号码！</string>
+    <string name="spam_import_count_success">已导入 %1$d 条骚扰条目！</string>
+
+    <!-- Settings - Call Recording Vault, Audio & Compression -->
+    <string name="settings_call_recording_sub">启用通话中的录音控制并保存到本地</string>
+    <string name="settings_recordings_title">已保存的录音</string>
+    <string name="no_recordings_title">未找到录音</string>
+    <string name="no_recordings_desc">启用通话录音，并在任意通话中点击录音按钮。</string>
+    <string name="share_recording">分享</string>
+    <string name="delete_recording">删除</string>
+    <string name="toast_deleted_recording">已删除录音</string>
+    <string name="settings_recording_chime">录音提示音与振动</string>
+    <string name="settings_recording_chime_sub">通话录音开始或结束时播放轻微提示音并提供触感反馈</string>
+    <string name="share_recording_title">分享与导出录音</string>
+    <string name="share_via_apps">通过应用分享</string>
+    <string name="share_via_apps_sub">将音频文件发送到消息、云盘或外部应用</string>
+    <string name="save_to_downloads">保存到“下载”</string>
+    <string name="save_to_downloads_sub">将副本直接导出到设备的“下载”目录</string>
+    <string name="recording_details">录音详情</string>
+    <string name="headset_recording_warning">已连接耳机：除非切换到免提，否则只会录制您的声音。</string>
+    <string name="settings_recordings_always_on">自动通话录音</string>
+    <string name="settings_recordings_always_on_sub">接通任何来电或去电时自动启动录音</string>
+    <string name="settings_recordings_biometric_lock">生物识别锁定录音</string>
+    <string name="settings_recordings_biometric_lock_sub">需要指纹或设备凭据才可查看和播放录音</string>
+    <string name="settings_recordings_auto_export">自动导出至下载目录</string>
+    <string name="settings_recordings_auto_export_sub">录音结束后自动复制文件到 Downloads/NovaDial 便于管理</string>
+    <string name="settings_recordings_compression_title">音频压缩与音质</string>
+    <string name="settings_recordings_compression_sub">优化音频编码码率与采样率，在保真度与存储空间之间取得平衡</string>
+    <string name="settings_recordings_cleanup_empty">清理空白/静音录音</string>
+    <string name="vault_locked_title">录音保险箱已锁定</string>
+    <string name="vault_locked_desc">需通过生物识别验证方可访问机密通话录音。</string>
+    <string name="btn_unlock_vault">解锁保险箱</string>
+
+    <!-- Settings - Dynamic Island Call Capsule -->
+    <string name="settings_dynamic_island_title">灵动岛通话胶囊</string>
+    <string name="settings_dynamic_island_sub">通话进行时在屏幕前置摄像头周围悬浮交互式通话胶囊</string>
+    <string name="settings_dynamic_island_speaker_only">仅在免提扬声器时显示</string>
+    <string name="settings_dynamic_island_speaker_only_sub">仅在开启扬声器免提模式时显示灵动岛</string>
+    <string name="settings_dynamic_island_floating_permission">悬浮窗悬停权限</string>
+    <string name="settings_dynamic_island_floating_permission_sub">允许通话胶囊悬浮于其他应用之上（支持小米、OPPO、vivo、三星等）</string>
+    <string name="dynamic_island_muted">已静音</string>
+
+    <!-- Settings - Contacts, Deduplication & Storage -->
+    <string name="settings_contacts_to_display">显示的联系人</string>
+    <string name="settings_default_account_for_new">新联系人的默认账户</string>
+    <string name="btn_add_merge">添加并合并</string>
+
+    <!-- Settings - Backup, Restore & Encrypted Migration -->
+    <string name="settings_backup_restore_sub">从加密的 JSON 文件恢复通话记录和设置</string>
+    <string name="backup_export_title">加密的本地备份</string>
+    <string name="backup_export_desc">将拦截名单、通话备注、快速拨号和快捷回复导出为 AES-256 加密的 JSON 备份字符串。</string>
+    <string name="backup_export_password_label">加密密码（可选）</string>
+    <string name="backup_restore_desc">从先前导出的备份字符串恢复拦截名单、备注和偏好设置。</string>
+    <string name="backup_password_label">密码（如已加密）</string>
+    <string name="backup_password_hint">At least 8 characters</string>
+    <string name="backup_password_too_short">Use at least 8 characters. If you lose this password, the backup cannot be restored.</string>
+    <string name="backup_restore_btn">恢复</string>
+    <string name="backup_restored_success_toast">备份恢复成功！</string>
+    <string name="backup_restore_failed_toast">恢复备份失败。请检查密码或数据字符串。</string>
+    <string name="vcf_migration_title">vCard (VCF) 联系人迁移</string>
+    <string name="vcf_migration_desc">将本地联系人导出为标准 vCard (.vcf) 文件，或从现有的 vCard 文件导入联系人。</string>
+    <string name="header_contacts_import_export">联系人导入与导出</string>
+    <string name="settings_export_contacts_vcard">导出联系人（vCard）</string>
+    <string name="settings_import_contacts_vcard">导入联系人（vCard）</string>
+    <string name="settings_import_contacts_vcard_sub">从标准 .vcf 名片文件恢复联系人</string>
+    <string name="vcf_import_count_success">联系人导入成功！</string>
+    <string name="btn_save_backup_file">保存备份文件</string>
+    <string name="btn_restore_backup_file">从文件恢复</string>
+    <string name="btn_save_vcf_file">保存 .VCF 文件</string>
+    <string name="btn_choose_vcf_file">选择 .VCF 文件</string>
+    <string name="file_saved_success">文件保存成功！</string>
+    <string name="file_save_failed">文件保存失败</string>
+    <string name="file_read_failed">读取所选文件失败</string>
+
+    <!-- Settings - Security, Biometrics, PIN & App Lock -->
+    <string name="settings_biometric_lock">应用锁</string>
+    <string name="settings_biometric_lock_sub">需要设备锁（PIN/图案/生物识别）才能打开应用</string>
+    <string name="settings_pocket_protection">口袋防误触保护</string>
+    <string name="settings_pocket_protection_sub">通话中当距离传感器检测到遮挡时（例如放在口袋里）拦截触摸输入</string>
+    <string name="pocket_lock_active">口袋锁已启用</string>
+    <string name="pocket_lock_desc">请保持距离传感器无遮挡以解锁</string>
+    <string name="restricted_settings_title">受限设置</string>
+    <string name="restricted_settings_desc">若要将此应用用作默认拨号应用，您可能需要手动启用它。请前往系统设置 > 应用 > [我们的应用名称] > 高级 > 允许受限设置，然后重试。</string>
+    <string name="btn_open_settings">打开设置</string>
+
+    <!-- Settings - Call Analytics, Dashboard & Call Notes -->
+    <string name="history_timeline">历史时间线</string>
+    <string name="call_details">通话详情</string>
+    <string name="delete_all_history">删除所有历史记录</string>
+    <string name="no_matching_calls_for">没有与“%1$s”匹配的通话</string>
+    <string name="summary_missed_and_time">未接：%1$d • 时长：%2$s</string>
+    <string name="summary_range_today">今天</string>
+    <string name="total_talk_time">通话总时长</string>
+    <string name="summary_chart_distribution">通话分布</string>
+    <string name="summary_chart_activity">最近 7 天</string>
+    <string name="summary_avg_duration">平均时长</string>
+    <string name="summary_busiest_day">最繁忙的一天</string>
+    <string name="summary_range_week_tab">周</string>
+    <string name="summary_range_month_tab">月</string>
+    <string name="summary_range_year_tab">年</string>
+    <string name="summary_range_all_tab">全部</string>
+    <string name="settings_call_log_filters">通话记录快捷筛选</string>
+    <string name="settings_call_log_filters_sub">在通话记录上方显示快捷筛选标签（全部、未接、已接、已拨）</string>
+    <string name="settings_all_call_notes">通话备注</string>
+    <string name="settings_all_call_notes_sub">查看并管理已保存的通话备注</string>
+    <string name="no_notes_title">暂无通话备注</string>
+    <string name="no_notes_desc">通话中添加的备注会显示在这里</string>
+    <string name="search_notes_placeholder">搜索备注或号码...</string>
+    <string name="note_deleted_toast">通话备注已删除</string>
+    <string name="add_call_note_btn">添加通话备注</string>
+    <string name="call_notes_count_title">通话备注 (%1$d)</string>
+    <string name="call_notes_count_badge">%1$d 条备注</string>
+    <string name="jot_call_note_title">记录通话备注</string>
+    <string name="call_note">通话备注</string>
+    <string name="note_saved">备注已安全保存</string>
+    <string name="note_placeholder">输入重要信息...</string>
+    <string name="btn_save_note">保存备注</string>
+
+    <!-- Settings - Fake Call Simulator & Reminders -->
+    <string name="settings_fake_call_sim">模拟来电</string>
+    <string name="settings_fake_call_sim_sub">预约模拟的来电</string>
+    <string name="caller_identity">来电者身份</string>
+    <string name="caller_name_label">来电者姓名</string>
+    <string name="trigger_delay_timer">触发延迟计时</string>
+    <string name="duration_label">时长</string>
+    <string name="sequential_multi_call_title">连续多次来电选项</string>
+    <string name="sequential_multi_call_desc">触发连续的来电</string>
+    <string name="repeat_interval_label">重复间隔</string>
+    <string name="multi_call_note">仅当次数大于 1 时才会应用间隔</string>
+    <string name="schedule_sequential_calls">预约 %1$d 次来电</string>
+    <string name="schedule_escape_call">预约来电 (%1$d 秒)</string>
+    <string name="btn_cancel_scheduled_escape_calls">取消已预约的来电</string>
+    <string name="callback_reminders_title">回电提醒</string>
+    <string name="callback_reminders_stats">%1$d 个待处理，%2$d 个已完成</string>
+    <string name="active_reminders_title">进行中的提醒</string>
+    <string name="no_active_reminders_title">暂无进行中的提醒</string>
+    <string name="no_active_reminders_desc">可直接在通话详情中设置回拨闹钟</string>
+    <string name="history_passed_title">历史记录（已过期）</string>
+    <string name="scheduled_prefix">已预约：%1$s</string>
+    <string name="triggered_prefix">已触发：%1$s</string>
+    <string name="schedule_callback_reminder_title">设置回拨提醒</string>
+    <string name="schedule_callback_reminder_sub">通过直接拨号闹钟接收通知</string>
+    <string name="remind_call_back_prompt">提醒您在以下时间后回拨 %1$s：</string>
+    <string name="optional_note_label">备注（可选）</string>
+    <string name="settings_callback_reminders">回拨提醒</string>
+    <string name="settings_callback_reminders_sub">管理待触发的回拨闹钟</string>
+    <string name="btn_call_back">回拨</string>
+
+    <!-- Settings - System Calling & Lock Screen Permissions -->
+    <string name="btn_grant">授予</string>
+    <string name="btn_configure">配置</string>
+    <string name="btn_set_default">设为默认</string>
+    <string name="status_granted">已授予</string>
+    <string name="settings_lockscreen_calling_title">锁屏全屏来电界面</string>
+    <string name="settings_lockscreen_calling_sub">设备锁屏或息屏时立即显示全屏来电接听界面</string>
+    <string name="settings_full_screen_intent_warning">全屏来电通知受到系统限制</string>
+    <string name="settings_overlay_permission_warning">需要悬浮窗权限以在其他应用上方显示灵动岛</string>
+    <string name="feature_enable_prompt">开启上方开关即可启用</string>
+    <string name="feature_disabled_hint">功能已停用</string>
+    <string name="btn_enable_feature">启用功能</string>
+    <string name="permissions_required">需要授予权限</string>
+
+    <!-- Settings - About, Privacy Policy & Community Support -->
+    <string name="settings_about">关于 NovaDial</string>
+    <string name="settings_about_sub">版本信息、许可与核心技术</string>
+    <string name="settings_privacy">隐私政策</string>
+    <string name="settings_privacy_sub">Local data and permission notice</string>
+    <string name="about_mission_desc">在不牺牲用户隐私的前提下，提供简单、可靠且安全的拨号体验。</string>
+    <string name="about_app_desc">NovaDial is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
+    <string name="privacy_policy_title">隐私政策</string>
+    <string name="privacy_intro">在 NovaDial，我们高度重视您的隐私。</string>
+    <string name="privacy_section_1_desc">NovaDial does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), SMS (quick replies and SOS) and optional SOS location are used only for the features you invoke.</string>
+    <string name="privacy_section_3_desc">NovaDial does not sell or share data with third parties. Data leaves the device only when you call, text, export or share.</string>
+    <string name="settings_support_title">支持 NovaDial</string>
+    <string name="settings_support_desc" formatted="false">NovaDial 100% 免费、开源、无广告，并始终以隐私为先。如果您觉得这款应用对您有帮助，欢迎贡献代码、提交翻译，或支持自由且安全的工具的开发。</string>
+    <string name="settings_contribute_github">在 GitHub 上贡献</string>
+
+    <!-- General Buttons, Common Utilities & Common Dialogs -->
+    <string name="btn_cancel">取消</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_delete">删除</string>
+    <string name="btn_edit">编辑</string>
+    <string name="btn_discard">放弃</string>
+    <string name="delete">删除</string>
+    <!-- Duplicate Finder -->
+    <string name="dup_finder_title">重复联系人查找器</string>
+    <string name="dup_finder_sub">查找共享同一号码的联系人，然后合并或删除多余条目。</string>
+    <string name="dup_finder_entry">重复联系人查找器</string>
+    <string name="dup_finder_entry_sub">检测重复联系人并合并或永久删除</string>
+    <string name="dup_scanning">正在扫描联系人…</string>
+    <string name="dup_groups_found">%1$d 组重复联系人</string>
+    <string name="dup_none_title">未发现重复联系人</string>
+    <string name="dup_none_desc">您的联系人很整洁 — 无需合并或删除。</string>
+    <string name="dup_permission_title">需要联系人权限</string>
+    <string name="dup_permission_desc">请授予联系人权限，以便 NovaDial 可以扫描、合并和删除重复条目。</string>
+    <string name="dup_rescan">重新扫描</string>
+    <string name="dup_merge">合并</string>
+    <string name="dup_delete_others">删除其他</string>
+    <string name="dup_merge_confirm_title">是否合并重复联系人？</string>
+    <string name="dup_merge_confirm_desc">选中的联系人将保留其详细信息，其他条目将被永久合并。</string>
+    <string name="dup_delete_confirm_title">是否删除重复联系人？</string>
+    <string name="dup_delete_confirm_desc">未选中的重复条目将被永久删除。此操作无法撤销。</string>
+    <string name="dup_delete_one_confirm_desc">此联系人将被永久删除。此操作无法撤销。</string>
+    <string name="dup_merged">已合并 %1$d 个联系人</string>
+    <string name="dup_deleted">已删除 %1$d 个联系人</string>
+    <string name="dup_merge_all">全部合并</string>
+    <string name="dup_delete_all">全部删除</string>
+    <string name="dup_merge_all_confirm_desc">将合并每个重复分组，并保留每组中所选的联系人。此操作会永久保存。</string>
+    <string name="dup_delete_all_confirm_desc">每个分组中未选中的重复联系人将被永久删除。此操作无法撤销。</string>
+    <string name="close">关闭</string>
+    <string name="add_call">添加通话</string>
+    <string name="add_call_search_hint">搜索联系人或输入号码</string>
+    <string name="add_call_unavailable">当前无法拨打其他电话</string>
+    <string name="account_filter_all">所有账户</string>
+    <string name="on_hold_prefix">保持中：</string>
+    <string name="warning">警告</string>
+    <string name="error_open_messages">无法打开信息应用</string>
+    <string name="history">历史记录</string>
+
+    <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
+    <string name="cat_focus_protection">专注与保护</string>
+    <string name="cat_focus_protection_sub">专注模式、VIP 来电与来电播报</string>
+    <string name="header_focus_mode">专注模式</string>
+    <string name="header_call_protection">通话保护级别</string>
+    <string name="header_vip_numbers">VIP 号码</string>
+    <string name="header_caller_announcer">来电播报</string>
+
+    <string name="screening_role_granted">通话过滤已激活</string>
+    <string name="screening_role_needed">需要通话过滤权限</string>
+    <string name="screening_role_desc">允许 NovaDial 过滤来电，以便专注模式、VIP 规则和拦截功能正常工作。</string>
+
+    <string name="focus_mode_title">专注模式</string>
+    <string name="focus_mode_sub">选择在您专注时允许响铃的来电。</string>
+    <string name="focus_mode_off">关闭</string>
+    <string name="focus_mode_off_sub">每个来电均正常响铃。</string>
+    <string name="focus_mode_saved">仅限已保存的联系人</string>
+    <string name="focus_mode_saved_sub">只有通讯录中的联系人才能响铃。</string>
+    <string name="focus_mode_vip">仅限 VIP</string>
+    <string name="focus_mode_vip_sub">只有 VIP 列表中的号码才能响铃。</string>
+    <string name="focus_mode_silence_all">全部静音</string>
+    <string name="focus_mode_silence_all_sub">除 VIP 和收藏联系人外，全部静音。</string>
+
+    <string name="protection_level_title">通话保护级别</string>
+    <string name="protection_level_sub">在专注模式关闭时拦截未知来电。</string>
+    <string name="protection_standard">标准</string>
+    <string name="protection_standard_sub">所有来电正常响铃。</string>
+    <string name="protection_strict">严格</string>
+    <string name="protection_strict_sub">静音未保存的号码；已保存、VIP 和重复来电仍可响铃。</string>
+    <string name="protection_maximum">最高</string>
+    <string name="protection_maximum_sub">除 VIP、收藏和重复来电外，全部静音。</string>
+    <string name="protection_allow_repeat_title">允许重复来电</string>
+    <string name="protection_allow_repeat_sub">3 分钟内同一号码的第二次来电始终响铃。</string>
+    <string name="protection_disclaimer">紧急号码始终响铃。被静音的来电仍会作为未接来电出现在通话记录中。</string>
+
+    <string name="vip_title">VIP 来电者</string>
+    <string name="vip_sub">VIP 号码始终穿透专注模式和通话保护。</string>
+    <string name="vip_empty">暂无 VIP 号码。添加必须能够随时联系到您的人。</string>
+    <string name="vip_add">添加 VIP 号码</string>
+    <string name="vip_add_sub">选择一个始终可以打通的号码</string>
+    <string name="vip_add_hint">电话号码</string>
+    <string name="vip_remove">移除 VIP 号码</string>
+
+    <string name="announcer_enable_title">播报来电者姓名</string>
+    <string name="announcer_enable_sub">响铃时朗年来电者姓名。</string>
+    <string name="announcer_message_title">播报消息</string>
+    <string name="announcer_template_label">消息模板</string>
+    <string name="announcer_template_help">使用 {name}、{user} 和 {type} 作为占位符。</string>
+    <string name="announcer_your_name_label">您的姓名 ({user})</string>
+    <string name="announcer_repeat_title">重复次数</string>
+    <string name="announcer_speed_title">语速</string>
+    <string name="announcer_pitch_title">声调</string>
+    <string name="announcer_volume_title">音量</string>
+    <string name="announcer_unknown_title">播报未知号码</string>
+    <string name="announcer_unknown_sub">对于不在联系人中的来电，播报“未知号码”。</string>
+    <string name="announcer_headphones_title">仅在耳机时播报</string>
+    <string name="announcer_headphones_sub">未连接耳机或蓝牙设备时保持静音。</string>
+    <string name="announcer_test_title">测试播报</string>
+    <string name="announcer_test_sub">使用您当前的设置播放样例</string>
+    <string name="announcer_voice_title">语音</string>
+    <string name="announcer_voice_default">默认</string>
+    <string name="announcer_voice_male">男声</string>
+    <string name="announcer_voice_female">女声</string>
+    <string name="announcer_voice_note">使用设备的文字转语音功能。效果取决于手机安装的语音引擎。</string>
+<string name="dialpad_matches_title">Quick matches</string>
+    <string name="dialpad_matches_hint">Tap a match to call</string>
+
+    <string name="spam_label">Spam</string>
+    <string name="mark_spam">Mark as spam</string>
+    <string name="remove_spam">Remove spam</string>
+    <string name="spam_marked">Marked as spam</string>
+    <string name="spam_unmarked">Removed from spam</string>
+
+    <string name="export_call_log_title">Export call log</string>
+    <string name="export_call_log_sub">Save your call history to a file on your device.</string>
+    <string name="export_call_log_csv">Export as CSV</string>
+    <string name="export_call_log_pdf">Export as PDF</string>
+    <string name="call_log_exported">Call log exported</string>
+
+    <string name="dnd_title">Do Not Disturb</string>
+    <string name="dnd_sub">Silence calls outside your quiet hours. Saved contacts and VIPs still ring.</string>
+    <string name="dnd_enabled_title">Schedule</string>
+    <string name="dnd_enabled_sub">Silence calls during the schedule below</string>
+    <string name="dnd_start_label">Start</string>
+    <string name="dnd_end_label">End</string>
+    <string name="dnd_days_label">Repeat on</string>
+    <string name="dnd_day_mon">Mon</string>
+    <string name="dnd_day_tue">Tue</string>
+    <string name="dnd_day_wed">Wed</string>
+    <string name="dnd_day_thu">Thu</string>
+    <string name="dnd_day_fri">Fri</string>
+    <string name="dnd_day_sat">Sat</string>
+    <string name="dnd_day_sun">Sun</string>
+    <string name="dnd_active_now">Quiet hours active now - unknown callers will be silenced</string>
+    <string name="dnd_pick_time_title">Pick a time</string>
+
+    <string name="contact_ringtones_title">Contact ringtones</string>
+    <string name="contact_ringtones_sub">Assign custom ringtones and vibration patterns. Played by Fake Call; incoming real calls still use the system ringtone.</string>
+    <string name="ringtone_row_sub_default">Default ringtone</string>
+    <string name="vibration_pattern_label">Vibration pattern</string>
+    <string name="pattern_default">Default</string>
+    <string name="pattern_none">None</string>
+    <string name="pattern_short">Short</string>
+    <string name="pattern_long">Long</string>
+    <string name="pattern_double">Double</string>
+    <string name="pattern_heartbeat">Heartbeat</string>
+    <string name="pattern_sos">SOS</string>
+    <string name="pattern_staccato">Staccato</string>
+    <string name="ringtone_assigned_toast">Ringtone assigned</string>
+    <string name="ringtone_cleared_toast">Ringtone cleared</string>
+    <string name="contact_ringtones_empty">No contacts with phone numbers yet - add a favourite to get started</string>
+    <string name="test_ringtone_label">Test</string>
+
+    <string name="quick_reply_direct_sms_title">Send as SMS</string>
+    <string name="quick_reply_direct_sms_sub">Send decline messages directly as text messages using SEND_SMS permission</string>
+    <string name="sms_permission_required">SMS permission needed to send quick replies as text</string>
+
+    <string name="widget_favorites_title">NovaDial Favourites</string>
+    <string name="widget_tap_hint">Tap a favourite to call</string>
+    <string name="widget_no_favourites">No favourites yet - open NovaDial to add some</string>
+    <string name="ringtone_pick">Ringtone</string>
+    <!-- Emergency SOS -->
+    <string name="sos_title">紧急 SOS</string>
+    <string name="sos_sub">发送带位置的紧急警报，并拨打紧急服务电话</string>
+    <string name="sos_instructions_title">使用方法</string>
+    <string name="sos_instructions_body">1. 在下方添加一个或多个紧急联系人。\n2. 长按 SOS 按钮。\n3. NovaDial 会将您的位置发送给这些联系人，并拨打您的紧急号码。</string>
+    <string name="sos_button_label">SOS</string>
+    <string name="sos_hold_hint">长按以激活</string>
+    <string name="sos_contacts_title">紧急联系人</string>
+    <string name="sos_contact_add">添加紧急联系人</string>
+    <string name="sos_contacts_empty">还没有紧急联系人</string>
+    <string name="sos_contact_name">姓名</string>
+    <string name="sos_contact_number">电话号码</string>
+    <string name="sos_auto_alert_title">自动通知联系人</string>
+    <string name="sos_auto_alert_sub">触发 SOS 时向已保存的紧急联系人发送短信</string>
+    <string name="sos_include_location_title">包含我的位置</string>
+    <string name="sos_include_location_sub">在警报中附加包含您 GPS 位置的地图链接</string>
+    <string name="sos_call_number_title">要拨打的紧急号码</string>
+    <string name="sos_call_number_sub">触发 SOS 时拨打的号码（例如 112）</string>
+    <string name="sos_grant_permissions">授予所需权限</string>
+    <string name="sos_permissions_needed">完整警报需要短信和位置权限</string>
+    <string name="sos_permissions_ok">已授予权限</string>
+    <string name="sos_sent_toast">SOS 警报已发送给 %1$d 位联系人</string>
+    <string name="sos_no_contacts_toast">请先添加至少一个紧急联系人</string>
+    <string name="sos_test_alert">发送测试警报</string>
+    <string name="sos_alert_message">紧急情况 - 我需要帮助。这是来自 NovaDial 的自动 SOS 警报。</string>
+    <string name="sos_alert_location_label">我的位置：</string>
+    <string name="sos_no_location">位置不可用 - 请开启 GPS 以获取地图链接</string>
+    <string name="sos_custom_message_title">Custom alert message</string>
+    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
+    <string name="sos_countdown_title">Emergency SOS</string>
+    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
+    <string name="sos_countdown_now">Send now</string>
+    <string name="sos_countdown_setting">Countdown before sending</string>
+    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
+    <string name="sos_shake_title">Shake to trigger SOS</string>
+    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
+    <string name="sos_shake_service_title">Shake to SOS is on</string>
+    <string name="sos_shake_service_text">Shake your phone firmly to start the emergency countdown</string>
+    <string name="sos_watch_notification_title">Shake to SOS is on</string>
+    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
+    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
+    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
+    <string name="sos_cancel_countdown_action">Cancel SOS</string>
+    <string name="sos_stop_watch_action">Stop watch</string>
+    <string name="sos_watch_channel_name">Shake to SOS watch</string>
+    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
+    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
+</resources>
