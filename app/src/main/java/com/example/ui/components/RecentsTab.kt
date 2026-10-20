@@ -446,15 +446,13 @@ fun getDayCategoryLabel(timestampMs: Long, context: android.content.Context): St
     val todayYear = todayCal.get(Calendar.YEAR)
     val todayDayOfYear = todayCal.get(Calendar.DAY_OF_YEAR)
 
-    return when {
-        callYear == todayYear && callDayOfYear == todayDayOfYear -> context.getString(R.string.summary_range_today)
-        callYear == todayYear && callDayOfYear == todayDayOfYear - 1 -> "Yesterday"
-        callYear == todayYear -> {
-            SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date(timestampMs))
+    return when (callYear) {
+        todayYear -> when {
+            callDayOfYear == todayDayOfYear -> context.getString(R.string.summary_range_today)
+            callDayOfYear == todayDayOfYear - 1 -> "Yesterday"
+            else -> SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date(timestampMs))
         }
-        else -> {
-            SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestampMs))
-        }
+        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestampMs))
     }
 }
 

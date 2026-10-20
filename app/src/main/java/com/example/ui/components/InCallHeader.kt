@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.CallManager
 import com.example.ContactCache
 import com.example.R
@@ -117,6 +118,10 @@ fun InCallHeader(
     fakeActiveStartTimestamp: Long = 0L,
     isSpam: Boolean = false
 ) {
+    // Never read StateFlow.value inside composition: it skips recomposition and can show a
+    // stale/mismatched call. collectAsStateWithLifecycle keeps the header in sync.
+    val currentCall by CallManager.currentCall.collectAsStateWithLifecycle()
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(top = 8.dp)
@@ -224,7 +229,7 @@ fun InCallHeader(
 
         // STIR/SHAKEN Anti-Spoofing Detection (Android 11+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && callState == Call.STATE_RINGING) {
-            val activeCallObj = CallManager.currentCall.value
+            val activeCallObj = currentCall
             val verificationStatus = activeCallObj?.details?.callerNumberVerificationStatus
             if (verificationStatus == Connection.VERIFICATION_STATUS_FAILED) {
                 Spacer(modifier = Modifier.height(6.dp))

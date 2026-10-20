@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -53,10 +53,8 @@ data class CallAudioRouteState(
     val usesEndpoints: Boolean = false
 ) {
     fun isAvailable(route: AudioRoute): Boolean = route in availableRoutes
-    fun isSelected(route: AudioRoute): Boolean = currentRoute == route
 
     val hasBluetooth: Boolean get() = AudioRoute.BLUETOOTH in availableRoutes
-    val hasSpeaker: Boolean get() = AudioRoute.SPEAKER in availableRoutes
     val hasWiredHeadset: Boolean get() = AudioRoute.WIRED_HEADSET in availableRoutes
 
     /** Speaker and Bluetooth are mutually exclusive; the platform decides which one wins. */

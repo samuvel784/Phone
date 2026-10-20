@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.data.BackupRestoreManager
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
 import java.text.SimpleDateFormat
@@ -60,6 +61,9 @@ fun ContactsAndDataSettings(
     var pendingEncryptedRestoreContent by remember { mutableStateOf<String?>(null) }
     var restorePasswordInput by remember { mutableStateOf("") }
     var showPasswordPromptDialog by remember { mutableStateOf(false) }
+    // Legacy plaintext JSON backups are held here until the user confirms the warning dialog.
+    var pendingPlaintextRestoreContent by remember { mutableStateOf<String?>(null) }
+    var showPlaintextWarningDialog by remember { mutableStateOf(false) }
 
     val saveBackupFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -82,18 +86,25 @@ fun ContactsAndDataSettings(
         if (uri != null) {
             viewModel.readTextFromUri(uri) { content ->
                 if (!content.isNullOrBlank()) {
-                    // FIXED: Correctly identifies encrypted Base64 payloads vs plaintext JSON
-                    val isEncrypted = !content.trim().startsWith("{")
-                    if (isEncrypted) {
-                        pendingEncryptedRestoreContent = content
-                        showPasswordPromptDialog = true
-                    } else {
-                        viewModel.importBackup(content, "") { success ->
-                            if (success) {
-                                Toast.makeText(context, context.getString(R.string.backup_restored_success_toast), Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.backup_restore_failed_toast), Toast.LENGTH_LONG).show()
-                            }
+                    // Classify before doing anything. Legacy plaintext JSON must never be imported
+                    // without an explicit "this file is not encrypted" confirmation.
+                    when (BackupRestoreManager.classify(content)) {
+                        BackupRestoreManager.BackupKind.ENCRYPTED,
+                        BackupRestoreManager.BackupKind.LEGACY_ENCRYPTED -> {
+                            pendingEncryptedRestoreContent = content
+                            restorePasswordInput = ""
+                            showPasswordPromptDialog = true
+                        }
+                        BackupRestoreManager.BackupKind.LEGACY_PLAINTEXT_JSON -> {
+                            pendingPlaintextRestoreContent = content
+                            showPlaintextWarningDialog = true
+                        }
+                        BackupRestoreManager.BackupKind.UNKNOWN -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.backup_error_not_a_backup),
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 } else {
@@ -529,13 +540,17 @@ fun ContactsAndDataSettings(
                 Button(
                     onClick = {
                         val content = pendingEncryptedRestoreContent ?: ""
-                        viewModel.importBackup(content, restorePasswordInput) { success ->
-                            if (success) {
-                                Toast.makeText(context, context.getString(R.string.backup_restored_success_toast), Toast.LENGTH_LONG).show()
-                                showPasswordPromptDialog = false
-                                pendingEncryptedRestoreContent = null
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.backup_restore_failed_toast), Toast.LENGTH_LONG).show()
+                        viewModel.importBackupResult(content, restorePasswordInput) { result ->
+                            when (result) {
+                                is BackupRestoreManager.ImportResult.Success -> {
+                                    Toast.makeText(context, context.getString(R.string.backup_restored_success_toast), Toast.LENGTH_LONG).show()
+                                    showPasswordPromptDialog = false
+                                    pendingEncryptedRestoreContent = null
+                                    restorePasswordInput = ""
+                                }
+                                is BackupRestoreManager.ImportResult.Failure -> {
+                                    Toast.makeText(context, context.getString(backupErrorRes(result.error)), Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     }
@@ -555,4 +570,67 @@ fun ContactsAndDataSettings(
             }
         )
     }
+
+    if (showPlaintextWarningDialog && pendingPlaintextRestoreContent != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showPlaintextWarningDialog = false
+                pendingPlaintextRestoreContent = null
+            },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text(stringResource(R.string.backup_plaintext_warning_title)) },
+            text = {
+                Text(
+                    text = stringResource(R.string.backup_plaintext_warning_body),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val content = pendingPlaintextRestoreContent ?: ""
+                        // Only reachable after the user pressed "Restore anyway".
+                        viewModel.importBackupResult(content, "") { result ->
+                            showPlaintextWarningDialog = false
+                            pendingPlaintextRestoreContent = null
+                            val messageRes = when (result) {
+                                is BackupRestoreManager.ImportResult.Success -> R.string.backup_restored_success_toast
+                                is BackupRestoreManager.ImportResult.Failure -> backupErrorRes(result.error)
+                            }
+                            Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.backup_plaintext_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPlaintextWarningDialog = false
+                        pendingPlaintextRestoreContent = null
+                    }
+                ) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+}
+
+/** Maps a typed import failure to a user-facing message resource. */
+private fun backupErrorRes(error: BackupRestoreManager.BackupError): Int = when (error) {
+    BackupRestoreManager.BackupError.EMPTY_FILE -> R.string.backup_error_empty_file
+    BackupRestoreManager.BackupError.TOO_LARGE -> R.string.backup_error_too_large
+    BackupRestoreManager.BackupError.NOT_A_BACKUP -> R.string.backup_error_not_a_backup
+    BackupRestoreManager.BackupError.PASSWORD_REQUIRED -> R.string.backup_error_password_required
+    BackupRestoreManager.BackupError.WRONG_PASSWORD_OR_DAMAGED -> R.string.backup_error_wrong_password
+    BackupRestoreManager.BackupError.UNSUPPORTED_VERSION -> R.string.backup_error_unsupported_version
+    BackupRestoreManager.BackupError.INVALID_PAYLOAD -> R.string.backup_error_invalid_payload
 }

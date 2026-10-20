@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 object NovaMotion {
     const val QUICK = 160
     const val MEDIUM = 280
-    const val SLOW = 420
 
     /** Fast, slightly springy: button presses, tab indicator. */
     fun <T> snappy(): SpringSpec<T> = spring(dampingRatio = 0.78f, stiffness = 520f)

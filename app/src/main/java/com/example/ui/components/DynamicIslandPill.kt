@@ -17,9 +17,9 @@
 
 package com.example.ui.components
 
-import android.content.Context
 import android.telecom.Call
 import android.telecom.CallAudioState
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -54,19 +54,13 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.CallManager
 import com.example.R
-import com.example.data.AppDatabase
-import com.example.model.CallRecording
 import com.example.model.getInitials
 import com.example.ui.theme.AppShapes
-import com.example.util.CallAudioHelper
 import com.example.util.CallAudioRecorder
-import com.example.util.RecordingFeedbackHelper
+import com.example.util.RecordingDisclosure
 import com.example.util.RichHapticEngine
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -93,6 +87,7 @@ fun DynamicIslandPill(
 
     val activeStartTimestamp by CallManager.activeStartTimestamp.collectAsStateWithLifecycle()
     var tickTrigger by remember { mutableLongStateOf(0L) }
+    var showRecordingDisclosure by remember { mutableStateOf(false) }
 
     val isRecording by CallAudioRecorder.isRecording.collectAsStateWithLifecycle()
 
@@ -513,47 +508,39 @@ fun DynamicIslandPill(
                                     isActive = isRecording,
                                     activeColor = Color(0xFFFF5252),
                                     onClick = {
-                                        val prefs = context.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
-                                        val chimeEnabled = prefs.getBoolean("recording_chime_enabled", false)
-                                        val autoTune = prefs.getBoolean("auto_tune_recording_volume", true)
-
                                         if (isRecording) {
-                                            RecordingFeedbackHelper.triggerRecordingStopFeedback(context, chimeEnabled)
-                                            val result = CallAudioRecorder.stopRecording()
-                                            if (autoTune) {
-                                                CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
-                                            }
-                                            val file = result.file
-                                            if (file != null && file.exists() && file.length() > 0L) {
-                                                val dur = result.durationSeconds.coerceAtLeast(1L)
-                                                val loc = getCurrentLocale(context)
-                                                val sdf = SimpleDateFormat("MMM d, HH:mm", loc)
-                                                val num = callerNumber.ifEmpty { "Unknown" }
-                                                val rec = CallRecording(
-                                                    number = num,
-                                                    name = callerName,
-                                                    timestamp = sdf.format(Date()),
-                                                    duration = dur,
-                                                    filePath = file.absolutePath
-                                                )
-                                                coroutineScope.launch(Dispatchers.IO) {
-                                                    try {
-                                                        val db = AppDatabase.getDatabase(context)
-                                                        db.dialerDao().insertCallRecording(rec)
-                                                        val isAutoExport = db.dialerDao().getSetting("is_auto_export_recordings_enabled")?.toBooleanStrictOrNull() ?: false
-                                                        if (isAutoExport) {
-                                                            CallAudioRecorder.exportRecordingToPublicDownloads(context, file)
-                                                        }
-                                                    } catch (_: Exception) {}
+                                            CallManager.stopCallRecording(
+                                                context = context,
+                                                playFeedback = true
+                                            ) { result ->
+                                                val message = when (result.status) {
+                                                    CallManager.RecordingSaveStatus.SAVED_ENCRYPTED ->
+                                                        R.string.recording_saved
+                                                    CallManager.RecordingSaveStatus.SAVED_UNENCRYPTED ->
+                                                        R.string.recording_encryption_failed
+                                                    CallManager.RecordingSaveStatus.FAILED ->
+                                                        R.string.recording_save_failed
+                                                    CallManager.RecordingSaveStatus.NO_AUDIO ->
+                                                        R.string.recording_empty
                                                 }
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(message),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             }
                                         } else {
-                                            RecordingFeedbackHelper.triggerRecordingStartFeedback(context, chimeEnabled)
-                                            if (autoTune) {
-                                                CallAudioHelper.prepareSpeakerForRecording(context, CallManager.inCallService, audioState)
+                                            // The service-owned start path reads the user's chime,
+                                            // auto-tune and audio-route settings consistently.
+                                            if (!RecordingDisclosure.isManualAcknowledged(context)) {
+                                                showRecordingDisclosure = true
+                                            } else if (!CallManager.startCallRecording(context)) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.recording_start_failed),
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             }
-                                            val num = callerNumber.ifEmpty { "Unknown" }
-                                            CallAudioRecorder.startRecording(context, num)
                                         }
                                     }
                                 )
@@ -589,6 +576,43 @@ fun DynamicIslandPill(
                 }
             }
         }
+    }
+
+    if (showRecordingDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showRecordingDisclosure = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = { Text(stringResource(R.string.recording_disclosure_title)) },
+            text = { Text(stringResource(R.string.recording_disclosure_body)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        RecordingDisclosure.acknowledgeManual(context)
+                        showRecordingDisclosure = false
+                        if (!CallManager.startCallRecording(context)) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.recording_start_failed),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.recording_disclosure_accept))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRecordingDisclosure = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
     }
 }
 

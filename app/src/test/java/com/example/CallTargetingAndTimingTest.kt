@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -106,14 +106,33 @@ class CallTargetingAndTimingTest {
         assertEquals(1, reports.size)
 
         val report = reports.first()
-        assertEquals("+15551234567", report.number)
+        // Diagnostics keep only a masked identifier; the full number must never be retained.
+        assertEquals("***4567", report.number)
         assertTrue(report.isIncoming)
         assertNotNull(report.offsetOf(CallTimingLogger.Event.ON_CALL_ADDED))
         assertNotNull(report.offsetOf("wakeLockAcquired"))
         assertNotNull(report.offsetOf(CallTimingLogger.Event.NOTIFICATION_POSTED))
         assertNotNull(report.offsetOf(CallTimingLogger.Event.FIRST_FRAME))
         assertTrue("every mark is measured relative to onCallAdded", report.totalMs >= 0L)
-        assertTrue(report.format().contains("+15551234567"))
+        assertFalse(
+            "the formatted report must not contain the full number",
+            report.format().contains("+15551234567")
+        )
+        assertTrue(report.format().contains("***4567"))
+    }
+
+    @Test
+    fun reportFormatRedactsEvenWhenConstructedWithARawNumber() {
+        val report = CallTimingLogger.Report(
+            number = "+15551234567",
+            isIncoming = true,
+            startedAtUptimeMs = 0L,
+            marks = listOf(CallTimingLogger.Mark(CallTimingLogger.Event.ON_CALL_ADDED, 0L))
+        )
+
+        val formatted = report.format()
+        assertFalse("a full number must never be rendered", formatted.contains("+15551234567"))
+        assertTrue(formatted.contains("***4567"))
     }
 
     @Test

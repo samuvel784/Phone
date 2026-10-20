@@ -86,6 +86,58 @@ fun CallRecordingsSettings(
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var noteEditingRecording by remember { mutableStateOf<CallRecording?>(null) }
     var shareSheetRecording by remember { mutableStateOf<CallRecording?>(null) }
+    var showAutoRecordDisclosure by remember { mutableStateOf(false) }
+    var pendingExportRecording by remember { mutableStateOf<CallRecording?>(null) }
+    var pendingExportIsShare by remember { mutableStateOf(false) }
+    var showExportWarning by remember { mutableStateOf(false) }
+
+    /** Shares a playable (decrypted) copy only after the caller has seen the export warning. */
+    fun performShare(rec: CallRecording) {
+        val file = File(rec.filePath)
+        if (!file.exists()) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val shareFile = CallAudioRecorder.playableFile(context, file)
+            if (shareFile == null) {
+                Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+                return
+            }
+            val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", shareFile)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "audio/mp4"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val chooser = Intent.createChooser(intent, context.getString(R.string.share_recording_title)).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(chooser)
+        } catch (_: Exception) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Writes a decrypted copy to Downloads/Nova Dialer only after the caller has seen the warning. */
+    fun performExport(rec: CallRecording) {
+        val exported = viewModel.exportRecordingToDownloads(context, rec.filePath)
+        if (exported) {
+            Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, context.getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Bulk export is also a decrypted copy operation, so it uses the same warning gate. */
+    fun performExportAll() {
+        val count = viewModel.exportAllRecordingsToDownloads(context)
+        if (count > 0) {
+            Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, context.getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(isVaultLockEnabled) {
         if (!isVaultLockEnabled) {
@@ -128,6 +180,11 @@ fun CallRecordingsSettings(
             if (isVaultLockEnabled) {
                 isVaultUnlocked = false
             }
+            // A shared recording is decrypted into the private cache. Drop it when this screen
+            // leaves composition so a plaintext copy is not left behind indefinitely. This is
+            // deliberately not done on ON_STOP: the share chooser is a separate activity, and the
+            // receiving app must still be able to read the granted cache file.
+            CallAudioRecorder.clearPlaybackCache(context)
         }
     }
 
@@ -243,33 +300,10 @@ fun CallRecordingsSettings(
                         .clickable {
                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                             shareSheetRecording = null
-                            if (file.exists()) {
-                                try {
-                                    val shareFile = CallAudioRecorder.playableFile(context, file)
-                                    if (shareFile == null) {
-                                        Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-                                        return@clickable
-                                    }
-                                    val uri: Uri = FileProvider.getUriForFile(
-                                        context,
-                                        "${context.packageName}.provider",
-                                        shareFile
-                                    )
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "audio/mp4"
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                    val chooser = Intent.createChooser(intent, context.getString(R.string.share_recording_title)).apply {
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                    context.startActivity(chooser)
-                                } catch (_: Exception) {
-                                    Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-                            }
+                            // Sharing needs a playable copy, which means decrypting it first.
+                            pendingExportRecording = rec
+                            pendingExportIsShare = true
+                            showExportWarning = true
                         }
                 ) {
                     Row(
@@ -318,12 +352,10 @@ fun CallRecordingsSettings(
                         .clickable {
                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                             shareSheetRecording = null
-                            val exported = viewModel.exportRecordingToDownloads(context, rec.filePath)
-                            if (exported) {
-                                Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show()
-                            }
+                            // Export writes a decrypted file to public Downloads; warn first.
+                            pendingExportRecording = rec
+                            pendingExportIsShare = false
+                            showExportWarning = true
                         }
                 ) {
                     Row(
@@ -418,6 +450,67 @@ fun CallRecordingsSettings(
             },
             dismissButton = {
                 TextButton(onClick = { noteEditingRecording = null }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+
+    // The exported/shared file is a decrypted, playable copy. Warn before it leaves app-private
+    // storage, and never describe it as encrypted.
+    if (showExportWarning && pendingExportRecording != null) {
+        val rec = pendingExportRecording!!
+        val isShare = pendingExportIsShare
+        RecordingExportWarningDialog(
+            title = stringResource(
+                if (isShare) R.string.recording_share_warning_title
+                else R.string.recording_export_warning_title
+            ),
+            body = stringResource(
+                if (isShare) R.string.recording_share_warning_body
+                else R.string.recording_export_warning_body
+            ),
+            confirmLabel = stringResource(
+                if (isShare) R.string.recording_share_warning_confirm
+                else R.string.recording_export_warning_confirm
+            ),
+            onConfirm = {
+                showExportWarning = false
+                pendingExportRecording = null
+                if (isShare) performShare(rec) else performExport(rec)
+            },
+            onDismiss = {
+                showExportWarning = false
+                pendingExportRecording = null
+            }
+        )
+    }
+
+    // Separate explicit confirmation when automatic recording is switched on.
+    if (showAutoRecordDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showAutoRecordDisclosure = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = { Text(stringResource(R.string.recording_auto_disclosure_title)) },
+            text = { Text(stringResource(R.string.recording_auto_disclosure_body)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAutoRecordDisclosure = false
+                        viewModel.updateAutoRecordCallsEnabled(true)
+                    }
+                ) {
+                    Text(stringResource(R.string.recording_auto_disclosure_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAutoRecordDisclosure = false }) {
                     Text(stringResource(R.string.btn_cancel))
                 }
             }
@@ -542,7 +635,12 @@ fun CallRecordingsSettings(
                     checked = isAlwaysRecordEnabled,
                     onCheckedChange = { enabled ->
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                        viewModel.updateAutoRecordCallsEnabled(enabled)
+                        if (enabled) {
+                            // Require a separate explicit confirmation before automatic recording.
+                            showAutoRecordDisclosure = true
+                        } else {
+                            viewModel.updateAutoRecordCallsEnabled(false)
+                        }
                     }
                 )
             }
@@ -906,7 +1004,7 @@ fun CallRecordingsSettings(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "$totalDiskFiles file(s) • Downloads/NovaDial",
+                                text = "$totalDiskFiles file(s) • Downloads/Nova Dialer",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -932,23 +1030,10 @@ fun CallRecordingsSettings(
                             Text(stringResource(R.string.btn_restore_backup_file), style = MaterialTheme.typography.labelMedium)
                         }
 
-                        Button(
-                            onClick = {
-                                RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                val count = viewModel.exportAllRecordingsToDownloads(context)
-                                if (count > 0) {
-                                    Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, context.getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show()
-                                }
-                            },
+                        BulkRecordingExportButton(
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.backup_export_title), style = MaterialTheme.typography.labelMedium)
-                        }
+                            onExportAll = { performExportAll() }
+                        )
                     }
 
                     OutlinedButton(
@@ -1179,7 +1264,7 @@ private fun CompactRecordingRow(
                     IconButton(onClick = onExport, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = stringResource(R.string.backup_export_title),
+                            contentDescription = stringResource(R.string.save_to_downloads),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(15.dp)
                         )
@@ -1261,4 +1346,79 @@ private fun CompactRecordingRow(
             }
         }
     }
+}
+
+/**
+ * Bulk export writes decrypted copies to Downloads, just like the per-recording export. Keep the
+ * confirmation local to this control so the export callback cannot run unless the user confirms.
+ */
+@Composable
+internal fun BulkRecordingExportButton(
+    modifier: Modifier = Modifier,
+    onExportAll: () -> Unit
+) {
+    val context = LocalContext.current
+    var showWarning by remember { mutableStateOf(false) }
+
+    Button(
+        onClick = {
+            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+            showWarning = true
+        },
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            stringResource(R.string.recording_export_all),
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+
+    if (showWarning) {
+        RecordingExportWarningDialog(
+            title = stringResource(R.string.recording_export_warning_title),
+            body = stringResource(R.string.recording_export_warning_body),
+            confirmLabel = stringResource(R.string.recording_export_warning_confirm),
+            onConfirm = {
+                showWarning = false
+                onExportAll()
+            },
+            onDismiss = { showWarning = false }
+        )
+    }
+}
+
+/** Shared warning used by single-file and bulk decrypted exports. */
+@Composable
+private fun RecordingExportWarningDialog(
+    title: String,
+    body: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = { Text(title) },
+        text = { Text(body) },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text(confirmLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        }
+    )
 }

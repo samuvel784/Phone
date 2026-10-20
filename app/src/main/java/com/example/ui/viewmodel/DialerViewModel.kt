@@ -43,6 +43,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.core.content.edit
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import com.example.ui.theme.ThemeMode
 
 class DialerViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,7 +70,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     var isCallHistoryDetailsOpen = mutableStateOf(false)
 
     // Duplicate detection
-    var duplicateGroups = mutableStateOf<List<com.example.util.DuplicateGroup>>(emptyList())
+    var duplicateGroups = mutableStateOf<List<DuplicateGroup>>(emptyList())
     var showDuplicatePrompt = mutableStateOf(false)
 
     init {
@@ -84,8 +85,8 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     fun checkDuplicates(context: Context, force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                if (!force) kotlinx.coroutines.delay(3_000)
-                val groups = com.example.util.DuplicateFinder.findDuplicates(context)
+                if (!force) kotlinx.coroutines.delay(3.seconds)
+                val groups = DuplicateFinder.findDuplicates(context)
                 withContext(Dispatchers.Main) {
                     duplicateGroups.value = groups
                     val now = System.currentTimeMillis()
@@ -149,10 +150,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         applyDialpadText(raw.dropLast(1))
     }
 
-    fun clearDialpad() {
-        applyDialpadText("")
-    }
-
     /**
      * Stores [text] as the canonical (raw) dialpad value and renders the spaced
      * display form into [dialpadTextFieldValue]. The keypad caps the number at
@@ -208,7 +205,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     val dialpadMatches: StateFlow<List<DialpadMatch>> = combine(
         allContactsFlow,
         allCallHistoryFlow,
-        _dialpadInputFlow.debounce(100)
+        _dialpadInputFlow.debounce(100.milliseconds)
     ) { contacts, recents, query ->
         if (query.isBlank()) {
             emptyList()
@@ -310,21 +307,12 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     var flashAlertsEnabled = mutableStateOf(prefs.getBoolean("flash_alerts_enabled", false))
     var isCallbackRemindersEnabled = mutableStateOf(prefs.getBoolean("is_callback_reminders_enabled", true))
     var isCallNotesEnabled = mutableStateOf(prefs.getBoolean("is_call_notes_enabled", true))
-    var isFakeCallSimulatorEnabled = mutableStateOf(prefs.getBoolean("is_fake_call_simulator_enabled", false))
     var pendingPostCallRecordingNote = mutableStateOf<CallRecording?>(null)
 
     // Dashboard & Tab Layout & Swipe Preferences
-    var dashboardMode = mutableStateOf(prefs.getString("dashboard_mode", "FULL") ?: "FULL")
     var isCallLogFiltersEnabled = mutableStateOf(prefs.getBoolean("is_call_log_filters_enabled", true))
     var isRowSwipeEnabled = mutableStateOf(prefs.getBoolean("is_row_swipe_enabled", false))
-    var lastDialedNumber = mutableStateOf(prefs.getString("last_dialed_number", "") ?: "")
 
-    // Fake Call Simulation State
-    var isFakeCallActive = mutableStateOf(false)
-    var fakeCallerName = mutableStateOf("Unknown")
-    var fakeCallerNumber = mutableStateOf("Unknown")
-    var fakeCallState = mutableStateOf("RINGING")
-    var fakeCallStartTimestamp = 0L
     var dialpadTonesEnabled = mutableStateOf(prefs.getBoolean("dialpad_tones_enabled", true))
     var vibrateOnClickEnabled = mutableStateOf(prefs.getBoolean("vibrate_on_click_enabled", true))
     var flipToSilenceEnabled = mutableStateOf(prefs.getBoolean("flip_to_silence_enabled", false))
@@ -378,107 +366,103 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
             try {
                 val settings = repository.dao.getAllSettingsList().associate { it.key to it.value }
-                val editor = prefs.edit()
+                prefs.edit {
 
                 settings["dialpad_tones_enabled"]?.toBooleanStrictOrNull()?.let {
                     dialpadTonesEnabled.value = it
-                    editor.putBoolean("dialpad_tones_enabled", it)
+                    putBoolean("dialpad_tones_enabled", it)
                 }
                 settings["vibrate_on_click_enabled"]?.toBooleanStrictOrNull()?.let {
                     vibrateOnClickEnabled.value = it
-                    editor.putBoolean("vibrate_on_click_enabled", it)
+                    putBoolean("vibrate_on_click_enabled", it)
                 }
                 settings["flip_to_silence_enabled"]?.toBooleanStrictOrNull()?.let {
                     flipToSilenceEnabled.value = it
-                    editor.putBoolean("flip_to_silence_enabled", it)
+                    putBoolean("flip_to_silence_enabled", it)
                 }
                 settings["call_waiting_enabled"]?.toBooleanStrictOrNull()?.let {
                     callWaitingEnabled.value = it
-                    editor.putBoolean("call_waiting_enabled", it)
+                    putBoolean("call_waiting_enabled", it)
                 }
                 settings["recording_enabled"]?.toBooleanStrictOrNull()?.let {
                     recordingEnabled.value = it
-                    editor.putBoolean("recording_enabled", it)
+                    putBoolean("recording_enabled", it)
                 }
                 settings["auto_tune_recording_volume"]?.toBooleanStrictOrNull()?.let {
                     autoTuneRecordingVolume.value = it
-                    editor.putBoolean("auto_tune_recording_volume", it)
+                    putBoolean("auto_tune_recording_volume", it)
                 }
                 settings["recording_chime_enabled"]?.toBooleanStrictOrNull()?.let {
                     recordingChimeEnabled.value = it
-                    editor.putBoolean("recording_chime_enabled", it)
+                    putBoolean("recording_chime_enabled", it)
                 }
                 settings["is_auto_record_calls_enabled"]?.toBooleanStrictOrNull()?.let {
                     isAutoRecordCallsEnabled.value = it
-                    editor.putBoolean("is_auto_record_calls_enabled", it)
+                    putBoolean("is_auto_record_calls_enabled", it)
                 }
                 settings["is_dynamic_island_enabled"]?.toBooleanStrictOrNull()?.let {
                     isDynamicIslandEnabled.value = it
-                    editor.putBoolean("is_dynamic_island_enabled", it)
+                    putBoolean("is_dynamic_island_enabled", it)
                 }
                 settings["is_dynamic_island_speaker_only"]?.toBooleanStrictOrNull()?.let {
                     isDynamicIslandSpeakerOnly.value = it
-                    editor.putBoolean("is_dynamic_island_speaker_only", it)
+                    putBoolean("is_dynamic_island_speaker_only", it)
                 }
                 settings["is_biometric_lock_enabled"]?.toBooleanStrictOrNull()?.let {
                     isBiometricLockEnabled.value = it
-                    editor.putBoolean("is_biometric_lock_enabled", it)
+                    putBoolean("is_biometric_lock_enabled", it)
                 }
                 settings["is_recordings_biometric_lock_enabled"]?.toBooleanStrictOrNull()?.let {
                     isRecordingsBiometricLockEnabled.value = it
-                    editor.putBoolean("is_recordings_biometric_lock_enabled", it)
+                    putBoolean("is_recordings_biometric_lock_enabled", it)
                 }
                 settings["is_auto_export_recordings_enabled"]?.toBooleanStrictOrNull()?.let {
                     isAutoExportRecordingsEnabled.value = it
-                    editor.putBoolean("is_auto_export_recordings_enabled", it)
+                    putBoolean("is_auto_export_recordings_enabled", it)
                 }
                 settings["is_pocket_protection_enabled"]?.toBooleanStrictOrNull()?.let {
                     isPocketProtectionEnabled.value = it
-                    editor.putBoolean("is_pocket_protection_enabled", it)
+                    putBoolean("is_pocket_protection_enabled", it)
                 }
                 settings["is_callback_reminders_enabled"]?.toBooleanStrictOrNull()?.let {
                     isCallbackRemindersEnabled.value = it
-                    editor.putBoolean("is_callback_reminders_enabled", it)
+                    putBoolean("is_callback_reminders_enabled", it)
                 }
                 settings["is_call_notes_enabled"]?.toBooleanStrictOrNull()?.let {
                     isCallNotesEnabled.value = it
-                    editor.putBoolean("is_call_notes_enabled", it)
-                }
-                settings["is_fake_call_simulator_enabled"]?.toBooleanStrictOrNull()?.let {
-                    isFakeCallSimulatorEnabled.value = it
-                    editor.putBoolean("is_fake_call_simulator_enabled", it)
+                    putBoolean("is_call_notes_enabled", it)
                 }
                 settings["flash_alerts_enabled"]?.toBooleanStrictOrNull()?.let {
                     flashAlertsEnabled.value = it
-                    editor.putBoolean("flash_alerts_enabled", it)
+                    putBoolean("flash_alerts_enabled", it)
                 }
                 settings["is_hide_caller_id_enabled"]?.toBooleanStrictOrNull()?.let {
                     isHideCallerIdEnabled.value = it
-                    editor.putBoolean("is_hide_caller_id_enabled", it)
+                    putBoolean("is_hide_caller_id_enabled", it)
                 }
                 settings["clir_prefix"]?.let {
                     clirPrefix.value = it
-                    editor.putString("clir_prefix", it)
+                    putString("clir_prefix", it)
                 }
                 settings["is_call_log_filters_enabled"]?.toBooleanStrictOrNull()?.let {
                     isCallLogFiltersEnabled.value = it
-                    editor.putBoolean("is_call_log_filters_enabled", it)
+                    putBoolean("is_call_log_filters_enabled", it)
                 }
                 settings["is_row_swipe_enabled"]?.toBooleanStrictOrNull()?.let {
                     isRowSwipeEnabled.value = it
-                    editor.putBoolean("is_row_swipe_enabled", it)
+                    putBoolean("is_row_swipe_enabled", it)
                 }
                 settings["selected_account_filter"]?.let {
                     selectedAccountFilter.value = it
                     _selectedAccountFilterFlow.value = it
-                    editor.putString("selected_account_filter", it)
+                    putString("selected_account_filter", it)
                 }
                 settings["default_contact_account_name"]?.let {
                     defaultContactAccountName.value = it
-                    editor.putString("default_contact_account_name", it)
+                    putString("default_contact_account_name", it)
                 }
 
-                editor.apply()
+                }
             } catch (_: Exception) {}
 
             val currentResponses = repository.getQuickResponses().first()
@@ -533,12 +517,13 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun updateAmoledMode(amoled: Boolean) {
         isAmoledMode.value = amoled
-        val editor = prefs.edit().putBoolean("is_amoled_mode", amoled)
-        if (amoled && !isDarkTheme.value) {
-            isDarkTheme.value = true
-            editor.putBoolean("is_dark_theme", true)
+        prefs.edit {
+            putBoolean("is_amoled_mode", amoled)
+            if (amoled && !isDarkTheme.value) {
+                isDarkTheme.value = true
+                putBoolean("is_dark_theme", true)
+            }
         }
-        editor.apply()
     }
 
     fun updateM3Expressive(expressive: Boolean) {
@@ -754,16 +739,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun updateFakeCallSimulatorEnabled(enabled: Boolean) {
-        isFakeCallSimulatorEnabled.value = enabled
-        prefs.edit { putBoolean("is_fake_call_simulator_enabled", enabled) }
-        viewModelScope.launch {
-            try {
-                repository.dao.insertSetting(AppSetting("is_fake_call_simulator_enabled", enabled.toString()))
-            } catch (_: Exception) {}
-        }
-    }
-
     fun updateCallLogFiltersEnabled(enabled: Boolean) {
         isCallLogFiltersEnabled.value = enabled
         prefs.edit { putBoolean("is_call_log_filters_enabled", enabled) }
@@ -877,6 +852,22 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
             val success = repository.importBackup(rawData, password)
             if (success) syncData()
             onResult(success)
+        }
+    }
+
+    /**
+     * Same as [importBackup] but returns the specific failure reason so the UI can explain what
+     * went wrong (wrong password, damaged file, unsupported version, ...) instead of a generic error.
+     */
+    fun importBackupResult(
+        rawData: String,
+        password: String = "",
+        onResult: (com.example.data.BackupRestoreManager.ImportResult) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.importBackupResult(rawData, password)
+            if (result is com.example.data.BackupRestoreManager.ImportResult.Success) syncData()
+            onResult(result)
         }
     }
 
@@ -1190,10 +1181,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
             repository.insertManualCallRecord(name, number, type, durationSeconds, simSlot)
             syncData()
         }
-    }
-
-    fun logFakeCall(name: String, number: String, type: CallType, durationSeconds: Long, simSlot: Int = 1) {
-        logCall(name, number, type, durationSeconds, simSlot)
     }
 
     override fun onCleared() {

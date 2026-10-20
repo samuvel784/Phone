@@ -46,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -63,8 +62,6 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import androidx.compose.ui.res.stringResource
 
-import com.example.ui.theme.LocalM3Expressive
-import com.example.ui.theme.LocalAmoledMode
 import com.example.ui.theme.AppShapes
 import com.example.ui.theme.NovaMotion
 import com.example.ui.theme.NovaTheme
@@ -197,7 +194,10 @@ fun BottomNavBar(
                     .height(70.dp)
             ) {
                 val slotCount = tabSlots.size.coerceAtLeast(1)
-                val itemWidth = maxWidth / slotCount
+                // Explicit receiver makes the BoxWithConstraints scope use visible to
+                // both the compiler and Android Studio's inspection.
+                val availableWidth = this@BoxWithConstraints.maxWidth
+                val itemWidth = availableWidth / slotCount
                 val pillWidth = 64.dp
                 val indicatorX = animateDpAsState(
                     targetValue = itemWidth * selectedTab.coerceIn(0, slotCount - 1),
@@ -543,7 +543,7 @@ fun ExpandableSettingsCard(
                             text = stringResource(R.string.feature_enable_prompt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

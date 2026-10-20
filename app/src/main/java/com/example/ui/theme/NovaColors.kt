@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -22,20 +22,12 @@ class NovaColors(
     val gradientEnd: Color,
     val glow: Color,
     val canvasTint: Color,
-    val glass: Color,
-    val glassBorder: Color,
     val success: Color,
-    val onSuccess: Color,
-    val danger: Color,
-    val onDanger: Color,
     val warning: Color,
     val isDark: Boolean
 ) {
     /** The signature diagonal gradient of the app (keypad button, call screen, highlights). */
     val brand: Brush = Brush.linearGradient(listOf(gradientStart, gradientEnd))
-    val brandHorizontal: Brush = Brush.horizontalGradient(listOf(gradientStart, gradientEnd))
-    val brandVertical: Brush = Brush.verticalGradient(listOf(gradientStart, gradientEnd))
-    val onBrand: Color = Color.White
 }
 
 val LocalNovaColors = staticCompositionLocalOf {
@@ -44,12 +36,7 @@ val LocalNovaColors = staticCompositionLocalOf {
         gradientEnd = Color(0xFFB04CFF),
         glow = Color(0x666E5BFF),
         canvasTint = Color(0x1A6E5BFF),
-        glass = Color(0xEBFFFFFF),
-        glassBorder = Color(0xFFDCE0EC),
         success = Color(0xFF0E9F6E),
-        onSuccess = Color.White,
-        danger = Color(0xFFE5334F),
-        onDanger = Color.White,
         warning = Color(0xFFF59E0B),
         isDark = false
     )
@@ -63,7 +50,7 @@ object NovaTheme {
 }
 
 /** Builds the brand colours from the final colour scheme, so they follow every accent (and dynamic colour). */
-internal fun buildNovaColors(primary: Color, outlineVariant: Color, surface: Color, dark: Boolean): NovaColors {
+internal fun buildNovaColors(primary: Color, dark: Boolean): NovaColors {
     val hsl = primary.toHsl()
     val hue = hsl[0]
     val sat = if (hsl[1] < 0.30f) hsl[1] else hsl[1].coerceIn(0.60f, 0.95f)
@@ -89,12 +76,7 @@ internal fun buildNovaColors(primary: Color, outlineVariant: Color, surface: Col
         gradientEnd = end,
         glow = start.copy(alpha = if (dark) 0.45f else 0.32f),
         canvasTint = start.copy(alpha = if (dark) 0.16f else 0.10f),
-        glass = surface.copy(alpha = 0.92f),
-        glassBorder = outlineVariant.copy(alpha = 0.75f),
         success = if (dark) Color(0xFF2DD4A0) else Color(0xFF0E9F6E),
-        onSuccess = if (dark) Color(0xFF04281D) else Color.White,
-        danger = if (dark) Color(0xFFFF6B81) else Color(0xFFE5334F),
-        onDanger = if (dark) Color(0xFF3A0610) else Color.White,
         warning = if (dark) Color(0xFFFBBF24) else Color(0xFFD97706),
         isDark = dark
     )

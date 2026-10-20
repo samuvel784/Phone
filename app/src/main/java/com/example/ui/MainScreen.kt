@@ -22,12 +22,8 @@ import com.example.ui.components.NovaFab
 import com.example.ui.theme.NovaMotion
 import com.example.ui.theme.novaCanvas
 import android.Manifest
-import android.app.NotificationManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.media.Ringtone
-import android.media.RingtoneManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.widget.Toast
@@ -64,18 +60,14 @@ import com.example.ContactCache
 import com.example.R
 import com.example.getContactNameFromNumber
 import com.example.getSavedCnapName
-import com.example.model.CallRecording
-import com.example.model.CallType
 import com.example.ui.components.*
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.CallScreenPermissionHelper
-import com.example.util.DuplicateGroup
 import com.example.util.ContactRingtonePrefs
 import com.example.util.MultiSimManager
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
 import kotlin.time.Duration.Companion.milliseconds
 
 const val MAX_WIDGET_FAVORITES = 6
@@ -129,8 +121,8 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(isCallActive, viewModel.isFakeCallActive.value) {
-        if (isCallActive || viewModel.isFakeCallActive.value) {
+    LaunchedEffect(isCallActive) {
+        if (isCallActive) {
             isSettingsVisible = false
             focusManager.clearFocus()
             keyboardController?.hide()
@@ -206,7 +198,7 @@ fun MainScreen(
             Manifest.permission.WRITE_CONTACTS,
             Manifest.permission.CALL_PHONE
         )
-        // Call Log is requested only after NovaDial actually holds the default Phone role.
+        // Call Log is requested only after Nova Dialer actually holds the default Phone role.
         if (includeCallLog) {
             perms.add(Manifest.permission.READ_CALL_LOG)
             perms.add(Manifest.permission.WRITE_CALL_LOG)
@@ -383,7 +375,6 @@ fun MainScreen(
         )
     ) { paddingValues ->
         val tabSlots = listOf("HOME", "RECENTS", "FAVORITES")
-        val currentSlotKey = tabSlots.getOrElse(selectedTab) { "HOME" }
 
         BackHandler(enabled = isDialpadVisible || isSettingsVisible) {
             if (isDialpadVisible) {
@@ -407,7 +398,7 @@ fun MainScreen(
                     title = { Text("Permissions & Local Data Privacy", fontWeight = FontWeight.Bold) },
                     text = {
                         Text(
-                            "NovaDial needs Contacts access to identify callers and let you dial. To show and manage call history, Android requires NovaDial to be your default Phone app and to grant Call Log access. All data is processed locally on your device and is never uploaded or shared.",
+                            "Nova Dialer needs Contacts access to identify callers and let you dial. To show and manage call history, Android requires Nova Dialer to be your default Phone app and to grant Call Log access. All data is processed locally on your device and is never uploaded or shared.",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -449,7 +440,7 @@ fun MainScreen(
                     title = { Text("Call History Access", fontWeight = FontWeight.Bold) },
                     text = {
                         Text(
-                            "NovaDial is now your default Phone app. Android requires Call Log access so NovaDial can display, create, and manage your call history. Call log data stays on this device and is not uploaded.",
+                            "Nova Dialer is now your default Phone app. Android requires Call Log access so Nova Dialer can display, create, and manage your call history. Call log data stays on this device and is not uploaded.",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -744,35 +735,8 @@ fun MainScreen(
                 }
             }
 
-            val isFakeCallActive by viewModel.isFakeCallActive
-            val fakeCallerName by viewModel.fakeCallerName
-            val fakeCallerNumber by viewModel.fakeCallerNumber
-            val fakeCallState by viewModel.fakeCallState
-
-            // Play the contact's assigned ringtone (if any) while Fake Call is ringing
-            val fakeCallRingtone = remember { mutableStateOf<Ringtone?>(null) }
-            LaunchedEffect(isFakeCallActive, fakeCallState, fakeCallerNumber) {
-                if (isFakeCallActive && fakeCallState == "RINGING") {
-                    val assignment = runCatching { ContactRingtonePrefs.find(context, fakeCallerNumber) }.getOrNull()
-                    if (assignment != null && assignment.ringtoneUri.isNotBlank()) {
-                        try {
-                            fakeCallRingtone.value?.stop()
-                            fakeCallRingtone.value = RingtoneManager.getRingtone(context, assignment.ringtoneUri.toUri())?.apply { play() }
-                        } catch (_: Exception) {}
-                    }
-                } else {
-                    try { fakeCallRingtone.value?.stop() } catch (_: Exception) {}
-                    fakeCallRingtone.value = null
-                }
-            }
-            DisposableEffect(Unit) {
-                onDispose {
-                    try { fakeCallRingtone.value?.stop() } catch (_: Exception) {}
-                }
-            }
-
             AnimatedVisibility(
-                visible = isSettingsVisible && !isFakeCallActive && (!isCallActive || isCallMinimized),
+                visible = isSettingsVisible && (!isCallActive || isCallMinimized),
                 enter = slideInHorizontally(
                     initialOffsetX = { -it },
                     animationSpec = tween(220, easing = FastOutSlowInEasing)
@@ -790,7 +754,7 @@ fun MainScreen(
             }
 
             AnimatedVisibility(
-                visible = (isCallActive && !isCallMinimized) || isFakeCallActive,
+                visible = isCallActive && !isCallMinimized,
                 enter = fadeIn(animationSpec = tween(120)) + scaleIn(initialScale = 0.95f, animationSpec = tween(120)),
                 exit = fadeOut(animationSpec = tween(100)) + scaleOut(targetScale = 0.95f, animationSpec = tween(100))
             ) {
@@ -800,100 +764,30 @@ fun MainScreen(
                 val spamList by viewModel.spamFlow.collectAsStateWithLifecycle()
                 val isSpamCaller = remember(spamList, callingContactNumber) {
                     if (callingContactNumber.isBlank()) false
-                    else spamList.any { com.example.util.ContactRingtonePrefs.numbersMatch(it.number, callingContactNumber) }
+                    else spamList.any { ContactRingtonePrefs.numbersMatch(it.number, callingContactNumber) }
                 }
 
                 ActiveCallScreen(
-                    contactName = if (isFakeCallActive) fakeCallerName else callingContactName,
-                    contactNumber = if (isFakeCallActive) fakeCallerNumber else callingContactNumber,
+                    contactName = callingContactName,
+                    contactNumber = callingContactNumber,
                     preferredSim = preferredSim,
                     quickResponses = quickResponses,
                     isSpam = isSpamCaller,
-                    onHangUp = {
-                        if (isFakeCallActive) {
-                            try {
-                                (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(9999)
-                            } catch (_: Exception) {}
-                            val durationSeconds = if (fakeCallState == "ACTIVE" && viewModel.fakeCallStartTimestamp > 0L) {
-                                (System.currentTimeMillis() - viewModel.fakeCallStartTimestamp) / 1000
-                            } else {
-                                0L
-                            }
-                            val callType = if (fakeCallState == "ACTIVE") CallType.INCOMING else CallType.MISSED
-                            viewModel.logFakeCall(fakeCallerName, fakeCallerNumber, callType, durationSeconds)
-                            viewModel.fakeCallStartTimestamp = 0L
-                            viewModel.isFakeCallActive.value = false
-                            viewModel.fakeCallState.value = "DISCONNECTED"
-                        } else {
-                            CallManager.disconnect()
-                        }
-                    },
+                    onHangUp = { CallManager.disconnect() },
                     onAnswer = { CallManager.answer() },
-                    onQuickDecline = {
-                        if (isFakeCallActive) {
-                            try {
-                                (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(9999)
-                            } catch (_: Exception) {}
-                            viewModel.fakeCallStartTimestamp = 0L
-                            viewModel.isFakeCallActive.value = false
-                            viewModel.fakeCallState.value = "DISCONNECTED"
-                        } else {
-                            CallManager.disconnect()
-                        }
-                    },
-                    isIncoming = if (isFakeCallActive) (fakeCallState == "RINGING") else (systemCallState == android.telecom.Call.STATE_RINGING),
+                    onQuickDecline = { CallManager.disconnect() },
+                    isIncoming = systemCallState == android.telecom.Call.STATE_RINGING,
                     contacts = allContacts,
-                    callState = if (isFakeCallActive) {
-                        if (fakeCallState == "ACTIVE") android.telecom.Call.STATE_ACTIVE else android.telecom.Call.STATE_RINGING
-                    } else {
-                        systemCallState
-                    },
+                    callState = systemCallState,
                     recordingEnabled = viewModel.recordingEnabled.value,
                     autoTuneVolume = viewModel.autoTuneRecordingVolume.value,
                     recordingChimeEnabled = viewModel.recordingChimeEnabled.value,
                     alwaysRecordEnabled = viewModel.isAutoRecordCallsEnabled.value,
                     callNotesEnabled = viewModel.isCallNotesEnabled.value,
-                    onSaveRecording = { duration, filePath ->
-                        viewModel.saveCallRecording(
-                            CallRecording(
-                                name = if (isFakeCallActive) fakeCallerName else callingContactName,
-                                number = if (isFakeCallActive) fakeCallerNumber else callingContactNumber,
-                                timestamp = System.currentTimeMillis().toString(),
-                                duration = duration,
-                                filePath = filePath
-                            )
-                        )
-                    },
-                    onSaveNote = { content ->
-                        viewModel.saveCallNote(if (isFakeCallActive) fakeCallerNumber else callingContactNumber, content)
-                    },
-                    onMinimize = if (isFakeCallActive) null else { { isCallMinimized = true } },
+                    onSaveNote = { content -> viewModel.saveCallNote(callingContactNumber, content) },
+                    onMinimize = { isCallMinimized = true },
                     avatarShapeType = viewModel.avatarShapeType.value,
-                    isPocketProtectionEnabled = viewModel.isPocketProtectionEnabled.value,
-                    isFake = isFakeCallActive,
-                    fakeState = fakeCallState,
-                    onFakeAnswer = {
-                        try {
-                            (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(9999)
-                        } catch (_: Exception) {}
-                        viewModel.fakeCallStartTimestamp = System.currentTimeMillis()
-                        viewModel.fakeCallState.value = "ACTIVE"
-                    },
-                    onFakeHangUp = {
-                        try {
-                            (context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)?.cancel(9999)
-                        } catch (_: Exception) {}
-                        val durationSeconds = if (fakeCallState == "ACTIVE" && viewModel.fakeCallStartTimestamp > 0L) {
-                            (System.currentTimeMillis() - viewModel.fakeCallStartTimestamp) / 1000
-                        } else {
-                            0L
-                        }
-                        val callType = if (fakeCallState == "ACTIVE") CallType.INCOMING else CallType.MISSED
-                        viewModel.logFakeCall(fakeCallerName, fakeCallerNumber, callType, durationSeconds)
-                        viewModel.fakeCallStartTimestamp = 0L
-                        viewModel.isFakeCallActive.value = false
-                        viewModel.fakeCallState.value = "DISCONNECTED"
-                    }
+                    isPocketProtectionEnabled = viewModel.isPocketProtectionEnabled.value
                 )
             }
 

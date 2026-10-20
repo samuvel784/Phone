@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
  *    platform-sanctioned way to present UI while the device is locked (Android 10+ blocks ordinary
  *    background activity starts).
  *  - It deliberately bypasses MainActivity's app-lock gate, so the ringing dashboard appears even
- *    when NovaDial is behind biometric auth — answering a call must never require an unlock first.
+ *    when Nova Dialer is behind biometric auth — answering a call must never require an unlock first.
  *  - It performs **no** contact/provider/database lookups. The caller name and number were already
  *    resolved by [MyInCallService] and handed over as intent extras, so the first frame is immediate
  *    and nothing on the incoming-call critical path touches disk.

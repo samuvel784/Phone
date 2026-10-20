@@ -67,7 +67,7 @@ fun ContactEditorScreen(
     val initialNumbers = remember(contactToEdit) {
         val existing = contactToEdit?.getAllNumbers() ?: emptyList()
         if (existing.isNotEmpty()) existing.toMutableStateList()
-        else mutableStateOf(mutableListOf(LabeledNumber("", "Mobile", true))).value.toMutableStateList()
+        else mutableListOf(LabeledNumber("", "Mobile", true)).toMutableStateList()
     }
     val phoneNumbers = remember { initialNumbers }
 
@@ -114,7 +114,7 @@ fun ContactEditorScreen(
                                 return@TextButton
                             }
                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.SUCCESS)
-                            if (isEditing && contactToEdit != null) {
+                            if (contactToEdit != null) {
                                 viewModel.updateContactWithDetails(
                                     contact = contactToEdit,
                                     name = name,

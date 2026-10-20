@@ -4,15 +4,16 @@
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 <paths>
-    <!-- Internal App Storage (Private) -->
+    <!-- Current app-private recordings (encrypted, or legacy plaintext) -->
     <files-path name="call_recordings" path="CallRecordings/" />
-    <files-path name="exports" path="exports/" />
 
-    <!-- Cache Storage (Temporary Exports & VCF Transfers) -->
-    <cache-path name="cache_files" path="." />
-    <cache-path name="cache_exports" path="exports/" />
+    <!-- Legacy recordings kept in app-specific external storage -->
+    <external-files-path name="external_recordings" path="CallRecordings/" />
+    <external-files-path name="external_music_recordings" path="Music/CallRecordings/" />
+
+    <!-- Temporary decrypted recording used for playback/sharing -->
     <cache-path name="cache_recordings" path="CallRecordings/" />
 
-    <!-- App-Specific External Storage (Scoped, covers Music and external files) -->
-    <external-files-path name="external_recordings" path="." />
+    <!-- Contact vCard written for an explicit share -->
+    <cache-path name="cache_exports" path="exports/" />
 </paths>

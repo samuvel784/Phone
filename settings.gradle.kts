@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "NovaDial"
+rootProject.name = "Nova Dialer"
 
 include(":app")

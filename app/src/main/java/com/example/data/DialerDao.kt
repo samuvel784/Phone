@@ -132,6 +132,19 @@ interface DialerDao {
     @Query("SELECT EXISTS(SELECT 1 FROM blocked_numbers WHERE number = :number)")
     suspend fun isBlocked(number: String): Boolean
 
+    /**
+     * One round-trip check for every equivalent representation of a dialled number.
+     * Wildcard rules are matched against [number] as before.
+     */
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1 FROM blocked_numbers
+            WHERE number IN (:numbers)
+               OR (:number LIKE REPLACE(number, '*', '%'))
+        )
+    """)
+    suspend fun isBlockedAny(number: String, numbers: List<String>): Boolean
+
     // ================= SPEED DIAL =================
 
     @Query("SELECT * FROM speed_dial")
@@ -156,6 +169,14 @@ interface DialerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertQuickResponse(response: QuickResponse)
+
+    /**
+     * Exact-message identity used when merging a backup. The UI already treats the message text as
+     * the identity of a quick response, and re-importing the same backup produces the identical
+     * string, so this can never collapse two genuinely different entries.
+     */
+    @Query("SELECT COUNT(*) FROM quick_responses WHERE message = :message")
+    suspend fun countQuickResponseWithMessage(message: String): Int
 
     @Delete
     suspend fun deleteQuickResponse(response: QuickResponse)
@@ -187,6 +208,14 @@ interface DialerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCallNote(callNote: CallNote)
+
+    /**
+     * Exact identity of a saved note: the note history is append-only, so (number, note,
+     * lastUpdated) uniquely identifies one save. Two genuinely different notes differ in at least
+     * the millisecond timestamp or the text, so this is safe for repeated-import dedupe.
+     */
+    @Query("SELECT COUNT(*) FROM call_notes WHERE number = :number AND note = :note AND lastUpdated = :lastUpdated")
+    suspend fun countCallNoteExact(number: String, note: String, lastUpdated: Long): Int
 
     @Query("DELETE FROM call_notes WHERE id = :id")
     suspend fun deleteCallNoteById(id: Long)
@@ -238,6 +267,9 @@ interface DialerDao {
     @Query("SELECT EXISTS(SELECT 1 FROM spam_numbers WHERE number = :number)")
     suspend fun isSpamNumber(number: String): Boolean
 
+    @Query("SELECT EXISTS(SELECT 1 FROM spam_numbers WHERE number IN (:numbers))")
+    suspend fun isSpamNumberAny(numbers: List<String>): Boolean
+
     // ================= CALL REMINDERS =================
 
     @Query("SELECT * FROM call_reminders ORDER BY reminderTime ASC")
@@ -248,6 +280,13 @@ interface DialerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReminder(reminder: CallReminder): Long
+
+    /**
+     * Identity of a reminder for merge purposes. `isCompleted` is deliberately excluded: if the
+     * user already completed this reminder, re-importing a backup must not resurrect it as active.
+     */
+    @Query("SELECT COUNT(*) FROM call_reminders WHERE number = :number AND reminderTime = :reminderTime AND note = :note")
+    suspend fun countReminderExact(number: String, reminderTime: Long, note: String): Int
 
     @Update
     suspend fun updateReminder(reminder: CallReminder)

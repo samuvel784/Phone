@@ -27,9 +27,6 @@ import android.os.Looper
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Phone
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import androidx.room.withTransaction
 import com.example.data.AppDatabase
 import com.example.model.*
@@ -68,27 +65,9 @@ class DialerRepository(rawContext: Context) {
 
     // --- Paging & Flows ---
 
-    fun getContactsPaged(query: String, accountName: String = ""): Flow<PagingData<Contact>> {
-        val sanitizedQuery = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        return Pager(
-            config = PagingConfig(pageSize = 50, enablePlaceholders = false),
-            pagingSourceFactory = {
-                if (query.isEmpty()) dao.getContactsPaged(accountName)
-                else dao.searchContacts("%$sanitizedQuery%", accountName)
-            }
-        ).flow
-    }
-
     fun getFavoriteContacts(): Flow<List<Contact>> = dao.getFavoriteContacts()
 
     fun getAllContactsFlow(): Flow<List<Contact>> = dao.getAllContactsFlow()
-
-    fun getCallHistoryPaged(): Flow<PagingData<CallRecord>> {
-        return Pager(
-            config = PagingConfig(pageSize = 50, enablePlaceholders = false),
-            pagingSourceFactory = { dao.getCallHistoryPaged() }
-        ).flow
-    }
 
     fun getAllCallHistoryFlow(): Flow<List<CallRecord>> = dao.getAllCallHistoryFlow()
 
@@ -110,7 +89,7 @@ class DialerRepository(rawContext: Context) {
                 contactsObserver = observer
             }
 
-            // Call-log access is allowed only while NovaDial holds the default Phone role.
+            // Call-log access is allowed only while Nova Dialer holds the default Phone role.
             // Register the observer only then; a denied/revoked role must not leave a live
             // call-log subscription behind.
             if (CallScreenPermissionHelper.isDefaultDialer(context)) {
@@ -274,26 +253,6 @@ class DialerRepository(rawContext: Context) {
     }
 
     // --- Actions ---
-
-    suspend fun addContact(
-        name: String,
-        number: String,
-        label: String,
-        email: String = "",
-        accountName: String = "",
-        accountType: String = ""
-    ) {
-        val numbers = if (number.isNotBlank()) listOf(LabeledNumber(number, label.ifBlank { "Mobile" }, true)) else emptyList()
-        val emails = if (email.isNotBlank()) listOf(LabeledEmail(email, "Home")) else emptyList()
-        addContactWithDetails(
-            name = name,
-            numbers = numbers,
-            emails = emails,
-            addresses = emptyList(),
-            accountName = accountName,
-            accountType = accountType
-        )
-    }
 
     suspend fun addContactWithDetails(
         name: String,
@@ -495,24 +454,6 @@ class DialerRepository(rawContext: Context) {
         syncContacts()
     }
 
-    suspend fun deleteContact(number: String) {
-        val contact = dao.getContactByNumber(number)
-        if (contact != null) {
-            deleteContact(contact)
-        } else {
-            try {
-                getContactIdFromNumber(number)?.let { id ->
-                    context.contentResolver.delete(
-                        ContactsContract.RawContacts.CONTENT_URI,
-                        "${ContactsContract.RawContacts.CONTACT_ID} = ?",
-                        arrayOf(id)
-                    )
-                }
-            } catch (_: Exception) {}
-            syncContacts()
-        }
-    }
-
     suspend fun deleteCallLog(id: Int) {
         dao.deleteCallLog(id)
         if (!CallScreenPermissionHelper.isDefaultDialer(context)) return
@@ -644,10 +585,8 @@ class DialerRepository(rawContext: Context) {
 
     // --- Call Notes ---
     suspend fun updateCallRecordingNote(id: Int, note: String) = dao.updateCallRecordingNote(id, note)
-    suspend fun getCallNote(number: String): CallNote? = dao.getLatestCallNote(number)
     fun getCallNotesForNumberFlow(number: String): Flow<List<CallNote>> = dao.getCallNotesForNumberFlow(number)
     fun getAllCallNotes(): Flow<List<CallNote>> = dao.getAllCallNotesFlow()
     suspend fun saveCallNote(callNote: CallNote) = dao.insertCallNote(callNote)
     suspend fun deleteCallNoteById(id: Long) = dao.deleteCallNoteById(id)
-    suspend fun deleteCallNotesForNumber(number: String) = dao.deleteCallNotesForNumber(number)
 }

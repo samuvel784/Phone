@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -7,12 +7,14 @@ package com.example.telecom
 
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.ContactCache
 import com.example.data.AppDatabase
 import com.example.data.DialerDao
 import com.example.util.BlockedNumberContractManager
@@ -20,9 +22,13 @@ import com.example.util.CallScreenPermissionHelper
 import com.example.util.PhoneNumberCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -31,116 +37,191 @@ import kotlin.time.Duration.Companion.milliseconds
  *  2. Numbers the user blocked, and numbers in the offline spam database, are rejected.
  *  3. Focus mode, protection level, VIP / favorites / repeat callers decide whether the call is silenced.
  * A silenced call still appears in the call log as a missed call.
+ *
+ * Latency contract: Telecom expects one response promptly. All work is on IO, settings are read
+ * once, the number is normalised once, contact/VIP/repeat facts are only fetched when the active
+ * policy can actually use them, and the final response is submitted at most once. If the deadline
+ * expires the call is allowed (fail-open) instead of being blocked by a slow provider.
  */
 class NovaDialCallScreeningService : CallScreeningService() {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val serviceJob = SupervisorJob()
+    private val scope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val dao: DialerDao by lazy { AppDatabase.getDatabase(applicationContext).dialerDao() }
 
     override fun onScreenCall(callDetails: Call.Details) {
+        val startedAt = SystemClock.elapsedRealtime()
+        val trace = ScreeningTrace(startedAt)
+        val responded = AtomicBoolean(false)
+        fun respondOnce(response: CallResponse) {
+            if (!responded.compareAndSet(false, true)) return
+            try {
+                respondToCall(callDetails, response)
+            } catch (e: Exception) {
+                Log.w(TAG, "Unable to submit screening response", e)
+            }
+        }
+
         val isIncoming = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
             callDetails.callDirection == Call.Details.DIRECTION_INCOMING
         if (!isIncoming) {
-            respondToCall(callDetails, CallResponse.Builder().build())
+            respondOnce(CallResponse.Builder().build())
             return
         }
 
-        val number = callDetails.handle?.schemeSpecificPart.orEmpty()
+        val number = NormalizedNumber.from(callDetails.handle?.schemeSpecificPart.orEmpty())
+        if (number.raw.isBlank()) {
+            respondOnce(CallResponse.Builder().build())
+            return
+        }
 
         scope.launch {
-            val response = try {
-                // Android allows only a few seconds; if we are too slow the call simply rings normally.
-                withTimeoutOrNull(3500.milliseconds) { decide(number) }
+            val decision = try {
+                withTimeoutOrNull(SCREENING_DEADLINE_MS) { decide(number, trace) }
             } catch (e: Exception) {
-                Log.e(TAG, "Error screening call", e)
+                Log.e(TAG, "Error screening call (${number.redacted})", e)
                 null
-            } ?: CallResponse.Builder().build()
+            } ?: ScreeningDecision(CallResponse.Builder().build(), "timeoutOrError")
 
-            respondToCall(callDetails, response)
+            Log.d(
+                TAG,
+                "screen ${number.redacted} decision=${decision.outcome} " +
+                    "totalMs=${SystemClock.elapsedRealtime() - startedAt} stages=${trace.summary()}"
+            )
+            respondOnce(decision.response)
         }
     }
 
-    private suspend fun decide(number: String): CallResponse = withContext(Dispatchers.IO) {
+    override fun onDestroy() {
+        scope.cancel()
+        serviceJob.cancel()
+        super.onDestroy()
+    }
+
+    private suspend fun decide(number: NormalizedNumber, trace: ScreeningTrace): ScreeningDecision {
         val allow = CallResponse.Builder().build()
+        val context = applicationContext
 
-        // 1. Emergency numbers: never blocked, never silenced
-        if (number.isNotBlank() && isEmergency(number)) return@withContext allow
+        // 1. Emergency numbers: never blocked, never silenced. Check the local short-list first
+        //    and only ask TelephonyManager when it is not an obvious match.
+        if (isEmergency(number)) {
+            trace.mark("emergency")
+            return ScreeningDecision(allow, "emergency")
+        }
+        trace.mark("emergency")
 
-        // 2. Your blocklist and offline spam database
-        if (number.isNotBlank()) {
-            val blocked = try {
-                BlockedNumberContractManager.isBlocked(applicationContext, number, dao)
-            } catch (e: Exception) {
-                false
+        // 2. Your blocklist and offline spam database. Both checks run concurrently because they
+        //    touch different stores (system blocklist / Room) and either one can reject the call.
+        val (blocked, spam) = coroutineScope {
+            val blockedCheck = async {
+                try {
+                    BlockedNumberContractManager.isBlocked(context, number.raw, dao)
+                } catch (_: Exception) {
+                    false
+                }
             }
-            val spam = try {
-                dao.isSpamNumber(number) || dao.isSpamNumber(number.filter { it.isDigit() })
-            } catch (e: Exception) {
-                false
+            val spamCheck = async {
+                try {
+                    dao.isSpamNumberAny(number.variants)
+                } catch (_: Exception) {
+                    false
+                }
             }
-            if (blocked || spam) {
-                Log.d(TAG, "Rejecting blocked/spam call from $number")
-                return@withContext CallResponse.Builder()
+            blockedCheck.await() to spamCheck.await()
+        }
+        trace.mark("blockAndSpam")
+
+        if (blocked || spam) {
+            Log.d(TAG, "Rejecting blocked/spam call from ${number.redacted}")
+            return ScreeningDecision(
+                CallResponse.Builder()
                     .setDisallowCall(true)
                     .setRejectCall(true)
                     .setSkipNotification(true)
-                    .build()
-            }
+                    .build(),
+                if (blocked) "blocked" else "spam"
+            )
         }
 
-        // 2.5 Do Not Disturb schedule: silence everyone except saved contacts and VIPs
-        val dndContext = applicationContext
-        if (DoNotDisturbPrefs.isQuietHoursNow(dndContext)) {
-            val (savedNow, _) = lookupContact(dndContext, number)
-            val vipNow = CallProtectionPrefs.isVip(dndContext, number)
-            if (!savedNow && !vipNow) {
-                Log.d(TAG, "DND quiet hours: silencing $number")
-                return@withContext silenced(number)
-            }
+        // Read all policy inputs once. The old path read SharedPreferences and performed a
+        // ContactsProvider lookup several times per call, including lookups the active policy
+        // could never use.
+        val focusMode = CallProtectionPrefs.getFocusMode(context)
+        val protectionLevel = CallProtectionPrefs.getProtectionLevel(context)
+        val quietHours = DoNotDisturbPrefs.isQuietHoursNow(context)
+        val needContact = quietHours ||
+            focusMode == FocusMode.SAVED_CONTACTS_ONLY ||
+            focusMode == FocusMode.SILENCE_ALL ||
+            (focusMode == FocusMode.OFF && protectionLevel != ProtectionLevel.STANDARD)
+        val needVip = quietHours ||
+            focusMode != FocusMode.OFF ||
+            protectionLevel != ProtectionLevel.STANDARD
+        val repeatAllowed = if (focusMode == FocusMode.OFF && protectionLevel != ProtectionLevel.STANDARD) {
+            CallProtectionPrefs.isRepeatCallerAllowed(context)
+        } else {
+            false
         }
+
+        val contactFacts = if (needContact) lookupContact(context, number.raw) else ContactFacts.EMPTY
+        trace.mark("contact")
+
+        val isVip = needVip && vipNumbers(context).any {
+            PhoneNumberCompat.numbersMatch(it, number.raw)
+        }
+        trace.mark("vip")
+
+        // 2.5 Do Not Disturb schedule: silence everyone except saved contacts and VIPs.
+        if (quietHours && !contactFacts.isSaved && !isVip) {
+            Log.d(TAG, "DND quiet hours: silencing ${number.redacted}")
+            trace.mark("dnd")
+            return ScreeningDecision(silenced(number.raw), "dndSilence")
+        }
+
+        val isRepeatCaller = repeatAllowed && isRepeatCaller(context, number)
+        trace.mark("repeat")
 
         // 3. Focus mode and protection level
-        val context = applicationContext
-        val (isSaved, isFavorite) = lookupContact(context, number)
-        val repeatAllowed = CallProtectionPrefs.isRepeatCallerAllowed(context)
-
         val result = CallProtectionPolicy.evaluateCall(
-            phoneNumber = number,
+            phoneNumber = number.raw,
             callerName = null,
-            isSavedContact = isSaved,
-            isVip = CallProtectionPrefs.isVip(context, number),
-            isFavorite = isFavorite,
-            isRepeatCaller = repeatAllowed && isRepeatCaller(context, number),
-            focusMode = CallProtectionPrefs.getFocusMode(context),
-            protectionLevel = CallProtectionPrefs.getProtectionLevel(context),
+            isSavedContact = contactFacts.isSaved,
+            isVip = isVip,
+            isFavorite = contactFacts.isFavorite,
+            isRepeatCaller = isRepeatCaller,
+            focusMode = focusMode,
+            protectionLevel = protectionLevel,
             isEmergencyNumber = false
         )
-        Log.d(TAG, "Policy for $number: silence=${result.shouldSilence} (${result.reason})")
+        Log.d(TAG, "Policy for ${number.redacted}: silence=${result.shouldSilence} (${result.reason})")
+        trace.mark("policy")
 
-        if (result.shouldSilence) silenced(number) else allow
+        return ScreeningDecision(
+            if (result.shouldSilence) silenced(number.raw) else allow,
+            if (result.shouldSilence) "silence" else "allow"
+        )
     }
 
     private fun silenced(number: String): CallResponse {
         CallDecisionStore.markSilenced(number)
         val builder = CallResponse.Builder()
-        // setSilenceCall exists from Android 10; on older versions the call simply rings
+        // setSilenceCall exists from Android 10; on older versions the call simply rings.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) builder.setSilenceCall(true)
         return builder.build()
     }
 
-    private fun isEmergency(number: String): Boolean {
-        val clean = number.replace(Regex("[^0-9]"), "")
-        if (clean == "911" || clean == "112" || clean == "999" || clean == "108" ||
-            clean == "000" || clean == "110" || clean == "119") return true
-        return PhoneNumberCompat.isEmergencyNumber(applicationContext, number)
+    private fun isEmergency(number: NormalizedNumber): Boolean {
+        if (number.digits in EMERGENCY_NUMBERS) return true
+        return PhoneNumberCompat.isEmergencyNumber(applicationContext, number.raw)
     }
 
-    /** Returns (isSavedContact, isFavorite) from the phone's real address book. */
-    private fun lookupContact(context: Context, number: String): Pair<Boolean, Boolean> {
-        if (number.isBlank()) return Pair(false, false)
+    /** Returns contact facts from the in-memory cache first, then the phone's real address book. */
+    private fun lookupContact(context: Context, number: String): ContactFacts {
+        ContactCache.getContact(number)?.let { cached ->
+            return ContactFacts(isSaved = true, isFavorite = cached.favorite)
+        }
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS) !=
             android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) return Pair(false, false)
+        ) return ContactFacts.EMPTY
 
         return try {
             val uri = android.net.Uri.withAppendedPath(
@@ -148,16 +229,22 @@ class NovaDialCallScreeningService : CallScreeningService() {
                 android.net.Uri.encode(number)
             )
             context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.STARRED), null, null, null)?.use { c ->
-                if (c.moveToFirst()) Pair(true, c.getInt(0) == 1) else Pair(false, false)
-            } ?: Pair(false, false)
-        } catch (e: Exception) {
-            Pair(false, false)
+                if (c.moveToFirst()) ContactFacts(isSaved = true, isFavorite = c.getInt(0) == 1)
+                else ContactFacts.EMPTY
+            } ?: ContactFacts.EMPTY
+        } catch (_: Exception) {
+            ContactFacts.EMPTY
         }
     }
 
+    private fun vipNumbers(context: Context): Set<String> = try {
+        CallProtectionPrefs.getVipNumbers(context)
+    } catch (_: Exception) {
+        emptySet()
+    }
+
     /** True if the same number called in the last 3 minutes (the current call is not in the log yet). */
-    private fun isRepeatCaller(context: Context, number: String): Boolean {
-        if (number.isBlank()) return false
+    private fun isRepeatCaller(context: Context, number: NormalizedNumber): Boolean {
         if (!CallScreenPermissionHelper.isDefaultDialer(context)) return false
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) !=
             android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -175,22 +262,80 @@ class NovaDialCallScreeningService : CallScreeningService() {
                     CallLog.Calls.MISSED_TYPE.toString(),
                     CallLog.Calls.REJECTED_TYPE.toString()
                 ),
-                null
+                "${CallLog.Calls.DATE} DESC"
             )?.use { c ->
                 var found = false
                 while (!found && c.moveToNext()) {
                     val logged = c.getString(0).orEmpty()
                     found = logged.isNotBlank() &&
-                        PhoneNumberCompat.numbersMatch(logged, number)
+                        PhoneNumberCompat.numbersMatch(logged, number.raw)
                 }
                 found
             } ?: false
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
 
+    private data class ScreeningDecision(val response: CallResponse, val outcome: String)
+
+    private data class ContactFacts(val isSaved: Boolean, val isFavorite: Boolean) {
+        companion object {
+            val EMPTY = ContactFacts(isSaved = false, isFavorite = false)
+        }
+    }
+
+    /** Immutable number view: raw for provider lookups, digits for exact local matches. */
+    private data class NormalizedNumber(val raw: String, val digits: String) {
+        val variants: List<String>
+            get() = buildList {
+                add(raw)
+                add(digits)
+                if (digits.isNotEmpty()) add("+$digits")
+            }.distinct()
+
+        val redacted: String
+            get() {
+                if (digits.isEmpty()) return "<private>"
+                if (digits.length <= 4) return "***${digits.takeLast(2)}"
+                return "***${digits.takeLast(4)}"
+            }
+
+        companion object {
+            fun from(value: String): NormalizedNumber {
+                val raw = value.trim()
+                return NormalizedNumber(raw = raw, digits = raw.filter { it.isDigit() })
+            }
+        }
+    }
+
+    /**
+     * Lightweight, monotonic stage recorder. Request-local, so no caller data survives screening.
+     * Each mark is the elapsed time since `onScreenCall` and is only emitted in the debug log.
+     */
+    private class ScreeningTrace(private val startedAt: Long) {
+        private val marks = ArrayList<Pair<String, Long>>(8)
+
+        fun mark(stage: String) {
+            if (marks.size < 16) marks += stage to (SystemClock.elapsedRealtime() - startedAt)
+        }
+
+        fun summary(): String = marks.joinToString(",") { "${it.first}=${it.second}ms" }
+    }
+
     private companion object {
-        const val TAG = "NovaDialCallScreening"
+        const val TAG = "Nova Dialer CallScreening"
+
+        /**
+         * Telecom allows a few seconds, but waiting almost all of it makes a slow provider feel
+         * like a delayed ring. 1.5 s is long enough for one ContactsProvider query on a cold
+         * device and short enough to keep the fallback imperceptible. Expired work is cancelled
+         * and the call is allowed.
+         */
+        val SCREENING_DEADLINE_MS = 1_500.milliseconds
+
+        val EMERGENCY_NUMBERS = setOf(
+            "911", "112", "999", "108", "000", "110", "119"
+        )
     }
 }

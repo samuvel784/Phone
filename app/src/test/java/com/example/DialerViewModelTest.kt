@@ -61,7 +61,6 @@ class DialerViewModelTest {
         viewModel.updatePocketProtectionEnabled(true)
         viewModel.updateCallbackRemindersEnabled(false)
         viewModel.updateCallNotesEnabled(false)
-        viewModel.updateFakeCallSimulatorEnabled(false)
         viewModel.onAccountFilterChange("Google:test@gmail.com")
         viewModel.updateDefaultContactAccount("Google:test@gmail.com", "com.google")
 
@@ -75,7 +74,6 @@ class DialerViewModelTest {
         assertTrue(viewModel.isPocketProtectionEnabled.value)
         assertFalse(viewModel.isCallbackRemindersEnabled.value)
         assertFalse(viewModel.isCallNotesEnabled.value)
-        assertFalse(viewModel.isFakeCallSimulatorEnabled.value)
         assertEquals("Google:test@gmail.com", viewModel.selectedAccountFilter.value)
         assertEquals("Google:test@gmail.com", viewModel.defaultContactAccountName.value)
 
@@ -91,7 +89,6 @@ class DialerViewModelTest {
         assertTrue(newViewModel.isPocketProtectionEnabled.value)
         assertFalse(newViewModel.isCallbackRemindersEnabled.value)
         assertFalse(newViewModel.isCallNotesEnabled.value)
-        assertFalse(newViewModel.isFakeCallSimulatorEnabled.value)
         assertEquals("Google:test@gmail.com", newViewModel.selectedAccountFilter.value)
         assertEquals("Google:test@gmail.com", newViewModel.defaultContactAccountName.value)
     }

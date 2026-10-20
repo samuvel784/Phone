@@ -1,6 +1,6 @@
-# NOTICE — NovaDial
+# NOTICE — Nova Dialer
 
-NovaDial (applicationId `com.aistudio.novadial.kpxm`, package namespace `com.example`)
+Nova Dialer (applicationId `com.aistudio.novadial.kpxm`, package namespace `com.example`)
 is a real Android default dialer built on the **Secure Dialer** codebase.
 
 - **Upstream:** Secure Dialer — <https://github.com/Secure-Phone-apps/Secure-Dialer>
@@ -8,9 +8,9 @@ is a real Android default dialer built on the **Secure Dialer** codebase.
 - **License:** GNU General Public License, version 3.0 or later (GPL-3.0-or-later).
   The full license text is in [`LICENSE`](LICENSE).
 
-NovaDial is free software: you can redistribute it and/or modify it under the terms of
+Nova Dialer is free software: you can redistribute it and/or modify it under the terms of
 the GNU General Public License as published by the Free Software Foundation, either
-version 3 of the License, or (at your option) any later version. NovaDial is distributed
+version 3 of the License, or (at your option) any later version. Nova Dialer is distributed
 in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the
 implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 General Public License for more details.
@@ -19,13 +19,13 @@ General Public License for more details.
 
 Every file derived from Secure Dialer keeps its original
 `Copyright (C) 2026 MovStore` / `SPDX-License-Identifier: GPL-3.0-or-later` header
-unchanged. Those files were rebranded for NovaDial (strings, colours, icon, package
+unchanged. Those files were rebranded for Nova Dialer (strings, colours, icon, package
 id) but their license and copyright notices were **not** altered.
 
-## Files written for NovaDial
+## Files written for Nova Dialer
 
-The following files are original NovaDial work and carry the header
-`Copyright (C) 2026 NovaDial contributors / SPDX-License-Identifier: GPL-3.0-or-later`.
+The following files are original Nova Dialer work and carry the header
+`Copyright (C) 2026 Nova Dialer contributors / SPDX-License-Identifier: GPL-3.0-or-later`.
 None of them is copied from Secure Dialer.
 
 ### Telecom / protection / announcer
@@ -63,13 +63,13 @@ None of them is copied from Secure Dialer.
 - `app/src/test/java/com/example/util/ContactRingtonePrefsTest.kt`
 
 > New files added in future must carry the same
-> `Copyright (C) 2026 NovaDial contributors` header. If any file listed above is found
+> `Copyright (C) 2026 Nova Dialer contributors` header. If any file listed above is found
 > to contain code copied from Secure Dialer, restore the `Copyright (C) 2026 MovStore`
 > line in that file.
 
 ## No third-party binaries or services
 
-NovaDial uses only Android platform APIs and the open-source libraries declared in
+Nova Dialer uses only Android platform APIs and the open-source libraries declared in
 `gradle/libs.versions.toml` (AndroidX, Room, SQLCipher, Coil, Robolectric/Roborazzi —
 all Apache-2.0 or MIT). There are no ads, no analytics, no proprietary SDKs, no API keys
 and **no `INTERNET` permission**.
@@ -83,5 +83,5 @@ original files. The licence text is in `app/src/main/assets/licenses/Inter-OFL.t
 ## Design system
 
 The premium design system (`AccentPalette.kt`, `NovaColors.kt`, `NovaMotion.kt`, `NovaComponents.kt`, `RecentsLookup.kt`,
-`Theme.kt`, `Type.kt` and the restyled components) was written for NovaDial. `Theme.kt` and `Type.kt` were rewritten
+`Theme.kt`, `Type.kt` and the restyled components) was written for Nova Dialer. `Theme.kt` and `Type.kt` were rewritten
 from scratch; they still carry the original header because they replace files that came from Secure Dialer.

@@ -37,6 +37,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.CallManager
 import com.example.MainActivity
+import com.example.safeState
 import com.example.security.IntentGuard
 import com.example.ui.components.DynamicIslandPill
 import com.example.ui.theme.MyApplicationTheme
@@ -50,11 +51,29 @@ object DynamicIslandOverlayManager {
     private var monitorJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private data class MonitorState(
-        val call: android.telecom.Call?,
+    /** Immutable per-call view-model used by the overlay and by its actions. */
+    private data class OverlayCallSnapshot(
+        val callId: Long,
+        val callerName: String,
+        val callerNumber: String,
+        val callerPhotoUri: String,
+        val callerLabel: String,
         val callState: Int,
-        val inForeground: Boolean,
-        val audioRoute: Int?
+        val audioState: CallAudioState?,
+        val simSlot: Int
+    )
+
+    private data class CallerDisplay(
+        val name: String,
+        val number: String,
+        val photoUri: String,
+        val label: String,
+        val simSlot: Int
+    )
+
+    private data class MonitorState(
+        val snapshot: OverlayCallSnapshot?,
+        val inForeground: Boolean
     )
 
     fun canDrawOverlay(context: Context): Boolean {
@@ -62,30 +81,62 @@ object DynamicIslandOverlayManager {
         return Settings.canDrawOverlays(context)
     }
 
+    /**
+     * The overlay's only data source. The stable call id is captured in the same emission as the
+     * caller fields, audio state and call state, so a late-flowing name or a newly arrived call
+     * can never make an action target a different call than the one on screen.
+     */
+    private fun perCallSnapshotFlow(): kotlinx.coroutines.flow.Flow<OverlayCallSnapshot?> {
+        val displayFlow = combine(
+            CallManager.callerName,
+            CallManager.callerNumber,
+            CallManager.callerPhotoUri,
+            CallManager.callerLabel,
+            CallManager.currentSimSlot
+        ) { name, number, photoUri, label, simSlot ->
+            CallerDisplay(name, number, photoUri, label, simSlot)
+        }
+        return combine(
+            CallManager.currentCall,
+            CallManager.callState,
+            CallManager.audioState,
+            displayFlow
+        ) { call, state, audio, display ->
+            call?.let {
+                OverlayCallSnapshot(
+                    callId = CallManager.callId(it),
+                    callerName = display.name,
+                    callerNumber = display.number,
+                    callerPhotoUri = display.photoUri,
+                    callerLabel = display.label,
+                    callState = it.safeState.takeIf { s -> s != 0 } ?: state,
+                    audioState = audio,
+                    simSlot = display.simSlot
+                )
+            }
+        }
+    }
+
     fun startCallMonitoring(context: Context) {
         monitorJob?.cancel()
+        val appContext = context.applicationContext
+
         monitorJob = scope.launch {
             combine(
-                CallManager.currentCall,
-                CallManager.callState,
-                CallManager.isAppInForeground,
-                CallManager.audioState
-            ) { call, state, inForeground, audio ->
-                MonitorState(call, state, inForeground, audio?.route)
+                perCallSnapshotFlow(),
+                CallManager.isAppInForeground
+            ) { snapshot, inForeground ->
+                MonitorState(snapshot, inForeground)
             }.collectLatest { state ->
-                val call = state.call
-                val callState = state.callState
-                val inForeground = state.inForeground
-
-                val isCallPlacedOrAnswered = call != null && (
-                    callState == android.telecom.Call.STATE_ACTIVE ||
-                    callState == android.telecom.Call.STATE_DIALING ||
-                    callState == android.telecom.Call.STATE_CONNECTING ||
-                    callState == android.telecom.Call.STATE_HOLDING
+                val snapshot = state.snapshot
+                val isCallPlacedOrAnswered = snapshot != null && (
+                    snapshot.callState == android.telecom.Call.STATE_ACTIVE ||
+                    snapshot.callState == android.telecom.Call.STATE_DIALING ||
+                    snapshot.callState == android.telecom.Call.STATE_CONNECTING ||
+                    snapshot.callState == android.telecom.Call.STATE_HOLDING
                 )
 
                 if (isCallPlacedOrAnswered) {
-                    val appContext = context.applicationContext
                     val prefs = appContext.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
                     val isEnabled = prefs.getBoolean("is_dynamic_island_enabled", true)
                     val speakerOnly = prefs.getBoolean("is_dynamic_island_speaker_only", false)
@@ -94,8 +145,8 @@ object DynamicIslandOverlayManager {
                     val km = appContext.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
                     val isLocked = km?.isKeyguardLocked == true
 
-                    if (isEnabled && canDrawOverlay(appContext) && !inForeground && !isLocked) {
-                        val isSpeaker = state.audioRoute == CallAudioState.ROUTE_SPEAKER
+                    if (isEnabled && canDrawOverlay(appContext) && !state.inForeground && !isLocked) {
+                        val isSpeaker = snapshot.audioState?.route == CallAudioState.ROUTE_SPEAKER
                         if (!speakerOnly || isSpeaker) {
                             showOverlay(appContext)
                         } else {
@@ -105,7 +156,7 @@ object DynamicIslandOverlayManager {
                         hideOverlay(appContext)
                     }
                 } else {
-                    hideOverlay(context.applicationContext)
+                    hideOverlay(appContext)
                 }
             }
         }
@@ -177,55 +228,59 @@ object DynamicIslandOverlayManager {
 
                 setContent {
                     MyApplicationTheme(darkTheme = true) {
-                        val callerName by CallManager.callerName.collectAsStateWithLifecycle()
-                        val callerNumber by CallManager.callerNumber.collectAsStateWithLifecycle()
-                        val callerPhotoUri by CallManager.callerPhotoUri.collectAsStateWithLifecycle()
-                        val callerLabel by CallManager.callerLabel.collectAsStateWithLifecycle()
-                        val callState by CallManager.callState.collectAsStateWithLifecycle()
-                        val audioState by CallManager.audioState.collectAsStateWithLifecycle()
-                        val currentSimSlot by CallManager.currentSimSlot.collectAsStateWithLifecycle()
-
-                        DynamicIslandPill(
-                            callerName = callerName,
-                            callerNumber = callerNumber,
-                            callState = callState,
-                            audioState = audioState,
-                            photoUri = callerPhotoUri,
-                            callerLabel = callerLabel,
-                            simSlot = currentSimSlot,
-                            onExpandedChange = { expanded ->
-                                val currentWm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-                                if (currentWm != null && overlayComposeView != null) {
-                                    if (expanded) {
-                                        layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT
-                                        layoutParams.x = 0
-                                        layoutParams.y = expandedY
-                                    } else {
-                                        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
-                                        layoutParams.x = 0
-                                        layoutParams.y = compactY
+                        val snapshot by perCallSnapshotFlow()
+                            .collectAsStateWithLifecycle(initialValue = null)
+                        val current = snapshot
+                        if (current != null) {
+                            DynamicIslandPill(
+                                callerName = current.callerName,
+                                callerNumber = current.callerNumber,
+                                callState = current.callState,
+                                audioState = current.audioState,
+                                photoUri = current.callerPhotoUri,
+                                callerLabel = current.callerLabel,
+                                simSlot = current.simSlot,
+                                onExpandedChange = { expanded ->
+                                    val currentWm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                                    if (currentWm != null && overlayComposeView != null) {
+                                        if (expanded) {
+                                            layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT
+                                            layoutParams.x = 0
+                                            layoutParams.y = expandedY
+                                        } else {
+                                            layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+                                            layoutParams.x = 0
+                                            layoutParams.y = compactY
+                                        }
+                                        try {
+                                            currentWm.updateViewLayout(this@apply, layoutParams)
+                                        } catch (_: Exception) {}
                                     }
+                                },
+                                onExpandToFullScreen = {
                                     try {
-                                        currentWm.updateViewLayout(this@apply, layoutParams)
-                                    } catch (_: Exception) {}
+                                        // FIXED: Align intent extras with MainActivity contracts
+                                        val intent = Intent(context, MainActivity::class.java).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                            putExtra("SHOW_CALL_SCREEN", true)
+                                            putExtra("EXTRA_NAVIGATE_TO_INCALL", true)
+                                            putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(context))
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        // Background activity launches may be blocked; the call
+                                        // notification remains the reliable route.
+                                    } finally {
+                                        hideOverlay(context)
+                                    }
+                                },
+                                onHangUp = {
+                                    // Scope the action to the call that was on screen.
+                                    CallManager.disconnectById(current.callId)
+                                    hideOverlay(context)
                                 }
-                            },
-                            onExpandToFullScreen = {
-                                // FIXED: Align intent extras with MainActivity contracts
-                                val intent = Intent(context, MainActivity::class.java).apply {
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                    putExtra("SHOW_CALL_SCREEN", true)
-                                    putExtra("EXTRA_NAVIGATE_TO_INCALL", true)
-                                    putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(context))
-                                }
-                                context.startActivity(intent)
-                                hideOverlay(context)
-                            },
-                            onHangUp = {
-                                CallManager.disconnect()
-                                hideOverlay(context)
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -233,8 +288,11 @@ object DynamicIslandOverlayManager {
             overlayComposeView = composeView
             wm.addView(composeView, layoutParams)
         } catch (_: Exception) {
-            overlayComposeView = null
+            // The overlay permission can be revoked between canDrawOverlay() and addView().
+            // Never leak the ComposeView or its lifecycle owner in that case.
+            overlayLifecycleOwner?.onDestroy()
             overlayLifecycleOwner = null
+            overlayComposeView = null
         }
     }
 

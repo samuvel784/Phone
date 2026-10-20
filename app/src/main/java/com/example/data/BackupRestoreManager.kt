@@ -20,6 +20,7 @@ package com.example.data
 import android.content.Context
 import android.net.Uri
 import android.util.Base64
+import androidx.room.withTransaction
 import com.example.DialerRepository
 import com.example.model.*
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +42,99 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 object BackupRestoreManager {
+
+    // =====================================================================================
+    // Backup container format
+    //
+    // Exported files are a small, documented text container:
+    //
+    //     NOVABACKUP1\n
+    //     <Base64( salt[16] || iv[12] || AES-256-GCM ciphertext )>
+    //
+    // The first line is a human- and machine-recognisable marker. It is also fed to AES-GCM as
+    // Additional Authenticated Data, so the marker cannot be swapped or edited without the
+    // decryption failing the authentication tag. Older backups (no header, raw Base64) are still
+    // accepted for backward compatibility.
+    // =====================================================================================
+
+    /** Marker at the start of the current encrypted container. */
+    const val ENVELOPE_MAGIC = "NOVABACKUP"
+
+    /** Version of the outer container. Bump only for structural file-format changes. */
+    const val ENVELOPE_VERSION = 1
+
+    /** Value written to the payload `format` field, so a foreign JSON file can be rejected. */
+    const val PAYLOAD_FORMAT = "novadial.backup"
+
+    /** Version of the encrypted JSON payload. Bump when the payload shape changes. */
+    const val PAYLOAD_VERSION = 4
+
+    /** Rejects absurdly large imports before any parsing or crypto work happens. */
+    private const val MAX_BACKUP_CHARS = 20_000_000
+
+    /** Minimum accepted backup password length (also enforced by the UI). */
+    const val MIN_PASSWORD_LENGTH = 8
+
+    /**
+     * What a file looks like before we touch any application data.
+     *
+     * The UI uses this to decide whether to ask for a password (encrypted) or to show an explicit
+     * "this file is not encrypted" warning (legacy plaintext JSON).
+     */
+    enum class BackupKind {
+        /** Current encrypted container (has the [ENVELOPE_MAGIC] header). */
+        ENCRYPTED,
+
+        /** Older encrypted backup: raw Base64 with no header. Still decrypted for compatibility. */
+        LEGACY_ENCRYPTED,
+
+        /** Legacy plaintext JSON. Must never be imported without an explicit user warning. */
+        LEGACY_PLAINTEXT_JSON,
+
+        /** Not recognisable as any supported backup. */
+        UNKNOWN
+    }
+
+    /** Classifies an imported file without decrypting or modifying anything. */
+    fun classify(rawData: String): BackupKind {
+        val trimmed = rawData.trim()
+        if (trimmed.isEmpty()) return BackupKind.UNKNOWN
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) return BackupKind.LEGACY_PLAINTEXT_JSON
+        if (trimmed.startsWith(ENVELOPE_MAGIC)) return BackupKind.ENCRYPTED
+
+        // Older encrypted backups are a single Base64 blob with no marker. Treat anything that
+        // looks like a long Base64 string as legacy-encrypted so the user is asked for a password
+        // rather than being told the file is invalid.
+        val compact = trimmed.filterNot { it.isWhitespace() }
+        if (compact.length >= 40 && compact.all { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' }) {
+            return BackupKind.LEGACY_ENCRYPTED
+        }
+        return BackupKind.UNKNOWN
+    }
+
+    /** True when [rawData] is a legacy (unencrypted) JSON backup. */
+    fun isLegacyPlaintextJson(rawData: String): Boolean =
+        classify(rawData) == BackupKind.LEGACY_PLAINTEXT_JSON
+
+    /** Distinct, user-explainable reasons an import can fail. */
+    enum class BackupError {
+        EMPTY_FILE,
+        TOO_LARGE,
+        NOT_A_BACKUP,
+        PASSWORD_REQUIRED,
+        WRONG_PASSWORD_OR_DAMAGED,
+        UNSUPPORTED_VERSION,
+        INVALID_PAYLOAD
+    }
+
+    /** Outcome of an import. [Success] carries per-category restored row counts. */
+    sealed interface ImportResult {
+        data class Success(val restored: Map<String, Int>) : ImportResult
+        data class Failure(val error: BackupError) : ImportResult
+    }
+
+    /** Internal signal for a structurally wrong container (wrong marker / unsupported version). */
+    private class BackupFormatException(val error: BackupError) : Exception(error.name)
 
     suspend fun writeTextToUri(context: Context, uri: Uri, content: String): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -120,14 +214,15 @@ object BackupRestoreManager {
         // A backup contains phone numbers, names, notes and call history. Never write it in
         // plaintext: require a real password so the file is encrypted at rest and in transit
         // (for example when the user saves it to cloud storage).
-        require(password.length >= 8) {
-            "A backup password of at least 8 characters is required."
+        require(password.length >= MIN_PASSWORD_LENGTH) {
+            "A backup password of at least $MIN_PASSWORD_LENGTH characters is required."
         }
 
         val dao = AppDatabase.getDatabase(context).dialerDao()
 
         val json = JSONObject().apply {
-            put("version", 3)
+            put("format", PAYLOAD_FORMAT)
+            put("version", PAYLOAD_VERSION)
             put("timestamp", System.currentTimeMillis())
 
             put("contacts", JSONArray().apply {
@@ -246,8 +341,11 @@ object BackupRestoreManager {
                 dao.getAllRemindersList().forEach {
                     put(JSONObject().apply {
                         put("number", it.number)
-                        put("contactName", it.contactName)
+                        put("contactName", it.name)
                         put("reminderTime", it.reminderTime)
+                        // Restoring the completion flag avoids resurrecting finished reminders as
+                        // active ones. Older readers simply ignore this additive field.
+                        put("isCompleted", it.isCompleted)
                         put("note", it.note)
                     })
                 }
@@ -255,178 +353,323 @@ object BackupRestoreManager {
         }
 
         val jsonString = json.toString(2)
-        encryptData(jsonString, password)
+        val header = "$ENVELOPE_MAGIC$ENVELOPE_VERSION"
+        // The header is authenticated (AAD) so a tampered marker fails the GCM tag check.
+        val payload = encryptData(jsonString, password, header.toByteArray(Charsets.UTF_8))
+        "$header\n$payload"
     }
 
-    suspend fun importBackup(context: Context, rawData: String, password: String = ""): Boolean = withContext(Dispatchers.IO) {
-        val dao = AppDatabase.getDatabase(context).dialerDao()
-        try {
-            val jsonString = if (password.isNotBlank()) {
-                decryptData(rawData, password)
-            } else {
-                if (rawData.trim().startsWith("{")) rawData else decryptData(rawData, password)
-            }
+    suspend fun importBackup(context: Context, rawData: String, password: String = ""): Boolean =
+        importBackupResult(context, rawData, password) is ImportResult.Success
 
-            val json = JSONObject(jsonString)
+    /**
+     * Imports a backup with strict validation and atomic application.
+     *
+     * Order of operations, chosen so that a bad file can never half-modify the database:
+     *  1. size guard, then classify the container (encrypted / legacy plaintext / legacy encrypted);
+     *  2. decrypt, which authenticates the whole payload with the AES-GCM tag (a wrong password or
+     *     a damaged byte both fail here and leave the database untouched);
+     *  3. validate the payload `format`/`version` header;
+     *  4. parse every record into memory (any malformed record, or a repeated primary key, aborts
+     *     the import);
+     *  5. apply all rows inside a single Room transaction.
+     *
+     * Restore **merges** with existing data. Rows with a stable identity are written with
+     * `OnConflictStrategy.REPLACE` (contacts, call history, blocked/spam numbers, speed dials,
+     * settings), so the backup copy wins for the same key and unbacked-up rows are kept. Three
+     * tables use generated ids, so they are merged by an exact-identity check instead:
+     *  - quick responses by their exact message text,
+     *  - call notes by (number, note, lastUpdated),
+     *  - reminders by (number, reminderTime, note), never downgrading a completed reminder.
+     * Importing the same file repeatedly therefore does not create duplicates. Call history from a
+     * hypothetical id-less legacy file (never produced by this app) is the one remaining case where
+     * content-based dedupe would be guesswork, so those rows are preserved as-is.
+     */
+    suspend fun importBackupResult(
+        context: Context,
+        rawData: String,
+        password: String = ""
+    ): ImportResult = withContext(Dispatchers.IO) {
+        if (rawData.length > MAX_BACKUP_CHARS) return@withContext ImportResult.Failure(BackupError.TOO_LARGE)
 
-            json.optJSONArray("contacts")?.let { arr ->
-                val contacts = mutableListOf<Contact>()
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    val numbers = mutableListOf<LabeledNumber>()
-                    obj.optJSONArray("numbers")?.let { numberArray ->
-                        for (n in 0 until numberArray.length()) {
-                            val numberObj = numberArray.getJSONObject(n)
-                            numbers.add(
-                                LabeledNumber(
-                                    number = numberObj.optString("number", ""),
-                                    label = numberObj.optString("label", "Mobile"),
-                                    isPrimary = numberObj.optBoolean("isPrimary", false)
-                                )
-                            )
-                        }
-                    }
-                    val emails = mutableListOf<LabeledEmail>()
-                    obj.optJSONArray("emails")?.let { emailArray ->
-                        for (e in 0 until emailArray.length()) {
-                            val emailObj = emailArray.getJSONObject(e)
-                            emails.add(
-                                LabeledEmail(
-                                    email = emailObj.optString("email", ""),
-                                    label = emailObj.optString("label", "Home")
-                                )
-                            )
-                        }
-                    }
-                    val addresses = mutableListOf<LabeledAddress>()
-                    obj.optJSONArray("addresses")?.let { addressArray ->
-                        for (a in 0 until addressArray.length()) {
-                            val addressObj = addressArray.getJSONObject(a)
-                            addresses.add(
-                                LabeledAddress(
-                                    address = addressObj.optString("address", ""),
-                                    label = addressObj.optString("label", "Home")
-                                )
-                            )
-                        }
-                    }
-                    contacts.add(
-                        Contact(
-                            id = obj.optLong("id", 0L),
-                            rawContactId = obj.optLong("rawContactId", 0L),
-                            contactId = obj.optLong("contactId", 0L),
-                            number = obj.optString("number", ""),
-                            name = obj.optString("name", ""),
-                            label = obj.optString("label", ""),
-                            favorite = obj.optBoolean("favorite", false),
-                            avatarText = obj.optString("avatarText", ""),
-                            avatarBgValue = obj.optLong("avatarBgValue", 0L),
-                            avatarTextColorValue = obj.optLong("avatarTextColorValue", 0L),
-                            t9Mapping = obj.optString("t9Mapping", ""),
-                            email = obj.optString("email", ""),
-                            photoUri = obj.optString("photoUri", ""),
-                            accountName = obj.optString("accountName", ""),
-                            accountType = obj.optString("accountType", ""),
-                            numbers = numbers,
-                            emails = emails,
-                            addresses = addresses,
-                            note = obj.optString("note", "")
-                        )
-                    )
+        val trimmed = rawData.trim()
+        if (trimmed.isEmpty()) return@withContext ImportResult.Failure(BackupError.EMPTY_FILE)
+
+        // 1-2. Decode and authenticate the container before anything else.
+        val jsonString: String = try {
+            when (classify(trimmed)) {
+                BackupKind.LEGACY_PLAINTEXT_JSON -> trimmed
+                BackupKind.ENCRYPTED -> {
+                    if (password.isBlank()) return@withContext ImportResult.Failure(BackupError.PASSWORD_REQUIRED)
+                    decryptEnvelope(trimmed, password)
                 }
-                if (contacts.isNotEmpty()) dao.insertContacts(contacts)
-            }
-
-            json.optJSONArray("call_history")?.let { arr ->
-                val calls = mutableListOf<CallRecord>()
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    val type = try {
-                        CallType.valueOf(obj.optString("type", CallType.INCOMING.name))
-                    } catch (_: Exception) {
-                        CallType.INCOMING
-                    }
-                    calls.add(
-                        CallRecord(
-                            id = obj.optInt("id", 0),
-                            name = obj.optString("name", ""),
-                            number = obj.optString("number", ""),
-                            label = obj.optString("label", ""),
-                            timestamp = obj.optString("timestamp", ""),
-                            type = type,
-                            avatarText = obj.optString("avatarText", ""),
-                            avatarBgValue = obj.optLong("avatarBgValue", 0L),
-                            avatarTextColorValue = obj.optLong("avatarTextColorValue", 0L),
-                            duration = obj.optLong("duration", 0L),
-                            hasVoicemail = obj.optBoolean("hasVoicemail", false),
-                            photoUri = obj.optString("photoUri", ""),
-                            timestampMs = obj.optLong("timestampMs", 0L),
-                            isVerified = obj.optBoolean("isVerified", false),
-                            simSlot = obj.optInt("simSlot", 1)
-                        )
-                    )
+                BackupKind.LEGACY_ENCRYPTED -> {
+                    if (password.isBlank()) return@withContext ImportResult.Failure(BackupError.PASSWORD_REQUIRED)
+                    decryptData(trimmed, password)
                 }
-                if (calls.isNotEmpty()) dao.insertCallLogs(calls)
+                BackupKind.UNKNOWN -> return@withContext ImportResult.Failure(BackupError.NOT_A_BACKUP)
             }
-
-            json.optJSONArray("blocked_numbers")?.let { arr ->
-                for (i in 0 until arr.length()) dao.insertBlockedNumber(BlockedNumber(arr.getString(i)))
-            }
-
-            json.optJSONArray("speed_dial")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    dao.insertSpeedDial(SpeedDial(obj.getInt("key"), obj.getString("number"), obj.getString("name")))
-                }
-            }
-
-            json.optJSONArray("quick_responses")?.let { arr ->
-                for (i in 0 until arr.length()) dao.insertQuickResponse(QuickResponse(message = arr.getString(i)))
-            }
-
-            json.optJSONArray("app_settings")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    dao.insertSetting(AppSetting(obj.getString("key"), obj.getString("value")))
-                }
-            }
-
-            json.optJSONArray("call_notes")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    dao.insertCallNote(
-                        CallNote(
-                            number = obj.getString("number"),
-                            note = obj.getString("note"),
-                            lastUpdated = obj.optLong("lastUpdated", System.currentTimeMillis())
-                        )
-                    )
-                }
-            }
-
-            json.optJSONArray("spam_numbers")?.let { arr ->
-                val spamList = mutableListOf<SpamNumber>()
-                for (i in 0 until arr.length()) spamList.add(SpamNumber(arr.getString(i)))
-                dao.insertSpamNumbers(spamList)
-            }
-
-            json.optJSONArray("call_reminders")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    dao.insertReminder(
-                        CallReminder(
-                            number = obj.getString("number"),
-                            name = obj.optString("contactName", ""),
-                            reminderTime = obj.getLong("reminderTime"),
-                            note = obj.optString("note", "")
-                        )
-                    )
-                }
-            }
-            true
+        } catch (e: BackupFormatException) {
+            return@withContext ImportResult.Failure(e.error)
         } catch (_: Exception) {
-            false
+            // AES-GCM cannot tell a wrong password from a damaged file; both fail the tag check.
+            return@withContext ImportResult.Failure(BackupError.WRONG_PASSWORD_OR_DAMAGED)
         }
+
+        // 3. Validate the payload header.
+        val json = try {
+            JSONObject(jsonString)
+        } catch (_: Exception) {
+            return@withContext ImportResult.Failure(BackupError.INVALID_PAYLOAD)
+        }
+        val version = json.optInt("version", -1)
+        if (version < 0) return@withContext ImportResult.Failure(BackupError.INVALID_PAYLOAD)
+        if (version > PAYLOAD_VERSION) return@withContext ImportResult.Failure(BackupError.UNSUPPORTED_VERSION)
+        val format = json.optString("format", "")
+        if (format.isNotEmpty() && format != PAYLOAD_FORMAT) {
+            return@withContext ImportResult.Failure(BackupError.INVALID_PAYLOAD)
+        }
+
+        // 4. Parse the whole payload in memory. A malformed record must abort before any write.
+        val parsed = try {
+            parsePayload(json)
+        } catch (_: Exception) {
+            return@withContext ImportResult.Failure(BackupError.INVALID_PAYLOAD)
+        }
+
+        // 5. Commit atomically.
+        val db = AppDatabase.getDatabase(context)
+        val dao = db.dialerDao()
+        try {
+            db.withTransaction {
+                if (parsed.contacts.isNotEmpty()) dao.insertContacts(parsed.contacts)
+                if (parsed.calls.isNotEmpty()) dao.insertCallLogs(parsed.calls)
+                parsed.blocked.forEach { dao.insertBlockedNumber(it) }
+                parsed.speedDial.forEach { dao.insertSpeedDial(it) }
+                parsed.quickResponses.forEach { response ->
+                    if (dao.countQuickResponseWithMessage(response.message) == 0) {
+                        dao.insertQuickResponse(response)
+                    }
+                }
+                parsed.settings.forEach { dao.insertSetting(it) }
+                parsed.notes.forEach { note ->
+                    if (dao.countCallNoteExact(note.number, note.note, note.lastUpdated) == 0) {
+                        dao.insertCallNote(note)
+                    }
+                }
+                parsed.spam.forEach { dao.insertSpamNumber(it) }
+                parsed.reminders.forEach { reminder ->
+                    if (dao.countReminderExact(reminder.number, reminder.reminderTime, reminder.note) == 0) {
+                        dao.insertReminder(reminder)
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            return@withContext ImportResult.Failure(BackupError.INVALID_PAYLOAD)
+        }
+
+        ImportResult.Success(
+            mapOf(
+                "contacts" to parsed.contacts.size,
+                "call_history" to parsed.calls.size,
+                "blocked_numbers" to parsed.blocked.size,
+                "speed_dial" to parsed.speedDial.size,
+                "quick_responses" to parsed.quickResponses.size,
+                "app_settings" to parsed.settings.size,
+                "call_notes" to parsed.notes.size,
+                "spam_numbers" to parsed.spam.size,
+                "call_reminders" to parsed.reminders.size
+            )
+        )
+    }
+
+    /** Fully-parsed backup payload. Built in memory so a partial file never reaches the database. */
+    private class ParsedBackup(
+        val contacts: List<Contact>,
+        val calls: List<CallRecord>,
+        val blocked: List<BlockedNumber>,
+        val speedDial: List<SpeedDial>,
+        val quickResponses: List<QuickResponse>,
+        val settings: List<AppSetting>,
+        val notes: List<CallNote>,
+        val spam: List<SpamNumber>,
+        val reminders: List<CallReminder>
+    )
+
+    /** Parses every supported section of the payload. Any missing required field throws. */
+    private fun parsePayload(json: JSONObject): ParsedBackup {
+        val contacts = mutableListOf<Contact>()
+        json.optJSONArray("contacts")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val numbers = mutableListOf<LabeledNumber>()
+                obj.optJSONArray("numbers")?.let { numberArray ->
+                    for (n in 0 until numberArray.length()) {
+                        val numberObj = numberArray.getJSONObject(n)
+                        numbers.add(
+                            LabeledNumber(
+                                number = numberObj.optString("number", ""),
+                                label = numberObj.optString("label", "Mobile"),
+                                isPrimary = numberObj.optBoolean("isPrimary", false)
+                            )
+                        )
+                    }
+                }
+                val emails = mutableListOf<LabeledEmail>()
+                obj.optJSONArray("emails")?.let { emailArray ->
+                    for (e in 0 until emailArray.length()) {
+                        val emailObj = emailArray.getJSONObject(e)
+                        emails.add(
+                            LabeledEmail(
+                                email = emailObj.optString("email", ""),
+                                label = emailObj.optString("label", "Home")
+                            )
+                        )
+                    }
+                }
+                val addresses = mutableListOf<LabeledAddress>()
+                obj.optJSONArray("addresses")?.let { addressArray ->
+                    for (a in 0 until addressArray.length()) {
+                        val addressObj = addressArray.getJSONObject(a)
+                        addresses.add(
+                            LabeledAddress(
+                                address = addressObj.optString("address", ""),
+                                label = addressObj.optString("label", "Home")
+                            )
+                        )
+                    }
+                }
+                contacts.add(
+                    Contact(
+                        id = obj.optLong("id", 0L),
+                        rawContactId = obj.optLong("rawContactId", 0L),
+                        contactId = obj.optLong("contactId", 0L),
+                        number = obj.optString("number", ""),
+                        name = obj.optString("name", ""),
+                        label = obj.optString("label", ""),
+                        favorite = obj.optBoolean("favorite", false),
+                        avatarText = obj.optString("avatarText", ""),
+                        avatarBgValue = obj.optLong("avatarBgValue", 0L),
+                        avatarTextColorValue = obj.optLong("avatarTextColorValue", 0L),
+                        t9Mapping = obj.optString("t9Mapping", ""),
+                        email = obj.optString("email", ""),
+                        photoUri = obj.optString("photoUri", ""),
+                        accountName = obj.optString("accountName", ""),
+                        accountType = obj.optString("accountType", ""),
+                        numbers = numbers,
+                        emails = emails,
+                        addresses = addresses,
+                        note = obj.optString("note", "")
+                    )
+                )
+            }
+        }
+
+        // Contacts are identified by their primary key. A payload that repeats an id would make
+        // REPLACE silently overwrite one contact with another, so reject it instead of losing data.
+        if (contacts.map { it.id }.toSet().size != contacts.size) {
+            throw IllegalArgumentException("Duplicate contact ids in backup")
+        }
+
+        val calls = mutableListOf<CallRecord>()
+        json.optJSONArray("call_history")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val type = try {
+                    CallType.valueOf(obj.optString("type", CallType.INCOMING.name))
+                } catch (_: Exception) {
+                    CallType.INCOMING
+                }
+                calls.add(
+                    CallRecord(
+                        id = obj.optInt("id", 0),
+                        name = obj.optString("name", ""),
+                        number = obj.optString("number", ""),
+                        label = obj.optString("label", ""),
+                        timestamp = obj.optString("timestamp", ""),
+                        type = type,
+                        avatarText = obj.optString("avatarText", ""),
+                        avatarBgValue = obj.optLong("avatarBgValue", 0L),
+                        avatarTextColorValue = obj.optLong("avatarTextColorValue", 0L),
+                        duration = obj.optLong("duration", 0L),
+                        hasVoicemail = obj.optBoolean("hasVoicemail", false),
+                        photoUri = obj.optString("photoUri", ""),
+                        timestampMs = obj.optLong("timestampMs", 0L),
+                        isVerified = obj.optBoolean("isVerified", false),
+                        simSlot = obj.optInt("simSlot", 1)
+                    )
+                )
+            }
+        }
+
+        // Same reasoning for call history: two records with one id cannot both survive a REPLACE.
+        if (calls.map { it.id }.toSet().size != calls.size) {
+            throw IllegalArgumentException("Duplicate call ids in backup")
+        }
+
+        val blocked = mutableListOf<BlockedNumber>()
+        json.optJSONArray("blocked_numbers")?.let { arr ->
+            for (i in 0 until arr.length()) blocked.add(BlockedNumber(arr.getString(i)))
+        }
+
+        val speedDial = mutableListOf<SpeedDial>()
+        json.optJSONArray("speed_dial")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                speedDial.add(SpeedDial(obj.getInt("key"), obj.getString("number"), obj.getString("name")))
+            }
+        }
+
+        val quickResponses = mutableListOf<QuickResponse>()
+        json.optJSONArray("quick_responses")?.let { arr ->
+            for (i in 0 until arr.length()) quickResponses.add(QuickResponse(message = arr.getString(i)))
+        }
+
+        val settings = mutableListOf<AppSetting>()
+        json.optJSONArray("app_settings")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                settings.add(AppSetting(obj.getString("key"), obj.getString("value")))
+            }
+        }
+
+        val notes = mutableListOf<CallNote>()
+        json.optJSONArray("call_notes")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                notes.add(
+                    CallNote(
+                        number = obj.getString("number"),
+                        note = obj.getString("note"),
+                        lastUpdated = obj.optLong("lastUpdated", System.currentTimeMillis())
+                    )
+                )
+            }
+        }
+
+        val spam = mutableListOf<SpamNumber>()
+        json.optJSONArray("spam_numbers")?.let { arr ->
+            for (i in 0 until arr.length()) spam.add(SpamNumber(arr.getString(i)))
+        }
+
+        val reminders = mutableListOf<CallReminder>()
+        json.optJSONArray("call_reminders")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                reminders.add(
+                    CallReminder(
+                        number = obj.getString("number"),
+                        name = obj.optString("contactName", ""),
+                        reminderTime = obj.getLong("reminderTime"),
+                        // Absent in backups written before this field was added.
+                        isCompleted = obj.optBoolean("isCompleted", false),
+                        note = obj.optString("note", "")
+                    )
+                )
+            }
+        }
+
+        return ParsedBackup(contacts, calls, blocked, speedDial, quickResponses, settings, notes, spam, reminders)
     }
 
     suspend fun exportContactsToVcf(context: Context): String = withContext(Dispatchers.IO) {
@@ -591,7 +834,7 @@ object BackupRestoreManager {
         }
     }
 
-    private fun encryptData(plainText: String, password: String): String {
+    private fun encryptData(plainText: String, password: String, aad: ByteArray? = null): String {
         val random = SecureRandom()
         val salt = ByteArray(16).also { random.nextBytes(it) }
         val iv = ByteArray(12).also { random.nextBytes(it) }
@@ -599,6 +842,8 @@ object BackupRestoreManager {
         val key = deriveKey(password, salt, 250000)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(128, iv))
+        // Binding the container header as AAD means a tampered marker fails authentication.
+        if (aad != null) cipher.updateAAD(aad)
 
         val encrypted = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
         val combined = ByteArray(salt.size + iv.size + encrypted.size)
@@ -610,7 +855,21 @@ object BackupRestoreManager {
         return Base64.encodeToString(combined, Base64.NO_WRAP)
     }
 
-    private fun decryptData(cipherText: String, password: String): String {
+    /**
+     * Parses the `NOVABACKUP<version>` container header and decrypts the Base64 body, using the
+     * exact header string as AEAD associated data.
+     */
+    private fun decryptEnvelope(text: String, password: String): String {
+        val newline = text.indexOf('\n')
+        val header = (if (newline >= 0) text.substring(0, newline) else text).trim()
+        val body = if (newline >= 0) text.substring(newline + 1).trim() else ""
+        val expected = "$ENVELOPE_MAGIC$ENVELOPE_VERSION"
+        if (header != expected) throw BackupFormatException(BackupError.UNSUPPORTED_VERSION)
+        if (body.isEmpty()) throw BackupFormatException(BackupError.NOT_A_BACKUP)
+        return decryptData(body, password, header.toByteArray(Charsets.UTF_8))
+    }
+
+    private fun decryptData(cipherText: String, password: String, aad: ByteArray? = null): String {
         val combined = Base64.decode(cipherText, Base64.DEFAULT)
         if (combined.size < 28) throw IllegalArgumentException("Corrupt backup payload")
 
@@ -626,8 +885,12 @@ object BackupRestoreManager {
             val key = deriveKey(password, salt, 250000)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
+            if (aad != null) cipher.updateAAD(aad)
             String(cipher.doFinal(encrypted), Charsets.UTF_8)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // The current container always uses 250k iterations; only pre-header backups may have
+            // used the older 10k iteration count, so never silently weaken a modern backup.
+            if (aad != null) throw e
             val legacyKey = deriveKey(password, salt, 10000)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, legacyKey, GCMParameterSpec(128, iv))

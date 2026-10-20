@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -11,13 +11,13 @@ import java.security.SecureRandom
 import androidx.core.content.edit
 
 /**
- * A per-install secret used to authenticate intents that ask NovaDial to perform a
+ * A per-install secret used to authenticate intents that ask Nova Dialer to perform a
  * sensitive action (answer a call, open the answer screen).
  *
  * MainActivity is exported (it must be, to handle DIAL/VIEW tel: intents). That means
  * any installed app can send it explicit intents. The token is kept in a private
  * SharedPreferences file that only this app can read, so a third-party app cannot
- * forge it. NovaDial adds the token to its own notifications and pending intents.
+ * forge it. Nova Dialer adds the token to its own notifications and pending intents.
  */
 object IntentGuard {
 

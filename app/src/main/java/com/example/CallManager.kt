@@ -10,7 +10,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.telecom.Call
 import android.telecom.CallAudioState
@@ -19,7 +18,6 @@ import android.telecom.TelecomManager
 import android.telecom.VideoProfile
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import com.example.data.AppDatabase
 import com.example.model.AppSetting
 import com.example.model.CallRecording
@@ -33,13 +31,13 @@ import com.example.telecom.MultiCallUiState
 import com.example.ui.components.getCurrentLocale
 import com.example.util.CallAudioHelper
 import com.example.util.CallAudioRecorder
-import com.example.util.CallScreenPermissionHelper
 import com.example.util.RecordingCrypto
 import com.example.util.MultiSimManager
 import com.example.util.PhoneNumberCompat
 import com.example.util.RecordingFeedbackHelper
 import com.example.util.SimCallTracker
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -48,6 +46,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import androidx.core.net.toUri
@@ -79,6 +79,19 @@ object CallManager {
     private var lastPlacedNumber: String = ""
     @Volatile
     private var lastPlacedAtMs: Long = 0L
+
+    /** Smallest file that can contain a usable AAC frame; shorter files are failed recordings. */
+    private const val MIN_VALID_RECORDING_BYTES = 1024L
+
+    /**
+     * All stop paths (UI, notification, call-end, service destruction) converge on this lock.
+     * A single job finalises the file, so an in-flight encryption can never be duplicated and
+     * a second stop cannot insert a second database row.
+     */
+    private val recordingFinalizationLock = Any()
+    private var recordingFinalizationJob: Job? = null
+    private var lastFinalizedRecordingPath: String? = null
+    private var recordingCallId: Long = -1L
 
     private val _isAppInForeground = MutableStateFlow(false)
     val isAppInForeground: StateFlow<Boolean> = _isAppInForeground.asStateFlow()
@@ -215,6 +228,10 @@ object CallManager {
     @Volatile
     var appContext: Context? = null
 
+    // The live InCallService also implements Context (via Service). It is the process-scoped
+    // Telecom service, is always cleared in onDestroy(), and never outlives the process, so the
+    // static reference is intentional and bounded rather than a leaked Activity.
+    @SuppressLint("StaticFieldLeak")
     var inCallService: InCallService? = null
         set(value) {
             field = value
@@ -344,7 +361,7 @@ object CallManager {
         _availableEndpoints.value = endpoints
         val summary = endpoints.joinToString { it.route.name }
         if (lastEndpointsLog.getAndSet(summary) != summary) {
-            android.util.Log.i("NovaDialAudio", "available call endpoints: [$summary]")
+            android.util.Log.i("Nova Dialer Audio", "available call endpoints: [$summary]")
         }
         recomputeRouteState()
     }
@@ -402,12 +419,12 @@ object CallManager {
         val state = _routeState.value
         if (target == AudioRoute.UNKNOWN) return false
         if (!state.isAvailable(target)) {
-            android.util.Log.i("NovaDialAudio", "route ${target.name} not available: ${state.availableRoutes}")
+            android.util.Log.i("Nova Dialer Audio", "route ${target.name} not available: ${state.availableRoutes}")
             return false
         }
         val controller = routeController
         if (controller == null) {
-            android.util.Log.i("NovaDialAudio", "no route controller bound yet; ignoring ${target.name}")
+            android.util.Log.i("Nova Dialer Audio", "no route controller bound yet; ignoring ${target.name}")
             return false
         }
         return controller.requestRoute(target)
@@ -445,6 +462,7 @@ object CallManager {
     }
 
     fun removeCall(call: Call) {
+        val removedCallId = callId(call)
         if (call in _calls.value) {
             _calls.value = _calls.value - call
             call.unregisterCallback(callCallback)
@@ -460,7 +478,7 @@ object CallManager {
             }
         }
         notifyCallsChanged()
-        if (_currentCall.value == call) {
+        if (_currentCall.value == call || recordingCallId == removedCallId) {
             autoStopRecordingIfNeeded()
         }
         if (_waitingCall.value == call) {
@@ -504,7 +522,7 @@ object CallManager {
                 _activeStartTimestamp.value = 0L
             }
 
-            // NOTE: NovaDial deliberately does NOT call unhold() here.
+            // NOTE: Nova Dialer deliberately does NOT call unhold() here.
             // When the second call of a swap ends, Telecom restores the remaining call itself.
             // Silently unholding a call the platform put on hold fights Telecom for control and
             // caused the "original call was taken off hold" / "unrelated call hung up" reports.
@@ -621,70 +639,184 @@ object CallManager {
         }
     }
 
+    /** Outcome of the one authoritative recording finalizer. */
+    enum class RecordingSaveStatus {
+        /** File validated, encrypted and recorded in the vault. */
+        SAVED_ENCRYPTED,
+
+        /** File validated and recorded, but encryption failed. Never reported as success. */
+        SAVED_UNENCRYPTED,
+
+        /** The recorder produced no usable audio. */
+        NO_AUDIO,
+
+        /** Database/IO failure; the original file is kept for recovery. */
+        FAILED
+    }
+
+    data class RecordingSaveResult(
+        val status: RecordingSaveStatus,
+        val filePath: String? = null
+    )
+
+    /** Starts the call-owned recording session. UI, notification and auto-record all use this. */
+    fun startCallRecording(context: Context): Boolean {
+        if (CallAudioRecorder.isRecording.value) return false
+        val ctx = context.applicationContext
+        val prefs = ctx.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
+        val chime = prefs.getBoolean("recording_chime_enabled", false)
+        val autoTune = prefs.getBoolean("auto_tune_recording_volume", true)
+
+        RecordingFeedbackHelper.triggerRecordingStartFeedback(ctx, chime)
+        if (autoTune) {
+            try { CallAudioHelper.prepareSpeakerForRecording(ctx, inCallService, _audioState.value) } catch (_: Exception) {}
+        }
+
+        val started = CallAudioRecorder.startRecording(ctx, _callerNumber.value.ifEmpty { "Unknown" })
+        if (started) {
+            recordingCallId = _currentCall.value?.let { callId(it) } ?: -1L
+        } else if (autoTune) {
+            // Starting failed: do not leave the speaker tuned for a recording that is not running.
+            try { CallAudioHelper.restoreAudioState(ctx, inCallService) } catch (_: Exception) {}
+        }
+        return started
+    }
+
     fun autoStartRecordingIfNeeded() {
         if (CallAudioRecorder.isRecording.value) return
         val ctx = appContext ?: inCallService?.applicationContext ?: return
         val prefs = ctx.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
         if (prefs.getBoolean("is_auto_record_calls_enabled", false)) {
-            val chime = prefs.getBoolean("recording_chime_enabled", false)
-            val autoTune = prefs.getBoolean("auto_tune_recording_volume", true)
-            RecordingFeedbackHelper.triggerRecordingStartFeedback(ctx, chime)
-            if (autoTune) CallAudioHelper.prepareSpeakerForRecording(ctx, inCallService, _audioState.value)
-            CallAudioRecorder.startRecording(ctx, _callerNumber.value.ifEmpty { "Unknown" })
+            startCallRecording(ctx)
         }
     }
 
-    fun autoStopRecordingIfNeeded(context: Context? = null): Job? {
+    /**
+     * Stops and finalises the current recording exactly once. Safe to call from the in-call UI
+     * being disposed, the notification action, Telecom call removal and service teardown.
+     */
+    fun stopCallRecording(
+        context: Context? = null,
+        playFeedback: Boolean = false,
+        onComplete: ((RecordingSaveResult) -> Unit)? = null
+    ): Job? {
         val ctx = context?.applicationContext ?: appContext ?: inCallService?.applicationContext ?: return null
-        val result = CallAudioRecorder.stopRecording()
-        CallAudioHelper.restoreAudioState(ctx, inCallService)
+        synchronized(recordingFinalizationLock) {
+            // Duplicate stop requests while a finalisation is running share that same job.
+            // A *new* active recorder must not be blocked by a previous finalisation job.
+            val running = recordingFinalizationJob
+            if (running?.isActive == true && !CallAudioRecorder.isRecording.value) {
+                return running
+            }
 
-        val file = result.file ?: return null
-        if (!file.exists() || file.length() <= 128L) return null
+            if (playFeedback && CallAudioRecorder.isRecording.value) {
+                val prefs = ctx.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
+                RecordingFeedbackHelper.triggerRecordingStopFeedback(
+                    ctx,
+                    prefs.getBoolean("recording_chime_enabled", false)
+                )
+            }
 
-        val durationSec = result.durationSeconds.coerceAtLeast(1L)
-        val number = _callerNumber.value.ifEmpty {
-            result.phoneNumber.ifEmpty {
-                // Legacy files encoded the number in the name; new RECV_ files do not.
-                val legacyName = file.nameWithoutExtension
-                if (legacyName.startsWith("REC_")) {
-                    legacyName.removePrefix("REC_").split("_").firstOrNull()
-                        ?.filter { it.isDigit() }?.ifEmpty { "Unknown" } ?: "Unknown"
-                } else {
-                    "Unknown"
+            val result = CallAudioRecorder.stopRecording()
+            try { CallAudioHelper.restoreAudioState(ctx, inCallService) } catch (_: Exception) {}
+            recordingCallId = -1L
+
+            val file = result.file
+            if (file == null || !file.exists() || file.length() < MIN_VALID_RECORDING_BYTES) {
+                onComplete?.invoke(RecordingSaveResult(RecordingSaveStatus.NO_AUDIO))
+                return null
+            }
+            if (lastFinalizedRecordingPath == file.absolutePath) {
+                return null
+            }
+            lastFinalizedRecordingPath = file.absolutePath
+
+            val durationSec = result.durationSeconds.coerceAtLeast(1L)
+            val number = _callerNumber.value.ifEmpty {
+                result.phoneNumber.ifEmpty {
+                    // Legacy files encoded the number in the name; new RECV_ files do not.
+                    val legacyName = file.nameWithoutExtension
+                    if (legacyName.startsWith("REC_")) {
+                        legacyName.removePrefix("REC_").split("_").firstOrNull()
+                            ?.filter { it.isDigit() }?.ifEmpty { "Unknown" } ?: "Unknown"
+                    } else {
+                        "Unknown"
+                    }
                 }
             }
-        }
-        val name = _callerName.value.ifEmpty { number }
-        val locale = getCurrentLocale(ctx)
-        val timestamp = SimpleDateFormat("MMM d, HH:mm", locale).format(Date())
+            val name = _callerName.value.ifEmpty { number }
+            val timestamp = SimpleDateFormat("MMM d, HH:mm", getCurrentLocale(ctx)).format(Date())
 
-        return scope.launch {
-            try {
-                // Encrypt before the recording path is written to the database. If encryption
-                // fails the original file is preserved and the row still points to it.
-                val secureFile = RecordingCrypto.encryptInPlace(file) ?: file
-                val recording = CallRecording(
-                    number = number,
-                    name = name,
-                    timestamp = timestamp,
-                    duration = durationSec,
-                    filePath = secureFile.absolutePath
-                )
-                val db = AppDatabase.getDatabase(ctx)
-                if (db.dialerDao().getCallRecordingByPath(secureFile.absolutePath) == null) {
-                    db.dialerDao().insertCallRecording(recording)
+            // LAZY guarantees the job is published before it can complete and clear itself.
+            val job = scope.launch(start = CoroutineStart.LAZY) {
+                val outcome = persistCompletedRecording(ctx, file, number, name, timestamp, durationSec)
+                if (onComplete != null) {
+                    withContext(Dispatchers.Main.immediate) { onComplete(outcome) }
                 }
-                val autoExport = db.dialerDao().getSetting("is_auto_export_recordings_enabled")?.toBooleanStrictOrNull() ?: false
+            }
+            recordingFinalizationJob = job
+            job.invokeOnCompletion {
+                CallAudioRecorder.clearLastResult()
+                synchronized(recordingFinalizationLock) {
+                    if (recordingFinalizationJob === job) recordingFinalizationJob = null
+                }
+            }
+            job.start()
+            return job
+        }
+    }
+
+    /** Backwards-compatible call-end hook. All work now goes through [stopCallRecording]. */
+    fun autoStopRecordingIfNeeded(context: Context? = null): Job? = stopCallRecording(context)
+
+    private suspend fun persistCompletedRecording(
+        ctx: Context,
+        file: File,
+        number: String,
+        name: String,
+        timestamp: String,
+        durationSec: Long
+    ): RecordingSaveResult = withContext(Dispatchers.IO) {
+        val secureFile = try {
+            RecordingCrypto.encryptInPlace(file)
+        } catch (_: Exception) {
+            null
+        }
+        val finalFile = secureFile ?: file
+        try {
+            val recording = CallRecording(
+                number = number,
+                name = name,
+                timestamp = timestamp,
+                duration = durationSec,
+                filePath = finalFile.absolutePath
+            )
+            val db = AppDatabase.getDatabase(ctx)
+            if (db.dialerDao().getCallRecordingByPath(finalFile.absolutePath) == null) {
+                db.dialerDao().insertCallRecording(recording)
+            }
+            // Never auto-export a file that could not be encrypted; that would copy plaintext
+            // call audio outside the app's private storage.
+            if (secureFile != null) {
+                val autoExport = db.dialerDao()
+                    .getSetting("is_auto_export_recordings_enabled")
+                    ?.toBooleanStrictOrNull() ?: false
                 if (autoExport) CallAudioRecorder.exportRecordingToPublicDownloads(ctx, secureFile)
-            } catch (_: Exception) {}
+            }
+            RecordingSaveResult(
+                if (secureFile != null) RecordingSaveStatus.SAVED_ENCRYPTED
+                else RecordingSaveStatus.SAVED_UNENCRYPTED,
+                finalFile.absolutePath
+            )
+        } catch (_: Exception) {
+            RecordingSaveResult(RecordingSaveStatus.FAILED, finalFile.absolutePath)
         }
     }
 
     fun mergeCalls(): Boolean {
         val state = _multiCallState.value
         if (!state.canMerge) {
-            android.util.Log.i("NovaDialMultiCall", "merge not supported in phase ${state.phase}")
+            android.util.Log.i("Nova Dialer MultiCall", "merge not supported in phase ${state.phase}")
             return false
         }
         val active = state.primary?.takeIf { it.isActive && !it.isConference }
@@ -726,7 +858,7 @@ object CallManager {
     fun swapCalls(): Boolean {
         val state = _multiCallState.value
         if (!state.canSwap) {
-            android.util.Log.i("NovaDialMultiCall", "swap not supported in phase ${state.phase}")
+            android.util.Log.i("Nova Dialer MultiCall", "swap not supported in phase ${state.phase}")
             return false
         }
         val activeSnapshot = listOfNotNull(state.primary, state.secondary).firstOrNull { it.isActive } ?: return false
@@ -871,14 +1003,6 @@ object CallManager {
     }
 
     /**
-     * Bluetooth toggle. Only dispatches when a Bluetooth *call audio* endpoint is available, so a
-     * paired headset that cannot carry calls never turns the button on.
-     */
-    fun setBluetooth(bluetooth: Boolean) {
-        requestAudioRoute(if (bluetooth) AudioRoute.BLUETOOTH else AudioRoute.EARPIECE)
-    }
-
-    /**
      * Holds or unholds the call the in-call screen is showing, honouring the capabilities
      * Telecom reports for it.
      */
@@ -959,12 +1083,12 @@ object CallManager {
         // immediate second dial that cancels the first.
         val now = System.currentTimeMillis()
         if (trimmed == lastPlacedNumber && now - lastPlacedAtMs < DUPLICATE_CALL_WINDOW_MS) {
-            android.util.Log.i("NovaDialMultiCall", "ignoring duplicate placeCall($trimmed) within window")
+            android.util.Log.i("Nova Dialer MultiCall", "ignoring duplicate placeCall(${com.example.util.LogRedaction.redactPhone(trimmed)}) within window")
             return false
         }
         // The in-call UI only offers Add Call when a second call is allowed; enforce it here too.
         if (_multiCallState.value.liveCallCount >= 2) {
-            android.util.Log.i("NovaDialMultiCall", "refusing placeCall: ${_multiCallState.value.liveCallCount} live calls")
+            android.util.Log.i("Nova Dialer MultiCall", "refusing placeCall: ${_multiCallState.value.liveCallCount} live calls")
             return false
         }
         lastPlacedNumber = trimmed
@@ -1081,33 +1205,15 @@ object CallManager {
 
         call?.disconnect()
 
-        // No ringing call (declined from the dialer UI): send the message directly
-        // when SEND_SMS is granted and the feature is enabled, otherwise hand off
-        // to the SMS app.
+        // A decline-only quick reply (toggle off) must not open an SMS composer.
         val directSmsEnabled = context
             .getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
             .getBoolean("quick_reply_direct_sms", true)
-        // SEND_SMS direct sending is restricted to the default Phone handler. Outside that
-        // role, hand the message to the user's SMS app instead of sending silently.
-        val hasSmsPermission = directSmsEnabled &&
-            CallScreenPermissionHelper.isDefaultDialer(context) &&
-            ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.SEND_SMS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (hasSmsPermission && number.isNotBlank()) {
-            try {
-                val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    context.getSystemService(android.telephony.SmsManager::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    android.telephony.SmsManager.getDefault()
-                }
-                smsManager?.sendTextMessage(number, null, textMessage, null, null)
-                Toast.makeText(context, context.getString(R.string.sms_sent), Toast.LENGTH_SHORT).show()
-                return
-            } catch (_: Exception) {} // fall through to the SMS app
-        }
+        if (!directSmsEnabled) return
 
+        // Nova Dialer is a dialer, not the default SMS handler. Sending silently would require
+        // the restricted SEND_SMS permission, so hand the message to the user's SMS app
+        // (no permission required, no Google Play SMS-policy risk).
         try {
             val intent = Intent(Intent.ACTION_SENDTO, "smsto:$number".toUri()).apply {
                 putExtra("sms_body", textMessage)

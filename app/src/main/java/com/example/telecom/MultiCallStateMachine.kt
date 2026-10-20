@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -48,12 +48,7 @@ data class CallSnapshot(
     /** Call supports being merged into (or split out of) a conference. */
     val supportsMergeConference: Boolean get() = has(Call.Details.CAPABILITY_MERGE_CONFERENCE)
 
-    /** Call supports swapping the active call for a held call inside a conference. */
-    val supportsSwapConference: Boolean get() = has(Call.Details.CAPABILITY_SWAP_CONFERENCE)
-
     val supportsManageConference: Boolean get() = has(Call.Details.CAPABILITY_MANAGE_CONFERENCE)
-
-    val supportsMute: Boolean get() = has(Call.Details.CAPABILITY_MUTE)
 
     private fun has(capability: Int): Boolean = (capabilities and capability) != 0
 }
@@ -128,7 +123,7 @@ data class MultiCallUiState(
  *
  * The call list, call states, capabilities and conferenceable-call information reported by
  * `android.telecom` are the single source of truth. The rules below deliberately mirror what
- * Google's Phone app / AOSP Dialer expose so that NovaDial never offers an action the platform
+ * Google's Phone app / AOSP Dialer expose so that Nova Dialer never offers an action the platform
  * or the carrier cannot perform.
  */
 object MultiCallStateMachine {
@@ -221,7 +216,7 @@ object MultiCallStateMachine {
         call.conferenceableIds.contains(other.id) || call.conferenceableIds.isEmpty()
 
     /**
-     * Foreground call selection, matching how NovaDial tracked calls before: a conference host,
+     * Foreground call selection, matching how Nova Dialer tracked calls before: a conference host,
      * then the connected call, then a call that is still connecting or ringing, then a held call.
      */
     private fun pickPrimary(

@@ -18,6 +18,7 @@
 package com.example.util
 
 import android.content.Context
+import androidx.core.content.edit
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
@@ -57,28 +58,27 @@ object SimCallTracker {
 
         try {
             val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val editor = prefs.edit()
+            prefs.edit {
+                if (clean.isNotEmpty()) {
+                    val hashed = hashNumber(clean)
+                    putInt("sim_${hashed}_$minuteBucket", simSlot)
+                }
+                putInt("sim_time_$timestampMs", simSlot)
+                putLong("sim_ts_$timestampMs", timestampMs)
 
-            if (clean.isNotEmpty()) {
-                val hashed = hashNumber(clean)
-                editor.putInt("sim_${hashed}_$minuteBucket", simSlot)
-            }
-            editor.putInt("sim_time_$timestampMs", simSlot)
-            editor.putLong("sim_ts_$timestampMs", timestampMs)
-
-            // AUTO-PRUNE: Periodically cleans up keys older than 48 hours to keep XML < 10KB
-            val allEntries = prefs.all
-            if (allEntries.size > 80) {
-                val cutoff = System.currentTimeMillis() - MAX_RETENTION_MS
-                for ((key, value) in allEntries) {
-                    if (key.startsWith("sim_ts_") && (value as? Long ?: 0L) < cutoff) {
-                        val ts = key.removePrefix("sim_ts_")
-                        editor.remove(key)
-                        editor.remove("sim_time_$ts")
+                // AUTO-PRUNE: Periodically cleans up keys older than 48 hours to keep XML < 10KB
+                val allEntries = prefs.all
+                if (allEntries.size > 80) {
+                    val cutoff = System.currentTimeMillis() - MAX_RETENTION_MS
+                    for ((key, value) in allEntries) {
+                        if (key.startsWith("sim_ts_") && (value as? Long ?: 0L) < cutoff) {
+                            val ts = key.removePrefix("sim_ts_")
+                            remove(key)
+                            remove("sim_time_$ts")
+                        }
                     }
                 }
             }
-            editor.apply()
         } catch (_: Exception) {}
     }
 

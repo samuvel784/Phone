@@ -29,33 +29,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +64,7 @@ import com.example.ui.theme.LocalAmoledMode
 import com.example.util.CallAudioHelper
 import com.example.util.CallAudioRecorder
 import com.example.util.CallGestureSensorManager
+import com.example.util.RecordingDisclosure
 import com.example.util.RecordingFeedbackHelper
 import com.example.util.RichHapticEngine
 
@@ -90,7 +84,6 @@ fun ActiveCallScreen(
     autoTuneVolume: Boolean = true,
     recordingChimeEnabled: Boolean = false,
     alwaysRecordEnabled: Boolean = false,
-    onSaveRecording: (Long, String) -> Unit = { _, _ -> },
     callNotesEnabled: Boolean = true,
     onSaveNote: (String) -> Unit = {},
     onMinimize: (() -> Unit)? = null,
@@ -122,7 +115,6 @@ fun ActiveCallScreen(
     val multiCallState by CallManager.multiCallState.collectAsStateWithLifecycle()
 
     var isAddCallDialogOpen by remember { mutableStateOf(false) }
-    var recordingStartTime by remember { mutableLongStateOf(0L) }
     var fakeActiveStartTimestamp by remember { mutableLongStateOf(0L) }
 
     val isMuted = routeState.isMuted
@@ -147,17 +139,6 @@ fun ActiveCallScreen(
 
     val isOnHold = currentCallState == Call.STATE_HOLDING
 
-    LaunchedEffect(recorderIsActive) {
-        if (recorderIsActive) {
-            if (recordingStartTime == 0L) recordingStartTime = System.currentTimeMillis()
-        } else {
-            recordingStartTime = 0L
-        }
-    }
-
-    val currentIsRecording by rememberUpdatedState(isRecording)
-    val currentOnSaveRecording by rememberUpdatedState(onSaveRecording)
-
     val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -170,14 +151,10 @@ fun ActiveCallScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            if (currentIsRecording || CallAudioRecorder.isRecording.value) {
-                val result = CallAudioRecorder.stopRecording()
-                CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
-                val file = result.file
-                if (file != null && file.exists() && file.length() > 0L) {
-                    currentOnSaveRecording(result.durationSeconds.coerceAtLeast(1L), file.absolutePath)
-                }
-            } else {
+            // Leaving the screen (minimise, tab switch, rotation) must NEVER stop recording.
+            // The recording session belongs to the call/service; only call-end, an explicit
+            // stop, or service teardown finalise it. Restore audio only when nothing is recording.
+            if (!CallAudioRecorder.isRecording.value) {
                 CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
             }
         }
@@ -204,6 +181,8 @@ fun ActiveCallScreen(
 
     var isQuickDeclineMenuOpen by remember { mutableStateOf(false) }
     var isInCallDialpadOpen by remember { mutableStateOf(false) }
+    // Shown once, before the first manual recording, until the user accepts the notice.
+    var showRecordingDisclosure by remember { mutableStateOf(false) }
 
     var fakeParticipants by remember(contactName, contactNumber) {
         mutableStateOf(listOf(Pair(contactName, contactNumber)))
@@ -261,7 +240,7 @@ fun ActiveCallScreen(
             try {
                 wakeLock = powerManager.newWakeLock(
                     PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK,
-                    "NovaDial:InCallProximityWakeLock"
+                    "Nova Dialer:InCallProximityWakeLock"
                 )
                 wakeLock.acquire(12 * 60 * 60 * 1000L)
             } catch (_: Exception) {}
@@ -340,7 +319,7 @@ fun ActiveCallScreen(
             label = "pulseValue"
         )
     } else {
-        remember { mutableStateOf(0.7f) }
+        remember { mutableFloatStateOf(0.7f) }
     }
     val pulse by pulseState
 
@@ -467,6 +446,56 @@ fun ActiveCallScreen(
                         )
                     }
 
+                    // Starting a manual recording is gated by the one-time notice below.
+                    val startManualRecording: () -> Unit = {
+                        // "Hands-free" detection uses the route Telecom actually reports.
+                        val isHeadset = isBluetoothOn || isHeadsetOn
+                        if (CallManager.startCallRecording(context)) {
+                            if (isHeadset) {
+                                Toast.makeText(context, context.getString(R.string.headset_recording_warning), Toast.LENGTH_LONG).show()
+                            } else if (autoTuneVolume) {
+                                Toast.makeText(context, "⏺️ Recording started. Speaker tuned for balanced audio.", Toast.LENGTH_SHORT).show()
+                            } else if (!isSpeakerOn) {
+                                Toast.makeText(context, "⏺️ Recording started. Tip: Turn ON Speakerphone.", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.recording_started), Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.recording_start_failed), Toast.LENGTH_LONG).show()
+                        }
+                    }
+
+                    if (showRecordingDisclosure) {
+                        AlertDialog(
+                            onDismissRequest = { showRecordingDisclosure = false },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            title = { Text(stringResource(R.string.recording_disclosure_title)) },
+                            text = { Text(stringResource(R.string.recording_disclosure_body)) },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        RecordingDisclosure.acknowledgeManual(context)
+                                        showRecordingDisclosure = false
+                                        startManualRecording()
+                                    }
+                                ) {
+                                    Text(stringResource(R.string.recording_disclosure_accept))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showRecordingDisclosure = false }) {
+                                    Text(stringResource(R.string.btn_cancel))
+                                }
+                            }
+                        )
+                    }
+
                     InCallControlGrid(
                         isInCallDialpadOpen = isInCallDialpadOpen,
                         onToggleDialpad = {
@@ -516,17 +545,21 @@ fun ActiveCallScreen(
                         isRecording = isRecording,
                         onToggleRecording = {
                             if (isRecording || CallAudioRecorder.isRecording.value) {
-                                RecordingFeedbackHelper.triggerRecordingStopFeedback(context, recordingChimeEnabled)
-                                val result = CallAudioRecorder.stopRecording()
-                                if (autoTuneVolume) {
-                                    CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
-                                }
-                                val file = result.file
-                                if (file != null && file.exists() && file.length() > 0L) {
-                                    onSaveRecording(result.durationSeconds.coerceAtLeast(1L), file.absolutePath)
-                                    Toast.makeText(context, context.getString(R.string.recording_saved), Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Call recording failed or file empty", Toast.LENGTH_SHORT).show()
+                                CallManager.stopCallRecording(
+                                    context = context,
+                                    playFeedback = true
+                                ) { result ->
+                                    val message = when (result.status) {
+                                        CallManager.RecordingSaveStatus.SAVED_ENCRYPTED ->
+                                            R.string.recording_saved
+                                        CallManager.RecordingSaveStatus.SAVED_UNENCRYPTED ->
+                                            R.string.recording_encryption_failed
+                                        CallManager.RecordingSaveStatus.FAILED ->
+                                            R.string.recording_save_failed
+                                        CallManager.RecordingSaveStatus.NO_AUDIO ->
+                                            R.string.recording_empty
+                                    }
+                                    Toast.makeText(context, context.getString(message), Toast.LENGTH_LONG).show()
                                 }
                             } else {
                                 val hasAudioPermission = ContextCompat.checkSelfPermission(
@@ -537,37 +570,11 @@ fun ActiveCallScreen(
                                 if (!hasAudioPermission) {
                                     Toast.makeText(context, "Microphone permission required for call recording", Toast.LENGTH_SHORT).show()
                                     recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                    return@InCallControlGrid
-                                }
-
-                                RecordingFeedbackHelper.triggerRecordingStartFeedback(context, recordingChimeEnabled)
-                                // "Hands-free" detection uses the route Telecom actually reports.
-                                val isHeadset = isBluetoothOn || isHeadsetOn
-
-                                if (autoTuneVolume && !isHeadset) {
-                                    CallAudioHelper.prepareSpeakerForRecording(
-                                        context = context,
-                                        inCallService = CallManager.inCallService,
-                                        currentAudioState = audioState
-                                    )
-                                }
-                                val started = CallAudioRecorder.startRecording(context, contactNumber)
-                                if (started) {
-                                    recordingStartTime = System.currentTimeMillis()
-                                    if (isHeadset) {
-                                        Toast.makeText(context, context.getString(R.string.headset_recording_warning), Toast.LENGTH_LONG).show()
-                                    } else if (autoTuneVolume) {
-                                        Toast.makeText(context, "⏺️ Recording started. Speaker tuned for balanced audio.", Toast.LENGTH_SHORT).show()
-                                    } else if (!isSpeakerOn) {
-                                        Toast.makeText(context, "⏺️ Recording started. Tip: Turn ON Speakerphone.", Toast.LENGTH_LONG).show()
-                                    } else {
-                                        Toast.makeText(context, context.getString(R.string.recording_started), Toast.LENGTH_SHORT).show()
-                                    }
+                                } else if (!RecordingDisclosure.isManualAcknowledged(context)) {
+                                    // First manual recording: show the notice before any audio is captured.
+                                    showRecordingDisclosure = true
                                 } else {
-                                    if (autoTuneVolume && !isHeadset) {
-                                        CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
-                                    }
-                                    Toast.makeText(context, "Cannot start recording. Grant Microphone permission.", Toast.LENGTH_LONG).show()
+                                    startManualRecording()
                                 }
                             }
                         },

@@ -20,10 +20,10 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /*
- * NovaDial "Aurora" design language.
+ * Nova Dialer "Aurora" design language.
  *
  * Identity: a luminous indigo -> violet -> orchid gradient family on deep
- * indigo-black surfaces. This is NovaDial's own palette and shares no colors
+ * indigo-black surfaces. This is Nova Dialer's own palette and shares no colors
  * with the Secure Dialer upstream theme (which used a blue/lime base).
  */
 
@@ -31,7 +31,7 @@ val Black = Color(0xFF000000)
 
 // ---- Aurora brand anchors -------------------------------------------------
 
-// ---- Material 3 tokens (NovaDial Aurora) ----------------------------------
+// ---- Material 3 tokens (Nova Dialer Aurora) ----------------------------------
 
 
 

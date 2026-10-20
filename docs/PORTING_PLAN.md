@@ -1,12 +1,12 @@
-# NovaDial 2.0 — Porting Plan & Change Log
+# Nova Dialer 2.0 — Porting Plan & Change Log
 
-NovaDial 2.0 is a **rebuild**: instead of patching the original NovaDial code (which contained
+Nova Dialer 2.0 is a **rebuild**: instead of patching the original Nova Dialer code (which contained
 compile errors, dead features and fake functionality), the mature **Secure Dialer** codebase was
-used as the foundation, rebranded to NovaDial, and NovaDial's genuinely useful features were added
+used as the foundation, rebranded to Nova Dialer, and Nova Dialer's genuinely useful features were added
 back on top.
 
 - **Foundation / upstream:** Secure Dialer (`com.example`, GPL-3.0-or-later)
-- **Target:** NovaDial (`com.aistudio.novadial.kpxm`), GPL-3.0-or-later
+- **Target:** Nova Dialer (`com.aistudio.novadial.kpxm`), GPL-3.0-or-later
 - **Version:** 2.0.0 (versionCode 3), minSdk 24, targetSdk 36
 
 > Both projects used the same `com.example` namespace, so the upstream source tree dropped into
@@ -18,11 +18,11 @@ back on top.
 
 ## 1. Why a port instead of a patch
 
-An audit of the original NovaDial found defects that would prevent it from building or from working
+An audit of the original Nova Dialer found defects that would prevent it from building or from working
 on a device. Rebuilding on Secure Dialer eliminates them by construction and keeps the parts of
-NovaDial users actually value.
+Nova Dialer users actually value.
 
-| # | Original NovaDial defect | Status after port | How the port resolves it |
+| # | Original Nova Dialer defect | Status after port | How the port resolves it |
 |---|--------------------------|-------------------|--------------------------|
 | 1 | `BorderStroke.copy(...)` compile errors in `EmergencyAlertActivity.kt` (lines ~209/320) | **Fixed** | File removed; the broken Emergency SOS screen is not compiled (see §5). |
 | 2 | Invalid manifest attribute `android:showOnLockScreen` | **Fixed** | Manifest rebuilt from upstream; only valid attributes (`showWhenLocked`, `turnScreenOn`) are used. |
@@ -35,8 +35,8 @@ NovaDial users actually value.
 | 9 | Unused dependencies (Firebase, OkHttp, Retrofit) | **Fixed** | `app/build.gradle.kts` only keeps what is used; commented placeholders remain. |
 | 10 | Call blocking / Focus mode / protection rules did nothing | **Fixed** | Real `CallScreeningService` now rejects blocked/spam numbers and silences by policy (see §3). |
 | 11 | Caller announcer not present in a working form | **Fixed** | Real TTS `CallerAnnouncerManager` + settings screen (see §4). |
-| 12 | Emergency SOS feature (NovaDial-unique) | **Deferred** | Reference sources archived under `reference/novadial-original/` (see §5). |
-| 13 | Analytics / call-stats dashboard (NovaDial-unique) | **Deferred** | Reference source archived; upstream `CallLogSummaryDashboard` already covers most of it (see §5). |
+| 12 | Emergency SOS feature (Nova Dialer-unique) | **Deferred** | Reference sources archived under `reference/novadial-original/` (see §5). |
+| 13 | Analytics / call-stats dashboard (Nova Dialer-unique) | **Deferred** | Reference source archived; upstream `CallLogSummaryDashboard` already covers most of it (see §5). |
 
 ---
 
@@ -45,25 +45,25 @@ NovaDial users actually value.
 | Item | Value |
 |------|-------|
 | `applicationId` | `com.aistudio.novadial.kpxm` |
-| App name (`app_name`) | `NovaDial` |
-| `rootProject.name` | `NovaDial` |
+| App name (`app_name`) | `Nova Dialer` |
+| `rootProject.name` | `Nova Dialer` |
 | `versionName` / `versionCode` | `2.0.0` / `3` |
-| Launcher icon | NovaDial's own adaptive icon (`ic_launcher_background`/`_foreground`, density PNGs) |
+| Launcher icon | Nova Dialer's own adaptive icon (`ic_launcher_background`/`_foreground`, density PNGs) |
 | Namespace | unchanged (`com.example`) |
 
-All strings/URLs referencing "Secure Dialer" were replaced with "NovaDial" across the resources.
+All strings/URLs referencing "Secure Dialer" were replaced with "Nova Dialer" across the resources.
 
 ---
 
 ## 2.1 Aurora design language (2026 redesign)
 
-NovaDial no longer ships the upstream Secure Dialer look. It has its own **"Aurora"** design
+Nova Dialer no longer ships the upstream Secure Dialer look. It has its own **"Aurora"** design
 language — a luminous **indigo → violet → orchid** identity on deep indigo-black glass surfaces,
 soft (26–36 dp) squircle geometry, pill chips/buttons and an expressive modern type scale.
 
 > **License note:** a visual redesign does **not** remove the GPL. The source remains a derivative
 > of Secure Dialer and stays **GPL-3.0-or-later** with attribution intact. The redesign gives
-> NovaDial a distinct brand identity (avoiding trade-dress/brand confusion); it is not a way to
+> Nova Dialer a distinct brand identity (avoiding trade-dress/brand confusion); it is not a way to
 > relicense the code.
 
 Changed by the redesign:
@@ -71,7 +71,7 @@ Changed by the redesign:
 | Area | File | What changed |
 |------|------|--------------|
 | Color tokens | `ui/theme/Color.kt` | New Aurora palette + material tokens; avatar pairs kept |
-| Playlists | `ui/theme/Theme.kt` | Replaced the 12 upstream palettes with 6 NovaDial themes (`nova_aurora` default, `nova_nebula`, `nova_glacier`, `nova_ember`, `nova_forest`, `nova_mono`); any legacy stored key falls back to Aurora; added glassy `surfaceTint`/`outlineVariant`/`scrim` treatment |
+| Playlists | `ui/theme/Theme.kt` | Replaced the 12 upstream palettes with 6 Nova Dialer themes (`nova_aurora` default, `nova_nebula`, `nova_glacier`, `nova_ember`, `nova_forest`, `nova_mono`); any legacy stored key falls back to Aurora; added glassy `surfaceTint`/`outlineVariant`/`scrim` treatment |
 | Typography | `ui/theme/Type.kt` | New Aurora scale (bolder, tighter tracking, tabular digits) |
 | Shapes | `ui/theme/AppShapes.kt` | Softer/rounder geometry; pill chips |
 | Theme picker | `ui/components/ThemeColorPicker.kt` | New palette swatches + default seed `#5A4BE0` |
@@ -79,8 +79,8 @@ Changed by the redesign:
 | Search bar | `ui/components/CommonComponents.kt` | Pill shape, glassy container, soft outline border |
 | Settings cards/rows | `ui/components/Settings.kt`, `CommonComponents.kt` | Aurora card shape + pill icon chips |
 | Nav bar | `ui/components/CommonComponents.kt` | Stronger active indicator |
-| Recording folder | `CallAudioRecorder.kt`, all `strings.xml` | `Downloads/SecureDialer` → `Downloads/NovaDial` |
-| Wake-lock tags | `MyInCallService.kt`, `ui/components/ActiveCall.kt`, test | `SecureDialer:*` → `NovaDial:*` |
+| Recording folder | `CallAudioRecorder.kt`, all `strings.xml` | `Downloads/SecureDialer` → `Downloads/Nova Dialer` |
+| Wake-lock tags | `MyInCallService.kt`, `ui/components/ActiveCall.kt`, test | `SecureDialer:*` → `Nova Dialer:*` |
 
 The old settings/preferences file name `secure_dialer_prefs` is still *read* as an upgrade fallback
 only (writes always target `dialer_prefs`); this keeps existing users' settings from resetting.
@@ -121,7 +121,7 @@ announcer configuration with a live preview button.
 Hooked into `MyInCallService`: created in `onCreate`, announced from the `STATE_RINGING` branch of
 `handleCallState`, stopped on `STATE_ACTIVE`/`STATE_DISCONNECTED`, and shut down in `onDestroy`.
 
-> **Adaptation note:** caller lookup uses NovaDial's `getContactNameFromNumber(context, number)`
+> **Adaptation note:** caller lookup uses Nova Dialer's `getContactNameFromNumber(context, number)`
 > instead of the original `DeviceContactsHelper.lookupCallerInfo`.
 
 ### Tests
@@ -135,7 +135,7 @@ Both exercise pure logic only (no Android framework), so they run on the JVM.
 
 ## 5. Deferred features (Emergency SOS & Analytics)
 
-These two NovaDial-only features were **not** merged in this pass. Their original sources are kept
+These two Nova Dialer-only features were **not** merged in this pass. Their original sources are kept
 for reference (not compiled) under `reference/novadial-original/`:
 
 ```
@@ -163,12 +163,12 @@ reference/novadial-original/
 
 - **Why deferred:** the upstream `CallLogSummaryDashboard` already provides call counts, talk time
   and quick filters, so a separate analytics screen is largely redundant.
-- **To finish:** either delete `AnalyticsScreen.kt` as duplicate, or re-add any NovaDial-only metrics
+- **To finish:** either delete `AnalyticsScreen.kt` as duplicate, or re-add any Nova Dialer-only metrics
   (e.g. per-contact trends) as an extra section inside `CallLogSummaryDashboard`.
 
 ### 5.3 Offline spam DB / community reports
 
-The genuine, local parts of NovaDial's spam handling (CSV blocklist import, manual entries, offline
+The genuine, local parts of Nova Dialer's spam handling (CSV blocklist import, manual entries, offline
 matching) are already covered by upstream `SpamDatabaseSettings` + `NovaDialCallScreeningService`.
 The original `RealtimeSpamDetector`, `CommunitySpamManager` and the made-up seed data were
 deliberately **not** ported.
@@ -192,5 +192,5 @@ been compiled**. What was done instead:
 
 ## 7. License
 
-Secure Dialer is licensed **GPL-3.0-or-later**; NovaDial 2.0 is a derivative work and stays
+Secure Dialer is licensed **GPL-3.0-or-later**; Nova Dialer 2.0 is a derivative work and stays
 GPL-3.0-or-later. Existing copyright headers are preserved and new files carry the same header.

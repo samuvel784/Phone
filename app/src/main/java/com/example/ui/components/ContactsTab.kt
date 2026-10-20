@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,7 +71,6 @@ import com.example.R
 import com.example.model.Contact
 import com.example.model.getInitials
 import com.example.ui.theme.AppShapes
-import com.example.ui.theme.LocalAmoledMode
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.delay
@@ -636,7 +635,6 @@ private fun ContactBoxCard(
 ) {
     val context = LocalContext.current
     var showProfile by remember { mutableStateOf(false) }
-    val isAmoled = LocalAmoledMode.current
 
     val numbers = remember(contact) { contact.getAllNumbers() }
     val primaryNumber = numbers.firstOrNull()?.number ?: contact.number
@@ -809,7 +807,7 @@ private fun QuickCallBubble(onClick: () -> Unit) {
 @Composable
 internal fun ContactBoxAvatar(
     contact: Contact,
-    size: androidx.compose.ui.unit.Dp,
+    size: Dp,
     showStar: Boolean
 ) {
     Box(contentAlignment = Alignment.Center) {

@@ -10,7 +10,7 @@
 <resources>
 
     <!-- Application Identity -->
-    <string name="app_name">NovaDial</string>
+    <string name="app_name">Nova Dialer</string>
 
     <!-- Navigation Tabs -->
     <string name="tab_home">首页</string>
@@ -47,22 +47,13 @@
     <string name="action_add_contact">添加联系人</string>
     <string name="label_phone_number">电话号码</string>
     <string name="label_first_name">名字</string>
-    <string name="label_last_name">姓氏</string>
     <string name="label_email">电子邮件</string>
     <string name="label_mobile">手机</string>
     <string name="label_home">住宅</string>
     <string name="label_work">工作</string>
     <string name="label_other">其他</string>
     <string name="label_address">地址</string>
-    <string name="contact_source_select">选择账户</string>
     <string name="contact_source_phone">手机存储</string>
-    <string name="contact_source_label">保存到账户</string>
-    <string name="add_contact_dialog_title">添加联系人</string>
-    <string name="edit_contact_dialog_title">编辑联系人</string>
-    <string name="select_number_to_call">选择要拨打的号码</string>
-    <string name="select_number_to_message">选择要发送信息的号码</string>
-    <string name="dialog_call_contact">呼叫 %1$s</string>
-    <string name="dialog_message_contact">给 %1$s 发送信息</string>
 
     <!-- Recents & Call History -->
     <string name="no_call_log_title">通话记录为空</string>
@@ -76,7 +67,6 @@
     <string name="unknown">未知</string>
     <string name="recent_label_format">最近 • %1$s</string>
     <string name="calls_count">%1$d 次通话</string>
-    <string name="call_count_label">来电次数：</string>
     <string name="call_summary_prefix">%1$s通话摘要</string>
     <string name="today_call_summary">今日通话摘要</string>
 
@@ -85,11 +75,9 @@
     <string name="dialpad_create_contact">新建联系人</string>
     <string name="dialpad_add_to_existing">添加到现有联系人</string>
     <string name="dialpad_select_contact_title">选择联系人</string>
-    <string name="dialpad_search_contact_hint">搜索联系人...</string>
+    <string name="dialpad_search_contact_hint">搜索联系人…</string>
     <string name="dialpad_no_contacts_found">未找到匹配的联系人</string>
-    <string name="dialpad_no_matches">没有匹配的联系人</string>
     <string name="dialpad_clear">清除</string>
-    <string name="dialpad_paste">粘贴</string>
     <string name="dialpad_copy">复制号码</string>
 
     <!-- In-Call Actions & States -->
@@ -100,16 +88,16 @@
     <string name="btn_call">呼叫</string>
     <string name="btn_unhold">取消保持</string>
     <string name="btn_answer_hold">接听并保持</string>
-    <string name="second_call_connecting">正在接通第二个通话...</string>
-    <string name="second_call_ringing">第二个通话正在响铃...</string>
-    <string name="second_call_dialing">正在拨打...</string>
+    <string name="second_call_connecting">正在接通第二个通话…</string>
+    <string name="second_call_ringing">第二个通话正在响铃…</string>
+    <string name="second_call_dialing">正在拨打…</string>
     <string name="second_call_active">通话中</string>
     <string name="second_call_held">保持中</string>
     <string name="second_call_failed">第二个通话已结束</string>
     <string name="call_status_ongoing">通话中</string>
-    <string name="call_status_dialing">正在拨号...</string>
-    <string name="call_status_ringing">来电中...</string>
-    <string name="call_status_connecting">正在接通...</string>
+    <string name="call_status_dialing">正在拨号…</string>
+    <string name="call_status_ringing">来电中…</string>
+    <string name="call_status_connecting">正在接通…</string>
     <string name="call_status_hold">通话保持中</string>
     <string name="call_status_ended">通话已结束</string>
     <string name="btn_end_call">结束通话</string>
@@ -117,9 +105,8 @@
     <string name="btn_collapse">折叠</string>
     <string name="btn_play">播放</string>
     <string name="btn_pause">暂停</string>
-    <string name="btn_minimize_call">最小化通话</string>
     <string name="in_call_spoof_warning">可能的伪造号码</string>
-    <string name="app_locked_title">NovaDial 已锁定</string>
+    <string name="app_locked_title">Nova Dialer 已锁定</string>
     <string name="app_locked_message">此应用已加密以保护您的隐私。请使用设备锁进行验证以继续。</string>
     <string name="btn_unlock_app">解锁拨号器</string>
     <string name="call_status_conference">多方通话</string>
@@ -132,12 +119,15 @@
     <string name="recording">录音中</string>
     <string name="recording_saved">录音已安全保存</string>
     <string name="recording_started">⏺️ 通话录音已开始</string>
+    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
+    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
+    <string name="recording_empty">Call recording failed or the file was empty</string>
+    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">拨打</string>
     <string name="action_message">发信息</string>
     <string name="action_swipe_call">拨打</string>
     <string name="action_swipe_message">发信息</string>
     <string name="toast_number_copied">号码已复制到剪贴板</string>
-    <string name="number_copied">已复制号码</string>
     <string name="send_sms">发送短信</string>
     <string name="sms_sent">短信已发送</string>
     <string name="sms_failed">短信发送失败</string>
@@ -150,12 +140,8 @@
     <!-- Favorites & Voicemail -->
     <string name="no_favorites_title">暂无收藏</string>
     <string name="no_favorites_subtitle">为联系人加星标，方便快速找到</string>
-    <string name="voicemail_header">语音信箱</string>
-    <string name="no_voicemails_title">暂无语音留言</string>
-    <string name="no_voicemails_subtitle">您已全部处理完毕</string>
     <string name="voicemail_settings">语音信箱设置</string>
     <string name="voicemail_directory_number">语音信箱号码</string>
-    <string name="voicemail_sample_transcript">转录：“嘿，就是打个电话问候一下。今晚有空的话告诉我一声！”</string>
 
     <!-- Settings Categories -->
     <string name="cat_sound_gestures">声音与手势</string>
@@ -172,7 +158,7 @@
     <string name="cat_speed_dial_quick_responses_sub">快速拨号与快捷回复</string>
     <string name="cat_call_blocking_sub">拦截号码与来电识别</string>
     <string name="cat_contacts_data_sub">同步、导入与备份</string>
-    <string name="cat_advanced_features_sub">通话录音、备注、模拟来电与回拨</string>
+    <string name="cat_advanced_features_sub">通话录音、备注与回拨</string>
     <string name="cat_privacy_security_about_sub">应用锁、安全与应用信息</string>
     <string name="settings_title">设置</string>
     <string name="settings_back">返回</string>
@@ -214,7 +200,6 @@
     <string name="theme_custom_title">自定义主题种子颜色</string>
     <string name="theme_custom_desc">输入任意 HEX 颜色代码（例如 #FF5722 或 #00E676）以动态生成 M3 配色方案。</string>
     <string name="theme_hex_code_label">HEX 颜色代码</string>
-    <string name="theme_hex_code_chip">十六进制代码</string>
     <string name="theme_apply">应用主题</string>
     <string name="settings_default_startup_tab">默认启动标签页</string>
 
@@ -265,9 +250,8 @@
 
     <!-- Settings - Speed Dial & Quick Responses -->
     <string name="settings_speed_dial">快速拨号</string>
-    <string name="settings_speed_dial_sub">为 1-9 号按键分配快速拨号</string>
-    <string name="speed_dial">快速拨号</string>
-    <string name="speed_dial_desc">长按拨号盘上的 1-9 号按键，即可快速拨打已分配的号码。</string>
+    <string name="settings_speed_dial_sub">为 1–9 号按键分配快速拨号</string>
+    <string name="speed_dial_desc">长按拨号盘上的 1–9 号按键，即可快速拨打已分配的号码。</string>
     <string name="assign_speed_dial_key">分配快速拨号键 %1$d</string>
     <string name="assign_key">分配按键</string>
     <string name="unassigned_key">未分配的按键</string>
@@ -287,8 +271,6 @@
     <!-- Settings - Carrier Voicemail & Preferences -->
     <string name="settings_voicemail_num">语音信箱号码</string>
     <string name="settings_voicemail_num_sub">配置快速拨号 1 的目标号码</string>
-    <string name="settings_voicemail_setup_title">语音信箱设置</string>
-    <string name="voicemail_setup_desc">设置长按拨号盘上的“1”键时拨出的电话号码。</string>
     <string name="save_voicemail_number">保存语音信箱号码</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
@@ -337,7 +319,7 @@
     <string name="share_via_apps">通过应用分享</string>
     <string name="share_via_apps_sub">将音频文件发送到消息、云盘或外部应用</string>
     <string name="save_to_downloads">保存到“下载”</string>
-    <string name="save_to_downloads_sub">将副本直接导出到设备的“下载”目录</string>
+    <string name="save_to_downloads_sub">将解密后可播放的副本直接导出到设备的“下载”目录</string>
     <string name="recording_details">录音详情</string>
     <string name="headset_recording_warning">已连接耳机：除非切换到免提，否则只会录制您的声音。</string>
     <string name="settings_recordings_always_on">自动通话录音</string>
@@ -345,7 +327,7 @@
     <string name="settings_recordings_biometric_lock">生物识别锁定录音</string>
     <string name="settings_recordings_biometric_lock_sub">需要指纹或设备凭据才可查看和播放录音</string>
     <string name="settings_recordings_auto_export">自动导出至下载目录</string>
-    <string name="settings_recordings_auto_export_sub">录音结束后自动复制文件到 Downloads/NovaDial 便于管理</string>
+    <string name="settings_recordings_auto_export_sub">录音结束后自动将解密文件复制到 Downloads/Nova Dialer</string>
     <string name="settings_recordings_compression_title">音频压缩与音质</string>
     <string name="settings_recordings_compression_sub">优化音频编码码率与采样率，在保真度与存储空间之间取得平衡</string>
     <string name="settings_recordings_cleanup_empty">清理空白/静音录音</string>
@@ -365,31 +347,24 @@
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">显示的联系人</string>
     <string name="settings_default_account_for_new">新联系人的默认账户</string>
-    <string name="btn_add_merge">添加并合并</string>
 
     <!-- Settings - Backup, Restore & Encrypted Migration -->
     <string name="settings_backup_restore_sub">从加密的 JSON 文件恢复通话记录和设置</string>
     <string name="backup_export_title">加密的本地备份</string>
     <string name="backup_export_desc">将拦截名单、通话备注、快速拨号和快捷回复导出为 AES-256 加密的 JSON 备份字符串。</string>
-    <string name="backup_export_password_label">加密密码（可选）</string>
     <string name="backup_restore_desc">从先前导出的备份字符串恢复拦截名单、备注和偏好设置。</string>
     <string name="backup_password_label">密码（如已加密）</string>
     <string name="backup_password_hint">At least 8 characters</string>
     <string name="backup_password_too_short">Use at least 8 characters. If you lose this password, the backup cannot be restored.</string>
     <string name="backup_restore_btn">恢复</string>
     <string name="backup_restored_success_toast">备份恢复成功！</string>
-    <string name="backup_restore_failed_toast">恢复备份失败。请检查密码或数据字符串。</string>
-    <string name="vcf_migration_title">vCard (VCF) 联系人迁移</string>
     <string name="vcf_migration_desc">将本地联系人导出为标准 vCard (.vcf) 文件，或从现有的 vCard 文件导入联系人。</string>
     <string name="header_contacts_import_export">联系人导入与导出</string>
     <string name="settings_export_contacts_vcard">导出联系人（vCard）</string>
     <string name="settings_import_contacts_vcard">导入联系人（vCard）</string>
     <string name="settings_import_contacts_vcard_sub">从标准 .vcf 名片文件恢复联系人</string>
     <string name="vcf_import_count_success">联系人导入成功！</string>
-    <string name="btn_save_backup_file">保存备份文件</string>
     <string name="btn_restore_backup_file">从文件恢复</string>
-    <string name="btn_save_vcf_file">保存 .VCF 文件</string>
-    <string name="btn_choose_vcf_file">选择 .VCF 文件</string>
     <string name="file_saved_success">文件保存成功！</string>
     <string name="file_save_failed">文件保存失败</string>
     <string name="file_read_failed">读取所选文件失败</string>
@@ -427,31 +402,18 @@
     <string name="settings_all_call_notes_sub">查看并管理已保存的通话备注</string>
     <string name="no_notes_title">暂无通话备注</string>
     <string name="no_notes_desc">通话中添加的备注会显示在这里</string>
-    <string name="search_notes_placeholder">搜索备注或号码...</string>
+    <string name="search_notes_placeholder">搜索备注或号码…</string>
     <string name="note_deleted_toast">通话备注已删除</string>
     <string name="add_call_note_btn">添加通话备注</string>
     <string name="call_notes_count_title">通话备注 (%1$d)</string>
     <string name="call_notes_count_badge">%1$d 条备注</string>
     <string name="jot_call_note_title">记录通话备注</string>
-    <string name="call_note">通话备注</string>
     <string name="note_saved">备注已安全保存</string>
-    <string name="note_placeholder">输入重要信息...</string>
+    <string name="note_placeholder">输入重要信息…</string>
     <string name="btn_save_note">保存备注</string>
 
-    <!-- Settings - Fake Call Simulator & Reminders -->
-    <string name="settings_fake_call_sim">模拟来电</string>
-    <string name="settings_fake_call_sim_sub">预约模拟的来电</string>
-    <string name="caller_identity">来电者身份</string>
-    <string name="caller_name_label">来电者姓名</string>
-    <string name="trigger_delay_timer">触发延迟计时</string>
+    <!-- Settings - Recording, Notes and Reminders -->
     <string name="duration_label">时长</string>
-    <string name="sequential_multi_call_title">连续多次来电选项</string>
-    <string name="sequential_multi_call_desc">触发连续的来电</string>
-    <string name="repeat_interval_label">重复间隔</string>
-    <string name="multi_call_note">仅当次数大于 1 时才会应用间隔</string>
-    <string name="schedule_sequential_calls">预约 %1$d 次来电</string>
-    <string name="schedule_escape_call">预约来电 (%1$d 秒)</string>
-    <string name="btn_cancel_scheduled_escape_calls">取消已预约的来电</string>
     <string name="callback_reminders_title">回电提醒</string>
     <string name="callback_reminders_stats">%1$d 个待处理，%2$d 个已完成</string>
     <string name="active_reminders_title">进行中的提醒</string>
@@ -483,19 +445,18 @@
     <string name="permissions_required">需要授予权限</string>
 
     <!-- Settings - About, Privacy Policy & Community Support -->
-    <string name="settings_about">关于 NovaDial</string>
+    <string name="settings_about">关于 Nova Dialer</string>
     <string name="settings_about_sub">版本信息、许可与核心技术</string>
     <string name="settings_privacy">隐私政策</string>
     <string name="settings_privacy_sub">Local data and permission notice</string>
     <string name="about_mission_desc">在不牺牲用户隐私的前提下，提供简单、可靠且安全的拨号体验。</string>
-    <string name="about_app_desc">NovaDial is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
+    <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">隐私政策</string>
-    <string name="privacy_intro">在 NovaDial，我们高度重视您的隐私。</string>
-    <string name="privacy_section_1_desc">NovaDial does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), SMS (quick replies and SOS) and optional SOS location are used only for the features you invoke.</string>
-    <string name="privacy_section_3_desc">NovaDial does not sell or share data with third parties. Data leaves the device only when you call, text, export or share.</string>
-    <string name="settings_support_title">支持 NovaDial</string>
-    <string name="settings_support_desc" formatted="false">NovaDial 100% 免费、开源、无广告，并始终以隐私为先。如果您觉得这款应用对您有帮助，欢迎贡献代码、提交翻译，或支持自由且安全的工具的开发。</string>
+    <string name="privacy_intro">在 Nova Dialer，我们高度重视您的隐私。</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="settings_support_desc" formatted="false">Nova Dialer 100% 免费、开源、无广告，并始终以隐私为先。如果您觉得这款应用对您有帮助，欢迎贡献代码、提交翻译，或支持自由且安全的工具的开发。</string>
     <string name="settings_contribute_github">在 GitHub 上贡献</string>
 
     <!-- General Buttons, Common Utilities & Common Dialogs -->
@@ -515,7 +476,7 @@
     <string name="dup_none_title">未发现重复联系人</string>
     <string name="dup_none_desc">您的联系人很整洁 — 无需合并或删除。</string>
     <string name="dup_permission_title">需要联系人权限</string>
-    <string name="dup_permission_desc">请授予联系人权限，以便 NovaDial 可以扫描、合并和删除重复条目。</string>
+    <string name="dup_permission_desc">请授予联系人权限，以便 Nova Dialer 可以扫描、合并和删除重复条目。</string>
     <string name="dup_rescan">重新扫描</string>
     <string name="dup_merge">合并</string>
     <string name="dup_delete_others">删除其他</string>
@@ -535,8 +496,6 @@
     <string name="add_call_search_hint">搜索联系人或输入号码</string>
     <string name="add_call_unavailable">当前无法拨打其他电话</string>
     <string name="account_filter_all">所有账户</string>
-    <string name="on_hold_prefix">保持中：</string>
-    <string name="warning">警告</string>
     <string name="error_open_messages">无法打开信息应用</string>
     <string name="history">历史记录</string>
 
@@ -550,7 +509,7 @@
 
     <string name="screening_role_granted">通话过滤已激活</string>
     <string name="screening_role_needed">需要通话过滤权限</string>
-    <string name="screening_role_desc">允许 NovaDial 过滤来电，以便专注模式、VIP 规则和拦截功能正常工作。</string>
+    <string name="screening_role_desc">允许 Nova Dialer 过滤来电，以便专注模式、VIP 规则和拦截功能正常工作。</string>
 
     <string name="focus_mode_title">专注模式</string>
     <string name="focus_mode_sub">选择在您专注时允许响铃的来电。</string>
@@ -580,7 +539,6 @@
     <string name="vip_empty">暂无 VIP 号码。添加必须能够随时联系到您的人。</string>
     <string name="vip_add">添加 VIP 号码</string>
     <string name="vip_add_sub">选择一个始终可以打通的号码</string>
-    <string name="vip_add_hint">电话号码</string>
     <string name="vip_remove">移除 VIP 号码</string>
 
     <string name="announcer_enable_title">播报来电者姓名</string>
@@ -633,46 +591,29 @@
     <string name="dnd_day_fri">Fri</string>
     <string name="dnd_day_sat">Sat</string>
     <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now - unknown callers will be silenced</string>
+    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
     <string name="dnd_pick_time_title">Pick a time</string>
 
-    <string name="contact_ringtones_title">Contact ringtones</string>
-    <string name="contact_ringtones_sub">Assign custom ringtones and vibration patterns. Played by Fake Call; incoming real calls still use the system ringtone.</string>
-    <string name="ringtone_row_sub_default">Default ringtone</string>
-    <string name="vibration_pattern_label">Vibration pattern</string>
-    <string name="pattern_default">Default</string>
-    <string name="pattern_none">None</string>
-    <string name="pattern_short">Short</string>
-    <string name="pattern_long">Long</string>
-    <string name="pattern_double">Double</string>
-    <string name="pattern_heartbeat">Heartbeat</string>
-    <string name="pattern_sos">SOS</string>
-    <string name="pattern_staccato">Staccato</string>
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
-    <string name="contact_ringtones_empty">No contacts with phone numbers yet - add a favourite to get started</string>
-    <string name="test_ringtone_label">Test</string>
 
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
-    <string name="quick_reply_direct_sms_sub">Send decline messages directly as text messages using SEND_SMS permission</string>
-    <string name="sms_permission_required">SMS permission needed to send quick replies as text</string>
+    <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
+    <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
 
-    <string name="widget_favorites_title">NovaDial Favourites</string>
+    <string name="widget_favorites_title">Nova Dialer Favourites</string>
     <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet - open NovaDial to add some</string>
-    <string name="ringtone_pick">Ringtone</string>
+    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <string name="sos_title">紧急 SOS</string>
     <string name="sos_sub">发送带位置的紧急警报，并拨打紧急服务电话</string>
     <string name="sos_instructions_title">使用方法</string>
-    <string name="sos_instructions_body">1. 在下方添加一个或多个紧急联系人。\n2. 长按 SOS 按钮。\n3. NovaDial 会将您的位置发送给这些联系人，并拨打您的紧急号码。</string>
+    <string name="sos_instructions_body">1. 在下方添加一个或多个紧急联系人。\n2. 长按 SOS 按钮。\n3. Nova Dialer 会将您的位置发送给这些联系人，并拨打您的紧急号码。</string>
     <string name="sos_button_label">SOS</string>
     <string name="sos_hold_hint">长按以激活</string>
     <string name="sos_contacts_title">紧急联系人</string>
     <string name="sos_contact_add">添加紧急联系人</string>
     <string name="sos_contacts_empty">还没有紧急联系人</string>
-    <string name="sos_contact_name">姓名</string>
-    <string name="sos_contact_number">电话号码</string>
     <string name="sos_auto_alert_title">自动通知联系人</string>
     <string name="sos_auto_alert_sub">触发 SOS 时向已保存的紧急联系人发送短信</string>
     <string name="sos_include_location_title">包含我的位置</string>
@@ -685,9 +626,9 @@
     <string name="sos_sent_toast">SOS 警报已发送给 %1$d 位联系人</string>
     <string name="sos_no_contacts_toast">请先添加至少一个紧急联系人</string>
     <string name="sos_test_alert">发送测试警报</string>
-    <string name="sos_alert_message">紧急情况 - 我需要帮助。这是来自 NovaDial 的自动 SOS 警报。</string>
+    <string name="sos_alert_message">紧急情况–我需要帮助。这是来自 Nova Dialer 的自动 SOS 警报。</string>
     <string name="sos_alert_location_label">我的位置：</string>
-    <string name="sos_no_location">位置不可用 - 请开启 GPS 以获取地图链接</string>
+    <string name="sos_no_location">位置不可用–请开启 GPS 以获取地图链接</string>
     <string name="sos_custom_message_title">Custom alert message</string>
     <string name="sos_custom_message_hint">Leave blank to use the default message</string>
     <string name="sos_countdown_title">Emergency SOS</string>
@@ -697,8 +638,6 @@
     <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
     <string name="sos_shake_title">Shake to trigger SOS</string>
     <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_shake_service_title">Shake to SOS is on</string>
-    <string name="sos_shake_service_text">Shake your phone firmly to start the emergency countdown</string>
     <string name="sos_watch_notification_title">Shake to SOS is on</string>
     <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
     <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
@@ -708,4 +647,30 @@
     <string name="sos_watch_channel_name">Shake to SOS watch</string>
     <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
     <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
+    <!-- Backup restore safety -->
+    <string name="backup_plaintext_warning_title">未加密的备份文件</string>
+    <string name="backup_plaintext_warning_body">这是旧版备份，未经过加密。其中可能以可读形式包含联系人、电话号码、通话记录、备注、提醒和设置。恢复会将其与当前数据合并，并保留你已有的全部内容。只有在你信任该文件时才继续。</string>
+    <string name="backup_plaintext_warning_confirm">仍然恢复</string>
+    <string name="backup_error_empty_file">所选文件为空。</string>
+    <string name="backup_error_too_large">所选文件过大，不可能是 Nova Dialer 备份。</string>
+    <string name="backup_error_not_a_backup">该文件不是 Nova Dialer 备份。</string>
+    <string name="backup_error_password_required">请输入备份密码。</string>
+    <string name="backup_error_wrong_password">密码错误，或文件已损坏。</string>
+    <string name="backup_error_unsupported_version">此备份由更新版本的 Nova Dialer 创建，无法在此恢复。</string>
+    <string name="backup_error_invalid_payload">备份已损坏或包含无效数据。</string>
+
+    <!-- Call recording disclosure -->
+    <string name="recording_disclosure_title">录制通话之前</string>
+    <string name="recording_disclosure_body">录制通话会将音频保存在此设备上。新录音理应在存储时加密，但加密可能失败，此时 Nova Dialer 可能在应用私有存储中保留未加密的副本。设备、Android 版本、运营商和厂商的限制可能导致无法录制，或限制录制通话的哪一方。你有责任遵守当地法律并取得参与者必须给予的同意。</string>
+    <string name="recording_disclosure_accept">我明白了</string>
+    <string name="recording_auto_disclosure_title">开启自动录音？</string>
+    <string name="recording_auto_disclosure_body">开启后，符合你的录音条件的通话可能会被自动录音，而不会每次都询问你。上方的录音提示仍然适用。你可以随时关闭此功能。</string>
+    <string name="recording_auto_disclosure_confirm">开启自动录音</string>
+    <string name="recording_export_warning_title">导出可播放的副本？</string>
+    <string name="recording_export_warning_body">写入 Downloads 的文件已解密，其他应用可以打开。即使卸载 Nova Dialer，该文件仍会留在设备上，并且不再受应用加密保护。</string>
+    <string name="recording_export_warning_confirm">导出未加密副本</string>
+    <string name="recording_share_warning_title">共享可播放的副本？</string>
+    <string name="recording_share_warning_body">共享的副本未加密，您选择的应用可以打开它。Nova Dialer 无法从该应用、接收者的设备或其创建的备份中删除它，它也不再受应用加密保护。</string>
+    <string name="recording_share_warning_confirm">共享未加密副本</string>
+    <string name="recording_export_all">导出所有录音</string>
 </resources>

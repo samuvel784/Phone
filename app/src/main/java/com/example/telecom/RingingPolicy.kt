@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -9,7 +9,7 @@ package com.example.telecom
  * Pure decision logic for whether an incoming call should play a ringtone and
  * vibrate. It contains no Android classes so it can be unit-tested on the JVM.
  *
- * NovaDial plays the ringtone itself (MyInCallService declares
+ * Nova Dialer plays the ringtone itself (MyInCallService declares
  * IN_CALL_SERVICE_RINGING), so the platform's "silence" request has no effect on
  * its own playback: that decision has to be made here.
  */

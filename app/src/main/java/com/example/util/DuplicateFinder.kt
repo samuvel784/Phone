@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ data class ContactPhoneRow(
 )
 
 /**
- * NovaDial Duplicate Finder.
+ * Nova Dialer Duplicate Finder.
  *
  * Detects contacts that share a phone number and lets the user merge them (via
  * [ContactsContract.AggregationExceptions], which permanently aggregates the raw

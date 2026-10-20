@@ -9,7 +9,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -169,10 +168,10 @@ private fun DialpadMatchesSection(
 fun HighlightedNumberText(
     fullNumber: String,
     query: String,
+    modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodySmall,
     normalColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     highlightColor: Color = DialpadMatchHighlightColor,
-    modifier: Modifier = Modifier,
     maxLines: Int = 1
 ) {
     val annotatedString = remember(fullNumber, query, normalColor, highlightColor) {
@@ -196,7 +195,6 @@ fun HighlightedNumberText(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DialpadOverlay(
     inputValue: String,
@@ -267,8 +265,9 @@ fun DialpadOverlay(
                     }
 
                     val isUnsavedNumber = remember(inputValue) {
-                        if (inputValue.isBlank()) false
-                        else viewModel?.isNumberUnsaved(inputValue) ?: (ContactCache.getContact(inputValue) == null)
+                        !inputValue.isBlank() &&
+                            (viewModel?.isNumberUnsaved(inputValue)
+                                ?: (ContactCache.getContact(inputValue) == null))
                     }
 
                     if (isUnsavedNumber && inputValue.isNotBlank()) {

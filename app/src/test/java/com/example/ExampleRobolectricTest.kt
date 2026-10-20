@@ -17,7 +17,7 @@ class ExampleRobolectricTest {
   fun `read string from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("NovaDial", appName)
+    assertEquals("Nova Dialer", appName)
   }
 
   @Test
@@ -89,6 +89,22 @@ class ExampleRobolectricTest {
 
     prefs.edit().putBoolean("is_auto_record_calls_enabled", false).commit()
     assertEquals(false, prefs.getBoolean("is_auto_record_calls_enabled", true))
+  }
+
+  @Test
+  fun `verify decrypted playback cache is never recovered as a recording`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val cacheDir = java.io.File(context.cacheDir, "CallRecordings").apply { mkdirs() }
+    val cacheCopy = java.io.File(cacheDir, "RECV_20260920_120000_abcd.m4a")
+    cacheCopy.writeBytes(ByteArray(512) { 7 })
+
+    val listed = com.example.util.CallAudioRecorder.getRecordedFiles(context)
+    assertEquals(false, listed.any { it.absolutePath == cacheCopy.absolutePath })
+
+    val recovered = com.example.util.CallAudioRecorder.recoverRecordingsFromDisk(context)
+    assertEquals(false, recovered.any { it.filePath == cacheCopy.absolutePath })
+
+    cacheCopy.delete()
   }
 
   @Test

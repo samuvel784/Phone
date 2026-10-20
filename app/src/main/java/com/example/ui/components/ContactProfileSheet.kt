@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -265,7 +265,7 @@ fun ContactProfileSheet(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     onClick = {
-                        val existing = ContactRingtonePrefs.get(context, contact.number)?.ringtoneUri?.let { it.toUri() }
+                        val existing = ContactRingtonePrefs.get(context, contact.number)?.ringtoneUri?.toUri()
                         val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
                             putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_RINGTONE)
                             putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Ringtone for ${contact.name}")

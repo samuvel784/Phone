@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.theme.getColorSchemeForTheme
 import com.example.ui.viewmodel.DialerViewModel
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -107,7 +108,7 @@ class AmoledThemeAuditTest {
     private fun Color.luminanceValue(): Double {
         fun channel(c: Float): Double {
             val v = c.toDouble()
-            return if (v <= 0.03928) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
+            return if (v <= 0.03928) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
         }
         return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
     }

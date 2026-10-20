@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -74,7 +73,7 @@ import java.util.Locale
 /**
  * Self-contained "Focus & Protection" settings screen.
  *
- * Combines the two features ported from NovaDial on top of the Secure Dialer core:
+ * Combines the two features ported from Nova Dialer on top of the Secure Dialer core:
  *  - Focus mode + call protection level (VIP / saved / repeat caller rules)
  *  - Caller announcer (text-to-speech that reads the caller's name while ringing)
  */
@@ -96,9 +95,9 @@ fun FocusAndProtectionSettings(
     var announcerTemplate by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerTemplate(context)) }
     var announcerUserName by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerUserName(context)) }
     var announcerRepeat by remember { mutableIntStateOf(CallProtectionPrefs.getAnnouncerRepeat(context)) }
-    var announcerSpeed by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerSpeedPercent(context)) }
-    var announcerPitch by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerPitchPercent(context)) }
-    var announcerVolume by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerVolumePercent(context)) }
+    var announcerSpeed by remember { mutableIntStateOf(CallProtectionPrefs.getAnnouncerSpeedPercent(context)) }
+    var announcerPitch by remember { mutableIntStateOf(CallProtectionPrefs.getAnnouncerPitchPercent(context)) }
+    var announcerVolume by remember { mutableIntStateOf(CallProtectionPrefs.getAnnouncerVolumePercent(context)) }
     var headphonesOnly by remember { mutableStateOf(CallProtectionPrefs.isAnnouncerHeadphonesOnly(context)) }
     var announcerVoice by remember { mutableStateOf(CallProtectionPrefs.getAnnouncerVoice(context)) }
     var announceUnknown by remember { mutableStateOf(CallProtectionPrefs.isAnnounceUnknown(context)) }

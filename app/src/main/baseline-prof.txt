@@ -1,4 +1,4 @@
-# Baseline profile for NovaDial.
+# Baseline profile for Nova Dialer.
 # Install-time compilation of the code that runs at startup and while scrolling, so the first launch and the
 # first swipes are smooth instead of being interpreted. Rules: H = hot, S = startup, P = post-startup.
 

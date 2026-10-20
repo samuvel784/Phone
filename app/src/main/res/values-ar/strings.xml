@@ -10,7 +10,7 @@
 <resources>
 
     <!-- Application Identity -->
-    <string name="app_name">NovaDial</string>
+    <string name="app_name">Nova Dialer</string>
 
     <!-- Navigation Tabs -->
     <string name="tab_home">الرئيسية</string>
@@ -47,22 +47,13 @@
     <string name="action_add_contact">إضافة جهة اتصال</string>
     <string name="label_phone_number">رقم الهاتف</string>
     <string name="label_first_name">الاسم الأول</string>
-    <string name="label_last_name">اسم العائلة</string>
     <string name="label_email">البريد الإلكتروني</string>
     <string name="label_mobile">جوال</string>
     <string name="label_home">منزل</string>
     <string name="label_work">عمل</string>
     <string name="label_other">آخر</string>
     <string name="label_address">العنوان</string>
-    <string name="contact_source_select">حدد الحساب</string>
     <string name="contact_source_phone">تخزين الهاتف</string>
-    <string name="contact_source_label">حفظ في الحساب</string>
-    <string name="add_contact_dialog_title">إضافة جهة اتصال</string>
-    <string name="edit_contact_dialog_title">تعديل جهة الاتصال</string>
-    <string name="select_number_to_call">حدد رقمًا للاتصال</string>
-    <string name="select_number_to_message">حدد رقمًا للمراسلة</string>
-    <string name="dialog_call_contact">الاتصال بـ %1$s</string>
-    <string name="dialog_message_contact">مراسلة %1$s</string>
 
     <!-- Recents & Call History -->
     <string name="no_call_log_title">سجل المكالمات فارغ</string>
@@ -76,7 +67,6 @@
     <string name="unknown">غير معروف</string>
     <string name="recent_label_format">الأخيرة • %1$s</string>
     <string name="calls_count">%1$d مكالمات</string>
-    <string name="call_count_label">عدد المكالمات:</string>
     <string name="call_summary_prefix">ملخص مكالمات %1$s</string>
     <string name="today_call_summary">ملخص مكالمات اليوم</string>
 
@@ -85,11 +75,9 @@
     <string name="dialpad_create_contact">إنشاء جهة اتصال</string>
     <string name="dialpad_add_to_existing">إضافة إلى موجود</string>
     <string name="dialpad_select_contact_title">تحديد جهة اتصال</string>
-    <string name="dialpad_search_contact_hint">البحث في جهات الاتصال...</string>
+    <string name="dialpad_search_contact_hint">البحث في جهات الاتصال…</string>
     <string name="dialpad_no_contacts_found">لا توجد جهات اتصال مطابقة للبحث</string>
-    <string name="dialpad_no_matches">لا توجد جهات اتصال مطابقة</string>
     <string name="dialpad_clear">مسح</string>
-    <string name="dialpad_paste">لصق</string>
     <string name="dialpad_copy">نسخ الرقم</string>
 
     <!-- In-Call Actions & States -->
@@ -100,16 +88,16 @@
     <string name="btn_call">اتصال</string>
     <string name="btn_unhold">إلغاء الانتظار</string>
     <string name="btn_answer_hold">الرد والانتظار</string>
-    <string name="second_call_connecting">جارٍ توصيل المكالمة الثانية...</string>
-    <string name="second_call_ringing">المكالمة الثانية ترن...</string>
-    <string name="second_call_dialing">جارٍ الاتصال...</string>
+    <string name="second_call_connecting">جارٍ توصيل المكالمة الثانية…</string>
+    <string name="second_call_ringing">المكالمة الثانية ترن…</string>
+    <string name="second_call_dialing">جارٍ الاتصال…</string>
     <string name="second_call_active">مكالمة نشطة</string>
     <string name="second_call_held">قيد الانتظار</string>
     <string name="second_call_failed">انتهت المكالمة الثانية</string>
     <string name="call_status_ongoing">مكالمة جارية</string>
-    <string name="call_status_dialing">جاري الاتصال...</string>
-    <string name="call_status_ringing">مكالمة واردة...</string>
-    <string name="call_status_connecting">جاري الاتصال...</string>
+    <string name="call_status_dialing">جاري الاتصال…</string>
+    <string name="call_status_ringing">مكالمة واردة…</string>
+    <string name="call_status_connecting">جاري الاتصال…</string>
     <string name="call_status_hold">المكالمة قيد الانتظار</string>
     <string name="call_status_ended">انتهت المكالمة</string>
     <string name="btn_end_call">إنهاء المكالمة</string>
@@ -117,9 +105,8 @@
     <string name="btn_collapse">طي</string>
     <string name="btn_play">تشغيل</string>
     <string name="btn_pause">إيقاف مؤقت</string>
-    <string name="btn_minimize_call">تصغير المكالمة</string>
     <string name="in_call_spoof_warning">رقم مُنتحل محتمل</string>
-    <string name="app_locked_title">NovaDial مقفل</string>
+    <string name="app_locked_title">Nova Dialer مقفل</string>
     <string name="app_locked_message">هذا التطبيق محمي لحماية خصوصيتك. يرجى المصادقة بقفل جهازك للمتابعة.</string>
     <string name="btn_unlock_app">فتح التطبيق</string>
     <string name="call_status_conference">مكالمة جماعية</string>
@@ -132,12 +119,15 @@
     <string name="recording">جاري التسجيل</string>
     <string name="recording_saved">تم حفظ التسجيل بأمان</string>
     <string name="recording_started">⏺️ بدأ تسجيل المكالمة</string>
+    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
+    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
+    <string name="recording_empty">Call recording failed or the file was empty</string>
+    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">اتصال</string>
     <string name="action_message">رسالة</string>
     <string name="action_swipe_call">اتصال</string>
     <string name="action_swipe_message">رسالة</string>
     <string name="toast_number_copied">تم نسخ الرقم إلى الحافظة</string>
-    <string name="number_copied">تم نسخ الرقم</string>
     <string name="send_sms">إرسال رسالة قصيرة</string>
     <string name="sms_sent">تم إرسال الرسالة النصية</string>
     <string name="sms_failed">فشل إرسال الرسالة النصية</string>
@@ -150,12 +140,8 @@
     <!-- Favorites & Voicemail -->
     <string name="no_favorites_title">لا توجد مفضلة بعد</string>
     <string name="no_favorites_subtitle">ضع نجمة على جهات الاتصال للعثور عليها بسهولة</string>
-    <string name="voicemail_header">البريد الصوتي</string>
-    <string name="no_voicemails_title">لا توجد رسائل صوتية</string>
-    <string name="no_voicemails_subtitle">كل شيء محدّث</string>
     <string name="voicemail_settings">إعدادات البريد الصوتي</string>
     <string name="voicemail_directory_number">رقم البريد الصوتي</string>
-    <string name="voicemail_sample_transcript">النص: \"مرحبًا! أردت الاطمئنان عليك. أخبرني عندما تكون متفرغًا هذا المساء!\"</string>
 
     <!-- Settings Categories -->
     <string name="cat_sound_gestures">الصوت والإيماءات</string>
@@ -172,7 +158,7 @@
     <string name="cat_speed_dial_quick_responses_sub">الاتصال السريع والردود النصية السريعة</string>
     <string name="cat_call_blocking_sub">الأرقام المحظورة وهوية المتصل</string>
     <string name="cat_contacts_data_sub">المزامنة والاستيراد والنسخ الاحتياطي</string>
-    <string name="cat_advanced_features_sub">تسجيل المكالمات والملاحظات والمكالمات الوهمية والتذكيرات</string>
+    <string name="cat_advanced_features_sub">تسجيل المكالمات والملاحظات والتذكيرات</string>
     <string name="cat_privacy_security_about_sub">قفل التطبيق والأمان ومعلومات التطبيق</string>
     <string name="settings_title">الإعدادات</string>
     <string name="settings_back">رجوع</string>
@@ -214,7 +200,6 @@
     <string name="theme_custom_title">لون تمييز مخصص</string>
     <string name="theme_custom_desc">اختر أي لون مخصص بدقة عالية لواجهة الاتصال ولوحة الأرقام</string>
     <string name="theme_hex_code_label">رمز اللون الست عشري (HEX)</string>
-    <string name="theme_hex_code_chip">رمز اللون</string>
     <string name="theme_apply">تطبيق اللون</string>
     <string name="settings_default_startup_tab">التبويب الافتراضي عند البدء</string>
 
@@ -265,9 +250,8 @@
 
     <!-- Settings - Speed Dial & Quick Responses -->
     <string name="settings_speed_dial">الاتصال السريع</string>
-    <string name="settings_speed_dial_sub">تخصيص مفاتيح الاتصال السريع 1-9</string>
-    <string name="speed_dial">الاتصال السريع</string>
-    <string name="speed_dial_desc">اضغط مطولاً على المفاتيح 1-9 للاتصال السريع.</string>
+    <string name="settings_speed_dial_sub">تخصيص مفاتيح الاتصال السريع 1–9</string>
+    <string name="speed_dial_desc">اضغط مطولاً على المفاتيح 1–9 للاتصال السريع.</string>
     <string name="assign_speed_dial_key">تعيين مفتاح الاتصال السريع %1$d</string>
     <string name="assign_key">تعيين المفتاح</string>
     <string name="unassigned_key">مفتاح غير معين</string>
@@ -287,8 +271,6 @@
     <!-- Settings - Carrier Voicemail & Preferences -->
     <string name="settings_voicemail_num">رقم البريد الصوتي</string>
     <string name="settings_voicemail_num_sub">تكوين هدف الاتصال السريع 1</string>
-    <string name="settings_voicemail_setup_title">إعداد البريد الصوتي</string>
-    <string name="voicemail_setup_desc">حدد الرقم للاتصال به عند الضغط المطول على المفتاح \'1\'.</string>
     <string name="save_voicemail_number">حفظ رقم البريد الصوتي</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
@@ -337,7 +319,7 @@
     <string name="share_via_apps">المشاركة عبر التطبيقات</string>
     <string name="share_via_apps_sub">إرسال الملف الصوتي إلى الرسائل أو السحابة أو التطبيقات الخارجية</string>
     <string name="save_to_downloads">الحفظ في التنزيلات</string>
-    <string name="save_to_downloads_sub">تصدير نسخة مباشرة إلى مجلد التنزيلات في الجهاز</string>
+    <string name="save_to_downloads_sub">تصدير نسخة غير مشفّرة قابلة للتشغيل مباشرة إلى مجلد التنزيلات في الجهاز</string>
     <string name="recording_details">تفاصيل التسجيل</string>
     <string name="headset_recording_warning">تم توصيل السماعات: سيتم تسجيل صوتك فقط ما لم تقم بالتبديل إلى مكبر الصوت.</string>
     <string name="settings_recordings_always_on">تسجيل المكالمات دائماً</string>
@@ -345,7 +327,7 @@
     <string name="settings_recordings_biometric_lock">قفل التسجيلات بالبصمة</string>
     <string name="settings_recordings_biometric_lock_sub">طلب البصمة أو رمز القفل للوصول إلى التسجيلات الصوتية وتشغيلها</string>
     <string name="settings_recordings_auto_export">تصدير تلقائي إلى التنزيلات</string>
-    <string name="settings_recordings_auto_export_sub">نسخ كل تسجيل مكالمة تلقائياً إلى مجلد Downloads/NovaDial لتسهيل الوصول</string>
+    <string name="settings_recordings_auto_export_sub">نسخ كل تسجيل مكتمل كملف غير مشفّر تلقائياً إلى مجلد Downloads/Nova Dialer</string>
     <string name="settings_recordings_compression_title">ضغط وجودة الصوت</string>
     <string name="settings_recordings_compression_sub">موازنة معدل البت والتردد للحفاظ على وضوح الصوت مع توفير مساحة التخزين</string>
     <string name="settings_recordings_cleanup_empty">تنظيف التسجيلات الفارغة أو الصامتة</string>
@@ -365,31 +347,24 @@
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">جهات الاتصال للعرض</string>
     <string name="settings_default_account_for_new">الحساب الافتراضي لجهات الاتصال الجديدة</string>
-    <string name="btn_add_merge">إضافة ودمج</string>
 
     <!-- Settings - Backup, Restore & Encrypted Migration -->
     <string name="settings_backup_restore_sub">استعادة سجلات المكالمات والإعدادات من ملف JSON مشفر</string>
     <string name="backup_export_title">نسخ احتياطي محلي مشفر</string>
     <string name="backup_export_desc">تصدير قوائم الحظر وملاحظات المكالمات والاتصال السريع والاستجابات السريعة إلى سلسلة JSON مشفرة بـ AES-256.</string>
-    <string name="backup_export_password_label">كلمة مرور التشفير (اختياري)</string>
     <string name="backup_restore_desc">استعادة قوائم الحظر والملاحظات والتفضيلات من سلسلة نسخة احتياطية تم تصديرها سابقًا.</string>
     <string name="backup_password_label">كلمة المرور (إذا كانت مشفرة)</string>
     <string name="backup_password_hint">At least 8 characters</string>
     <string name="backup_password_too_short">Use at least 8 characters. If you lose this password, the backup cannot be restored.</string>
     <string name="backup_restore_btn">استعادة</string>
     <string name="backup_restored_success_toast">تمت استعادة النسخة الاحتياطية بنجاح!</string>
-    <string name="backup_restore_failed_toast">فشلت استعادة النسخة الاحتياطية. تحقق من كلمة المرور أو البيانات.</string>
-    <string name="vcf_migration_title">نقل جهات الاتصال (vCard)</string>
     <string name="vcf_migration_desc">تصدير أو استيراد جهات الاتصال بسهولة عبر ملفات .vcf القياسية دون وسطاء سحابيين.</string>
     <string name="header_contacts_import_export">استيراد وتصدير جهات الاتصال</string>
     <string name="settings_export_contacts_vcard">تصدير جهات الاتصال (vCard)</string>
     <string name="settings_import_contacts_vcard">استيراد جهات الاتصال (vCard)</string>
     <string name="settings_import_contacts_vcard_sub">استعادة جهات الاتصال من ملف .vcf القياسي</string>
     <string name="vcf_import_count_success">تم استيراد جهات الاتصال بنجاح!</string>
-    <string name="btn_save_backup_file">حفظ ملف النسخة الاحتياطية</string>
     <string name="btn_restore_backup_file">استعادة النسخة الاحتياطية</string>
-    <string name="btn_save_vcf_file">حفظ ملف جهات الاتصال</string>
-    <string name="btn_choose_vcf_file">اختيار ملف جهات الاتصال</string>
     <string name="file_saved_success">تم حفظ الملف بنجاح</string>
     <string name="file_save_failed">فشل حفظ الملف</string>
     <string name="file_read_failed">فشل قراءة الملف المحدد</string>
@@ -427,31 +402,18 @@
     <string name="settings_all_call_notes_sub">عرض وإدارة ملاحظات المكالمات المحفوظة</string>
     <string name="no_notes_title">لا توجد ملاحظات مكالمات</string>
     <string name="no_notes_desc">ستظهر الملاحظات المضافة أثناء المكالمات هنا</string>
-    <string name="search_notes_placeholder">البحث في الملاحظات أو الأرقام...</string>
+    <string name="search_notes_placeholder">البحث في الملاحظات أو الأرقام…</string>
     <string name="note_deleted_toast">تم حذف ملاحظة المكالمة</string>
     <string name="add_call_note_btn">إضافة ملاحظة مكالمة</string>
     <string name="call_notes_count_title">ملاحظات المكالمات (%1$d)</string>
     <string name="call_notes_count_badge">%1$d ملاحظات</string>
     <string name="jot_call_note_title">تدوين ملاحظة مكالمة</string>
-    <string name="call_note">ملاحظة المكالمة</string>
     <string name="note_saved">تم حفظ الملاحظة بأمان</string>
-    <string name="note_placeholder">أدخل تفاصيل مهمة...</string>
+    <string name="note_placeholder">أدخل تفاصيل مهمة…</string>
     <string name="btn_save_note">حفظ الملاحظة</string>
 
-    <!-- Settings - Fake Call Simulator & Reminders -->
-    <string name="settings_fake_call_sim">محاكي المكالمة الوهمية</string>
-    <string name="settings_fake_call_sim_sub">جدولة مكالمة واردة وهمية للخروج من المواقف المخرجة</string>
-    <string name="caller_identity">هوية المتصل</string>
-    <string name="caller_name_label">اسم المتصل</string>
-    <string name="trigger_delay_timer">مؤقت التأخير</string>
+    <!-- Settings - Recording, Notes and Reminders -->
     <string name="duration_label">المدة</string>
-    <string name="sequential_multi_call_title">خيارات المكالمات المتعددة المتتالية</string>
-    <string name="sequential_multi_call_desc">إطلاق عدة مكالمات واردة متتالية</string>
-    <string name="repeat_interval_label">فاصل التكرار</string>
-    <string name="multi_call_note">ملاحظة: ينطبق الفاصل الزمني عندما يكون العدد أكبر من 1</string>
-    <string name="schedule_sequential_calls">جدولة %1$d مكالمات</string>
-    <string name="schedule_escape_call">جدولة مكالمة (%1$d ثانية)</string>
-    <string name="btn_cancel_scheduled_escape_calls">إلغاء المكالمات المجدولة</string>
     <string name="callback_reminders_title">تذكيرات إعادة الاتصال</string>
     <string name="callback_reminders_stats">%1$d نشطة، %2$d مكتملة</string>
     <string name="active_reminders_title">التذكيرات النشطة</string>
@@ -483,19 +445,18 @@
     <string name="permissions_required">الأذونات المطلوبة</string>
 
     <!-- Settings - About, Privacy Policy & Community Support -->
-    <string name="settings_about">حول NovaDial</string>
+    <string name="settings_about">حول Nova Dialer</string>
     <string name="settings_about_sub">معلومات الإصدار والتراخيص والتقنيات</string>
     <string name="settings_privacy">سياسة الخصوصية</string>
     <string name="settings_privacy_sub">Local data and permission notice</string>
     <string name="about_mission_desc">توفير تجربة اتصال بسيطة وموثوقة وآمنة دون المساس بخصوصية المستخدم.</string>
-    <string name="about_app_desc">NovaDial is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
+    <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">سياسة الخصوصية</string>
-    <string name="privacy_intro">In NovaDial, we prioritize your privacy.</string>
-    <string name="privacy_section_1_desc">NovaDial does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), SMS (quick replies and SOS) and optional SOS location are used only for the features you invoke.</string>
-    <string name="privacy_section_3_desc">NovaDial does not sell or share data with third parties. Data leaves the device only when you call, text, export or share.</string>
-    <string name="settings_support_title">دعم NovaDial</string>
-    <string name="settings_support_desc" formatted="false">NovaDial مجاني 100%، مفتوح المصدر، بدون إعلانات ويهتم بالخصوصية.</string>
+    <string name="privacy_intro">In Nova Dialer, we prioritize your privacy.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="settings_support_desc" formatted="false">Nova Dialer مجاني 100%، مفتوح المصدر، بدون إعلانات ويهتم بالخصوصية.</string>
     <string name="settings_contribute_github">المساهمة على GitHub</string>
 
     <!-- General Buttons, Common Utilities & Common Dialogs -->
@@ -515,7 +476,7 @@
     <string name="dup_none_title">لم يتم العثور على تكرارات</string>
     <string name="dup_none_desc">جهات الاتصال لديك نظيفة — لا يوجد ما يمكن دمج أو حذفه.</string>
     <string name="dup_permission_title">يلزم إذن جهات الاتصال</string>
-    <string name="dup_permission_desc">امنح إذن الوصول إلى جهات الاتصال حتى يتمكن NovaDial من فحص التكرارات ودمجها وإزالتها.</string>
+    <string name="dup_permission_desc">امنح إذن الوصول إلى جهات الاتصال حتى يتمكن Nova Dialer من فحص التكرارات ودمجها وإزالتها.</string>
     <string name="dup_rescan">إعادة الفحص</string>
     <string name="dup_merge">دمج</string>
     <string name="dup_delete_others">حذف الأخرى</string>
@@ -535,8 +496,6 @@
     <string name="add_call_search_hint">ابحث عن جهة اتصال أو أدخل رقماً</string>
     <string name="add_call_unavailable">لا يمكن إجراء مكالمة أخرى الآن</string>
     <string name="account_filter_all">جميع الحسابات</string>
-    <string name="on_hold_prefix">قيد الانتظار:</string>
-    <string name="warning">تحذير</string>
     <string name="error_open_messages">تعذر فتح الرسائل</string>
     <string name="history">السجل</string>
 
@@ -550,7 +509,7 @@
 
     <string name="screening_role_granted">فحص المكالمات نشط</string>
     <string name="screening_role_needed">يلزم إذن فحص المكالمات</string>
-    <string name="screening_role_desc">اسمح لـ NovaDial بفحص المكالمات الواردة ليعمل وضع التركيز وقواعد VIP والحظر.</string>
+    <string name="screening_role_desc">اسمح لـ Nova Dialer بفحص المكالمات الواردة ليعمل وضع التركيز وقواعد VIP والحظر.</string>
 
     <string name="focus_mode_title">وضع التركيز</string>
     <string name="focus_mode_sub">اختر المكالمات المسموح لها بالرنين أثناء تركيزك.</string>
@@ -580,7 +539,6 @@
     <string name="vip_empty">لا توجد أرقام VIP بعد. أضف الأشخاص الذين يجب أن يصلوا إليك دائمًا.</string>
     <string name="vip_add">إضافة رقم VIP</string>
     <string name="vip_add_sub">اختر رقمًا يمكنه الوصول إليك دائمًا</string>
-    <string name="vip_add_hint">رقم الهاتف</string>
     <string name="vip_remove">إزالة رقم VIP</string>
 
     <string name="announcer_enable_title">نطق اسم المتصل</string>
@@ -633,46 +591,29 @@
     <string name="dnd_day_fri">Fri</string>
     <string name="dnd_day_sat">Sat</string>
     <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now - unknown callers will be silenced</string>
+    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
     <string name="dnd_pick_time_title">Pick a time</string>
 
-    <string name="contact_ringtones_title">Contact ringtones</string>
-    <string name="contact_ringtones_sub">Assign custom ringtones and vibration patterns. Played by Fake Call; incoming real calls still use the system ringtone.</string>
-    <string name="ringtone_row_sub_default">Default ringtone</string>
-    <string name="vibration_pattern_label">Vibration pattern</string>
-    <string name="pattern_default">Default</string>
-    <string name="pattern_none">None</string>
-    <string name="pattern_short">Short</string>
-    <string name="pattern_long">Long</string>
-    <string name="pattern_double">Double</string>
-    <string name="pattern_heartbeat">Heartbeat</string>
-    <string name="pattern_sos">SOS</string>
-    <string name="pattern_staccato">Staccato</string>
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
-    <string name="contact_ringtones_empty">No contacts with phone numbers yet - add a favourite to get started</string>
-    <string name="test_ringtone_label">Test</string>
 
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
-    <string name="quick_reply_direct_sms_sub">Send decline messages directly as text messages using SEND_SMS permission</string>
-    <string name="sms_permission_required">SMS permission needed to send quick replies as text</string>
+    <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
+    <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
 
-    <string name="widget_favorites_title">NovaDial Favourites</string>
+    <string name="widget_favorites_title">Nova Dialer Favourites</string>
     <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet - open NovaDial to add some</string>
-    <string name="ringtone_pick">Ringtone</string>
+    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <string name="sos_title">طوارئ SOS</string>
     <string name="sos_sub">أرسل تنبيه طوارئ مع موقعك واتصل بخدمات الطوارئ</string>
     <string name="sos_instructions_title">كيف يعمل</string>
-    <string name="sos_instructions_body">١. أضف جهة اتصال طوارئ واحدة أو أكثر أدناه.\n٢. اضغط مطولًا على زر SOS.\n٣. يرسل NovaDial موقعك إلى تلك الجهات ويتصل برقم الطوارئ الخاص بك.</string>
+    <string name="sos_instructions_body">١. أضف جهة اتصال طوارئ واحدة أو أكثر أدناه.\n٢. اضغط مطولًا على زر SOS.\n٣. يرسل Nova Dialer موقعك إلى تلك الجهات ويتصل برقم الطوارئ الخاص بك.</string>
     <string name="sos_button_label">SOS</string>
     <string name="sos_hold_hint">اضغط مطولًا للتفعيل</string>
     <string name="sos_contacts_title">جهات اتصال الطوارئ</string>
     <string name="sos_contact_add">إضافة جهة اتصال طوارئ</string>
     <string name="sos_contacts_empty">لا توجد جهات اتصال طوارئ بعد</string>
-    <string name="sos_contact_name">الاسم</string>
-    <string name="sos_contact_number">رقم الهاتف</string>
     <string name="sos_auto_alert_title">تنبيه جهات الاتصال تلقائيًا</string>
     <string name="sos_auto_alert_sub">يرسل رسالة إلى جهات اتصال الطوارئ المحفوظة عند تفعيل SOS</string>
     <string name="sos_include_location_title">تضمين موقعي</string>
@@ -685,9 +626,9 @@
     <string name="sos_sent_toast">تم إرسال تنبيه SOS إلى %1$d جهة اتصال</string>
     <string name="sos_no_contacts_toast">أضف جهة اتصال طوارئ واحدة على الأقل أولًا</string>
     <string name="sos_test_alert">إرسال تنبيه تجريبي</string>
-    <string name="sos_alert_message">طوارئ - أحتاج إلى المساعدة. هذا تنبيه SOS تلقائي من NovaDial.</string>
+    <string name="sos_alert_message">طوارئ–أحتاج إلى المساعدة. هذا تنبيه SOS تلقائي من Nova Dialer.</string>
     <string name="sos_alert_location_label">موقعي:</string>
-    <string name="sos_no_location">الموقع غير متاح - شغّل GPS للحصول على رابط خريطة</string>
+    <string name="sos_no_location">الموقع غير متاح–شغّل GPS للحصول على رابط خريطة</string>
     <string name="sos_custom_message_title">Custom alert message</string>
     <string name="sos_custom_message_hint">Leave blank to use the default message</string>
     <string name="sos_countdown_title">Emergency SOS</string>
@@ -697,8 +638,6 @@
     <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
     <string name="sos_shake_title">Shake to trigger SOS</string>
     <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_shake_service_title">Shake to SOS is on</string>
-    <string name="sos_shake_service_text">Shake your phone firmly to start the emergency countdown</string>
     <string name="sos_watch_notification_title">Shake to SOS is on</string>
     <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
     <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
@@ -708,4 +647,30 @@
     <string name="sos_watch_channel_name">Shake to SOS watch</string>
     <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
     <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
+    <!-- Backup restore safety -->
+    <string name="backup_plaintext_warning_title">ملف نسخة احتياطية غير مشفّر</string>
+    <string name="backup_plaintext_warning_body">هذه نسخة احتياطية قديمة وغير مشفّرة. قد تحتوي على جهات اتصال وأرقام هواتف وسجل مكالمات وملاحظات وتذكيرات وإعدادات بشكل مقروء. الاستعادة تدمجها مع بياناتك الحالية وتحتفظ بكل ما لديك. تابع فقط إذا كنت تثق بهذا الملف.</string>
+    <string name="backup_plaintext_warning_confirm">استعادة على أي حال</string>
+    <string name="backup_error_empty_file">الملف المحدد فارغ.</string>
+    <string name="backup_error_too_large">الملف المحدد كبير جدًا بحيث لا يمكن أن يكون نسخة احتياطية من Nova Dialer.</string>
+    <string name="backup_error_not_a_backup">هذا الملف ليس نسخة احتياطية من Nova Dialer.</string>
+    <string name="backup_error_password_required">أدخل كلمة مرور النسخة الاحتياطية.</string>
+    <string name="backup_error_wrong_password">كلمة المرور غير صحيحة، أو الملف تالف.</string>
+    <string name="backup_error_unsupported_version">أُنشئت هذه النسخة الاحتياطية بإصدار أحدث من Nova Dialer ولا يمكن استعادتها هنا.</string>
+    <string name="backup_error_invalid_payload">النسخة الاحتياطية تالفة أو تحتوي على بيانات غير صالحة.</string>
+
+    <!-- Call recording disclosure -->
+    <string name="recording_disclosure_title">قبل تسجيل مكالمة</string>
+    <string name="recording_disclosure_body">تسجيل مكالمة يحفظ الصوت على هذا الجهاز. من المفترض أن تكون التسجيلات الجديدة مشفّرة أثناء التخزين، لكن قد يفشل التشفير، وفي هذه الحالة قد يحتفظ Nova Dialer بنسخة غير مشفّرة داخل تخزين التطبيق الخاص. قد تمنع قيود الجهاز وإصدار Android وشبكة الاتصال والشركة المصنّعة التسجيل أو تحدّ من الجهة التي يتم تسجيلها. أنت مسؤول عن الالتزام بالقوانين المحلية وعن الحصول على أي موافقة مطلوبة من المشاركين.</string>
+    <string name="recording_disclosure_accept">أفهم ذلك</string>
+    <string name="recording_auto_disclosure_title">تفعيل التسجيل التلقائي؟</string>
+    <string name="recording_auto_disclosure_body">عند تفعيل هذا، قد تُسجَّل المكالمات المطابقة لشروط التسجيل تلقائيًا دون سؤالك في كل مرة. يظل إشعار التسجيل أعلاه ساريًا. يمكنك إيقاف هذا في أي وقت.</string>
+    <string name="recording_auto_disclosure_confirm">تفعيل التسجيل التلقائي</string>
+    <string name="recording_export_warning_title">تصدير نسخة قابلة للتشغيل؟</string>
+    <string name="recording_export_warning_body">الملف المكتوب في التنزيلات يكون غير مشفّر ويمكن للتطبيقات الأخرى فتحه. ويبقى على الجهاز حتى إذا أزلت Nova Dialer، ولم يعد محميًا بتشفير التطبيق.</string>
+    <string name="recording_export_warning_confirm">تصدير نسخة غير مشفّرة</string>
+    <string name="recording_share_warning_title">مشاركة نسخة قابلة للتشغيل؟</string>
+    <string name="recording_share_warning_body">النسخة التي تشاركها غير مشفرة ويمكن للتطبيق الذي تختاره فتحها. لا يستطيع Nova Dialer حذفها من ذلك التطبيق أو من جهاز المستلم أو من أي نسخة احتياطية ينشئها، ولم تعد محمية بتشفير التطبيق.</string>
+    <string name="recording_share_warning_confirm">مشاركة نسخة غير مشفرة</string>
+    <string name="recording_export_all">تصدير كل التسجيلات</string>
 </resources>

@@ -10,7 +10,7 @@
 <resources>
 
     <!-- Application Identity -->
-    <string name="app_name">NovaDial</string>
+    <string name="app_name">Nova Dialer</string>
 
     <!-- Navigation Tabs -->
     <string name="tab_home">Início</string>
@@ -47,22 +47,13 @@
     <string name="action_add_contact">Adicionar contato</string>
     <string name="label_phone_number">Número de telefone</string>
     <string name="label_first_name">Nome</string>
-    <string name="label_last_name">Sobrenome</string>
     <string name="label_email">E-mail</string>
     <string name="label_mobile">Celular</string>
     <string name="label_home">Casa</string>
     <string name="label_work">Trabalho</string>
     <string name="label_other">Outro</string>
     <string name="label_address">Endereço</string>
-    <string name="contact_source_select">Selecionar conta</string>
     <string name="contact_source_phone">Armazenamento do telefone</string>
-    <string name="contact_source_label">Salvar na conta</string>
-    <string name="add_contact_dialog_title">Adicionar contato</string>
-    <string name="edit_contact_dialog_title">Editar contato</string>
-    <string name="select_number_to_call">Selecione um número para ligar</string>
-    <string name="select_number_to_message">Selecione um número para enviar mensagem</string>
-    <string name="dialog_call_contact">Ligar para %1$s</string>
-    <string name="dialog_message_contact">Enviar mensagem para %1$s</string>
 
     <!-- Recents & Call History -->
     <string name="no_call_log_title">Seu registro de chamadas está vazio</string>
@@ -76,7 +67,6 @@
     <string name="unknown">Desconhecido</string>
     <string name="recent_label_format">Recente • %1$s</string>
     <string name="calls_count">%1$d chamadas</string>
-    <string name="call_count_label">Quantidade de Chamadas:</string>
     <string name="call_summary_prefix">Resumo de chamadas de %1$s</string>
     <string name="today_call_summary">Resumo de chamadas de hoje</string>
 
@@ -85,11 +75,9 @@
     <string name="dialpad_create_contact">Criar contato</string>
     <string name="dialpad_add_to_existing">Adicionar a existente</string>
     <string name="dialpad_select_contact_title">Selecionar contato</string>
-    <string name="dialpad_search_contact_hint">Buscar contatos...</string>
+    <string name="dialpad_search_contact_hint">Buscar contatos…</string>
     <string name="dialpad_no_contacts_found">Nenhum contato encontrado</string>
-    <string name="dialpad_no_matches">Nenhum contato correspondente</string>
     <string name="dialpad_clear">Limpar</string>
-    <string name="dialpad_paste">Colar</string>
     <string name="dialpad_copy">Copiar número</string>
 
     <!-- In-Call Actions & States -->
@@ -100,16 +88,16 @@
     <string name="btn_call">Ligar</string>
     <string name="btn_unhold">Retomar</string>
     <string name="btn_answer_hold">Atender e reter</string>
-    <string name="second_call_connecting">Conectando a segunda chamada...</string>
-    <string name="second_call_ringing">Segunda chamada tocando...</string>
-    <string name="second_call_dialing">Chamando...</string>
+    <string name="second_call_connecting">Conectando a segunda chamada…</string>
+    <string name="second_call_ringing">Segunda chamada tocando…</string>
+    <string name="second_call_dialing">Chamando…</string>
     <string name="second_call_active">Chamada ativa</string>
     <string name="second_call_held">Em espera</string>
     <string name="second_call_failed">Segunda chamada encerrada</string>
     <string name="call_status_ongoing">Chamada em andamento</string>
-    <string name="call_status_dialing">Discando...</string>
-    <string name="call_status_ringing">Chamada recebida...</string>
-    <string name="call_status_connecting">Conectando...</string>
+    <string name="call_status_dialing">Discando…</string>
+    <string name="call_status_ringing">Chamada recebida…</string>
+    <string name="call_status_connecting">Conectando…</string>
     <string name="call_status_hold">Chamada em espera</string>
     <string name="call_status_ended">Chamada encerrada</string>
     <string name="btn_end_call">Encerrar chamada</string>
@@ -117,9 +105,8 @@
     <string name="btn_collapse">Recolher</string>
     <string name="btn_play">Reproduzir</string>
     <string name="btn_pause">Pausar</string>
-    <string name="btn_minimize_call">Minimizar chamada</string>
     <string name="in_call_spoof_warning">Possível número falsificado</string>
-    <string name="app_locked_title">NovaDial bloqueado</string>
+    <string name="app_locked_title">Nova Dialer bloqueado</string>
     <string name="app_locked_message">Este app é protegido para salvaguardar sua privacidade. Autentique-se com o bloqueio do dispositivo para continuar.</string>
     <string name="btn_unlock_app">Desbloquear discador</string>
     <string name="call_status_conference">Chamada em conferência</string>
@@ -132,12 +119,15 @@
     <string name="recording">Gravando</string>
     <string name="recording_saved">Gravação salva com segurança</string>
     <string name="recording_started">⏺️ Gravação de chamada iniciada</string>
+    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
+    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
+    <string name="recording_empty">Call recording failed or the file was empty</string>
+    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">Chamar</string>
     <string name="action_message">Mensagem</string>
     <string name="action_swipe_call">Ligar</string>
     <string name="action_swipe_message">Mensagem</string>
     <string name="toast_number_copied">Número copiado para a área de transferência</string>
-    <string name="number_copied">Número copiado</string>
     <string name="send_sms">Enviar SMS</string>
     <string name="sms_sent">SMS enviado</string>
     <string name="sms_failed">Falha ao enviar SMS</string>
@@ -150,12 +140,8 @@
     <!-- Favorites & Voicemail -->
     <string name="no_favorites_title">Nenhum favorito ainda</string>
     <string name="no_favorites_subtitle">Marque contatos com estrela para encontrá-los facilmente</string>
-    <string name="voicemail_header">Correio de voz</string>
-    <string name="no_voicemails_title">Sem mensagens de voz</string>
-    <string name="no_voicemails_subtitle">Você está atualizado</string>
     <string name="voicemail_settings">Configurações de correio de voz</string>
     <string name="voicemail_directory_number">Número do correio de voz</string>
-    <string name="voicemail_sample_transcript">Transcrição: \"Olá! Só liguei para colocar a conversa em dia. Me avise quando estiver livre hoje à noite!\"</string>
 
     <!-- Settings Categories -->
     <string name="cat_sound_gestures">Som e gestos</string>
@@ -172,7 +158,7 @@
     <string name="cat_speed_dial_quick_responses_sub">Discagem rápida e respostas rápidas por SMS</string>
     <string name="cat_call_blocking_sub">Números bloqueados e identificador de chamadas</string>
     <string name="cat_contacts_data_sub">Sincronização, importação e backup</string>
-    <string name="cat_advanced_features_sub">Gravação de chamadas, notas, chamadas falsas e lembretes</string>
+    <string name="cat_advanced_features_sub">Gravação de chamadas, notas e lembretes</string>
     <string name="cat_privacy_security_about_sub">Bloqueio do app, segurança e informações</string>
     <string name="settings_title">Configurações</string>
     <string name="settings_back">Voltar</string>
@@ -214,7 +200,6 @@
     <string name="theme_custom_title">Cor personalizada do tema</string>
     <string name="theme_custom_desc">Digite um código de cor HEX (ex. #FF5722 ou #00E676) para gerar um esquema M3.</string>
     <string name="theme_hex_code_label">Código de cor HEX</string>
-    <string name="theme_hex_code_chip">Código HEX</string>
     <string name="theme_apply">Aplicar tema</string>
     <string name="settings_default_startup_tab">Aba de início padrão</string>
 
@@ -265,9 +250,8 @@
 
     <!-- Settings - Speed Dial & Quick Responses -->
     <string name="settings_speed_dial">Discagem rápida</string>
-    <string name="settings_speed_dial_sub">Atribuir teclas de chamada rápida 1-9</string>
-    <string name="speed_dial">Discagem rápida</string>
-    <string name="speed_dial_desc">Segure as teclas 1-9 no teclado para ligar rapidamente.</string>
+    <string name="settings_speed_dial_sub">Atribuir teclas de chamada rápida 1–9</string>
+    <string name="speed_dial_desc">Segure as teclas 1–9 no teclado para ligar rapidamente.</string>
     <string name="assign_speed_dial_key">Atribuir tecla de discagem rápida %1$d</string>
     <string name="assign_key">Atribuir tecla</string>
     <string name="unassigned_key">Tecla não atribuída</string>
@@ -287,8 +271,6 @@
     <!-- Settings - Carrier Voicemail & Preferences -->
     <string name="settings_voicemail_num">Número do correio de voz</string>
     <string name="settings_voicemail_num_sub">Configurar destino da discagem rápida 1</string>
-    <string name="settings_voicemail_setup_title">Configuração do correio de voz</string>
-    <string name="voicemail_setup_desc">Configure o número a ser chamado ao pressionar e segurar a tecla \'1\' no teclado.</string>
     <string name="save_voicemail_number">Salvar número do correio de voz</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
@@ -337,7 +319,7 @@
     <string name="share_via_apps">Compartilhar via aplicativos</string>
     <string name="share_via_apps_sub">Enviar arquivo de áudio para mensagens, nuvem ou outros apps</string>
     <string name="save_to_downloads">Salvar em Downloads</string>
-    <string name="save_to_downloads_sub">Exportar uma cópia diretamente para a pasta Downloads do aparelho</string>
+    <string name="save_to_downloads_sub">Exportar uma cópia desencriptada e reproduzível diretamente para a pasta Downloads do dispositivo</string>
     <string name="recording_details">Detalhes da gravação</string>
     <string name="headset_recording_warning">Fones conectados: apenas sua voz será gravada, a menos que mude para o viva-voz.</string>
     <string name="settings_recordings_always_on">Sempre gravar chamadas</string>
@@ -345,7 +327,7 @@
     <string name="settings_recordings_biometric_lock">Bloquear gravações com biometria</string>
     <string name="settings_recordings_biometric_lock_sub">Exige impressão digital ou credencial para ouvir as gravações</string>
     <string name="settings_recordings_auto_export">Exportar automaticamente para Downloads</string>
-    <string name="settings_recordings_auto_export_sub">Copia automaticamente as gravações finalizadas para Downloads/NovaDial</string>
+    <string name="settings_recordings_auto_export_sub">Copia automaticamente cada gravação finalizada como ficheiro desencriptado para Downloads/Nova Dialer</string>
     <string name="settings_recordings_compression_title">Compressão e qualidade de áudio</string>
     <string name="settings_recordings_compression_sub">Otimiza a taxa de bits e amostragem para equilibrar fidelidade e espaço</string>
     <string name="settings_recordings_cleanup_empty">Limpar gravações vazias/silenciosas</string>
@@ -365,31 +347,24 @@
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">Contatos a serem exibidos</string>
     <string name="settings_default_account_for_new">Conta padrão para novos contatos</string>
-    <string name="btn_add_merge">Adicionar e mesclar</string>
 
     <!-- Settings - Backup, Restore & Encrypted Migration -->
     <string name="settings_backup_restore_sub">Restaurar histórico de chamadas e configurações de arquivo JSON criptografado</string>
     <string name="backup_export_title">Backup local criptografado</string>
     <string name="backup_export_desc">Exporte listas de bloqueio, notas de chamadas, discagem rápida e respostas rápidas para uma string JSON criptografada com AES-256.</string>
-    <string name="backup_export_password_label">Senha de criptografia (Opcional)</string>
     <string name="backup_restore_desc">Restaure listas de bloqueio, notas e preferências de uma string de backup exportada anteriormente.</string>
     <string name="backup_password_label">Senha (se criptografado)</string>
     <string name="backup_password_hint">At least 8 characters</string>
     <string name="backup_password_too_short">Use at least 8 characters. If you lose this password, the backup cannot be restored.</string>
     <string name="backup_restore_btn">Restaurar</string>
     <string name="backup_restored_success_toast">Backup restaurado com sucesso!</string>
-    <string name="backup_restore_failed_toast">Falha ao restaurar o backup. Verifique a senha ou a string de dados.</string>
-    <string name="vcf_migration_title">Migração de Contatos vCard (VCF)</string>
     <string name="vcf_migration_desc">Exporte ou importe contatos em formato vCard (.vcf).</string>
     <string name="header_contacts_import_export">IMPORTAÇÃO E EXPORTAÇÃO DE CONTATOS</string>
     <string name="settings_export_contacts_vcard">Exportar contatos (vCard)</string>
     <string name="settings_import_contacts_vcard">Importar contatos (vCard)</string>
     <string name="settings_import_contacts_vcard_sub">Restaurar contatos de arquivo .vcf padrão</string>
     <string name="vcf_import_count_success">Contatos importados com sucesso!</string>
-    <string name="btn_save_backup_file">Salvar arquivo de backup</string>
     <string name="btn_restore_backup_file">Restaurar de arquivo</string>
-    <string name="btn_save_vcf_file">Salvar arquivo .VCF</string>
-    <string name="btn_choose_vcf_file">Escolher arquivo .VCF</string>
     <string name="file_saved_success">Arquivo salvo com sucesso!</string>
     <string name="file_save_failed">Falha ao salvar o arquivo</string>
     <string name="file_read_failed">Falha ao ler o arquivo selecionado</string>
@@ -427,31 +402,18 @@
     <string name="settings_all_call_notes_sub">Exibir e gerenciar notas de chamadas salvas</string>
     <string name="no_notes_title">Nenhuma nota de chamada</string>
     <string name="no_notes_desc">Notas adicionadas durante chamadas aparecerão aqui</string>
-    <string name="search_notes_placeholder">Pesquisar notas ou números...</string>
+    <string name="search_notes_placeholder">Pesquisar notas ou números…</string>
     <string name="note_deleted_toast">Nota de chamada excluída</string>
     <string name="add_call_note_btn">Adicionar nota de chamada</string>
     <string name="call_notes_count_title">Notas de chamadas (%1$d)</string>
     <string name="call_notes_count_badge">%1$d notas</string>
     <string name="jot_call_note_title">Anotar nota da chamada</string>
-    <string name="call_note">Nota da chamada</string>
     <string name="note_saved">Nota salva com segurança</string>
-    <string name="note_placeholder">Digite detalhes importantes...</string>
+    <string name="note_placeholder">Digite detalhes importantes…</string>
     <string name="btn_save_note">Salvar nota</string>
 
-    <!-- Settings - Fake Call Simulator & Reminders -->
-    <string name="settings_fake_call_sim">Simulador de Chamada Falsa</string>
-    <string name="settings_fake_call_sim_sub">Agende uma chamada simulada para sair de reuniões chotas</string>
-    <string name="caller_identity">Identidade do Chamador</string>
-    <string name="caller_name_label">Nome do Chamador</string>
-    <string name="trigger_delay_timer">Temporizador de Disparo</string>
+    <!-- Settings - Recording, Notes and Reminders -->
     <string name="duration_label">Duração</string>
-    <string name="sequential_multi_call_title">Opções de Chamadas Múltiplas</string>
-    <string name="sequential_multi_call_desc">Dispara chamadas em sequência para saídas de emergência.</string>
-    <string name="repeat_interval_label">Intervalo de Repetição</string>
-    <string name="multi_call_note">Nota: O intervalo se aplica a 2 ou mais chamadas.</string>
-    <string name="schedule_sequential_calls">Agendar %1$d Chamadas Consecutivas</string>
-    <string name="schedule_escape_call">Agendar Chamada Falsa (%1$d seg)</string>
-    <string name="btn_cancel_scheduled_escape_calls">Cancelar Chamadas Simuladas</string>
     <string name="callback_reminders_title">Lembretes de retorno de chamada</string>
     <string name="callback_reminders_stats">%1$d ativos, %2$d concluídos</string>
     <string name="active_reminders_title">Lembretes Ativos</string>
@@ -483,19 +445,18 @@
     <string name="permissions_required">Permissões necessárias</string>
 
     <!-- Settings - About, Privacy Policy & Community Support -->
-    <string name="settings_about">Sobre o NovaDial</string>
+    <string name="settings_about">Sobre o Nova Dialer</string>
     <string name="settings_about_sub">Informações da versão, licenças e tecnologia</string>
     <string name="settings_privacy">Política de privacidade</string>
     <string name="settings_privacy_sub">Local data and permission notice</string>
     <string name="about_mission_desc">Fornecer uma experiência de discagem simples, confiável e segura sem comprometer a privacidade do usuário.</string>
-    <string name="about_app_desc">NovaDial is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
+    <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">Política de privacidade</string>
-    <string name="privacy_intro">No NovaDial, priorizamos sua privacidade.</string>
-    <string name="privacy_section_1_desc">NovaDial does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), SMS (quick replies and SOS) and optional SOS location are used only for the features you invoke.</string>
-    <string name="privacy_section_3_desc">NovaDial does not sell or share data with third parties. Data leaves the device only when you call, text, export or share.</string>
-    <string name="settings_support_title">Apoiar o NovaDial</string>
-    <string name="settings_support_desc" formatted="false">O NovaDial é 100% gratuito, código aberto, sem anúncios e focado na privacidade. Se você acha este app útil, considere contribuir com código ou traduções.</string>
+    <string name="privacy_intro">No Nova Dialer, priorizamos sua privacidade.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="settings_support_desc" formatted="false">O Nova Dialer é 100% gratuito, código aberto, sem anúncios e focado na privacidade. Se você acha este app útil, considere contribuir com código ou traduções.</string>
     <string name="settings_contribute_github">Contribuir no GitHub</string>
 
     <!-- General Buttons, Common Utilities & Common Dialogs -->
@@ -515,7 +476,7 @@
     <string name="dup_none_title">Nenhum duplicado encontrado</string>
     <string name="dup_none_desc">Seus contatos estão limpos — nada para mesclar ou excluir.</string>
     <string name="dup_permission_title">Permissão de contatos necessária</string>
-    <string name="dup_permission_desc">Conceda acesso aos contatos para que o NovaDial possa escanear, mesclar e remover duplicados.</string>
+    <string name="dup_permission_desc">Conceda acesso aos contatos para que o Nova Dialer possa escanear, mesclar e remover duplicados.</string>
     <string name="dup_rescan">Reescanear</string>
     <string name="dup_merge">Mesclar</string>
     <string name="dup_delete_others">Excluir outros</string>
@@ -535,8 +496,6 @@
     <string name="add_call_search_hint">Buscar contato ou digitar número</string>
     <string name="add_call_unavailable">Não é possível fazer outra chamada agora</string>
     <string name="account_filter_all">Todas as contas</string>
-    <string name="on_hold_prefix">Em espera:</string>
-    <string name="warning">Aviso</string>
     <string name="error_open_messages">Não foi possível abrir mensagens</string>
     <string name="history">Histórico</string>
 
@@ -550,7 +509,7 @@
 
     <string name="screening_role_granted">Filtragem de chamadas ativa</string>
     <string name="screening_role_needed">Permissão de filtragem de chamadas necessária</string>
-    <string name="screening_role_desc">Permita que o NovaDial filtre chamadas recebidas para que o modo foco, regras VIP e bloqueio funcionem.</string>
+    <string name="screening_role_desc">Permita que o Nova Dialer filtre chamadas recebidas para que o modo foco, regras VIP e bloqueio funcionem.</string>
 
     <string name="focus_mode_title">Modo foco</string>
     <string name="focus_mode_sub">Escolha quais chamadas podem tocar enquanto você se concentra.</string>
@@ -580,7 +539,6 @@
     <string name="vip_empty">Nenhum número VIP ainda. Adicione as pessoas que sempre precisam falar com você.</string>
     <string name="vip_add">Adicionar número VIP</string>
     <string name="vip_add_sub">Escolha um número que sempre possa falar com você</string>
-    <string name="vip_add_hint">Número de telefone</string>
     <string name="vip_remove">Remover número VIP</string>
 
     <string name="announcer_enable_title">Anunciar nome do chamador</string>
@@ -633,46 +591,29 @@
     <string name="dnd_day_fri">Fri</string>
     <string name="dnd_day_sat">Sat</string>
     <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now - unknown callers will be silenced</string>
+    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
     <string name="dnd_pick_time_title">Pick a time</string>
 
-    <string name="contact_ringtones_title">Contact ringtones</string>
-    <string name="contact_ringtones_sub">Assign custom ringtones and vibration patterns. Played by Fake Call; incoming real calls still use the system ringtone.</string>
-    <string name="ringtone_row_sub_default">Default ringtone</string>
-    <string name="vibration_pattern_label">Vibration pattern</string>
-    <string name="pattern_default">Default</string>
-    <string name="pattern_none">None</string>
-    <string name="pattern_short">Short</string>
-    <string name="pattern_long">Long</string>
-    <string name="pattern_double">Double</string>
-    <string name="pattern_heartbeat">Heartbeat</string>
-    <string name="pattern_sos">SOS</string>
-    <string name="pattern_staccato">Staccato</string>
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
-    <string name="contact_ringtones_empty">No contacts with phone numbers yet - add a favourite to get started</string>
-    <string name="test_ringtone_label">Test</string>
 
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
-    <string name="quick_reply_direct_sms_sub">Send decline messages directly as text messages using SEND_SMS permission</string>
-    <string name="sms_permission_required">SMS permission needed to send quick replies as text</string>
+    <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
+    <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
 
-    <string name="widget_favorites_title">NovaDial Favourites</string>
+    <string name="widget_favorites_title">Nova Dialer Favourites</string>
     <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet - open NovaDial to add some</string>
-    <string name="ringtone_pick">Ringtone</string>
+    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <string name="sos_title">SOS de emergência</string>
     <string name="sos_sub">Envie um alerta de emergência com a sua localização e ligue para os serviços de emergência</string>
     <string name="sos_instructions_title">Como funciona</string>
-    <string name="sos_instructions_body">1. Adicione um ou mais contactos de emergência abaixo.\n2. Mantenha premido o botão SOS.\n3. O NovaDial envia a sua localização a esses contactos e liga para o seu número de emergência.</string>
+    <string name="sos_instructions_body">1. Adicione um ou mais contactos de emergência abaixo.\n2. Mantenha premido o botão SOS.\n3. O Nova Dialer envia a sua localização a esses contactos e liga para o seu número de emergência.</string>
     <string name="sos_button_label">SOS</string>
     <string name="sos_hold_hint">Mantenha premido para ativar</string>
     <string name="sos_contacts_title">Contactos de emergência</string>
     <string name="sos_contact_add">Adicionar contacto de emergência</string>
     <string name="sos_contacts_empty">Ainda não há contactos de emergência</string>
-    <string name="sos_contact_name">Nome</string>
-    <string name="sos_contact_number">Número de telefone</string>
     <string name="sos_auto_alert_title">Alertar contactos automaticamente</string>
     <string name="sos_auto_alert_sub">Envia uma mensagem aos seus contactos de emergência guardados quando o SOS é ativado</string>
     <string name="sos_include_location_title">Incluir a minha localização</string>
@@ -685,9 +626,9 @@
     <string name="sos_sent_toast">Alerta SOS enviado a %1$d contacto(s)</string>
     <string name="sos_no_contacts_toast">Adicione primeiro pelo menos um contacto de emergência</string>
     <string name="sos_test_alert">Enviar alerta de teste</string>
-    <string name="sos_alert_message">EMERGÊNCIA - Preciso de ajuda. Este é um alerta SOS automático do NovaDial.</string>
+    <string name="sos_alert_message">EMERGÊNCIA–Preciso de ajuda. Este é um alerta SOS automático do Nova Dialer.</string>
     <string name="sos_alert_location_label">A minha localização:</string>
-    <string name="sos_no_location">Localização indisponível - ative o GPS para um link de mapa</string>
+    <string name="sos_no_location">Localização indisponível–ative o GPS para um link de mapa</string>
     <string name="sos_custom_message_title">Custom alert message</string>
     <string name="sos_custom_message_hint">Leave blank to use the default message</string>
     <string name="sos_countdown_title">Emergency SOS</string>
@@ -697,8 +638,6 @@
     <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
     <string name="sos_shake_title">Shake to trigger SOS</string>
     <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_shake_service_title">Shake to SOS is on</string>
-    <string name="sos_shake_service_text">Shake your phone firmly to start the emergency countdown</string>
     <string name="sos_watch_notification_title">Shake to SOS is on</string>
     <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
     <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
@@ -708,4 +647,30 @@
     <string name="sos_watch_channel_name">Shake to SOS watch</string>
     <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
     <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
+    <!-- Backup restore safety -->
+    <string name="backup_plaintext_warning_title">Ficheiro de cópia não encriptado</string>
+    <string name="backup_plaintext_warning_body">Esta é uma cópia antiga que NÃO está encriptada. Pode conter contactos, números de telefone, histórico de chamadas, notas, lembretes e definições em formato legível. Restaurar combina-a com os seus dados atuais e mantém tudo o que já tem. Continue apenas se confiar neste ficheiro.</string>
+    <string name="backup_plaintext_warning_confirm">Restaurar mesmo assim</string>
+    <string name="backup_error_empty_file">O ficheiro selecionado está vazio.</string>
+    <string name="backup_error_too_large">O ficheiro selecionado é demasiado grande para ser uma cópia do Nova Dialer.</string>
+    <string name="backup_error_not_a_backup">Esse ficheiro não é uma cópia de segurança do Nova Dialer.</string>
+    <string name="backup_error_password_required">Introduza a palavra-passe da cópia.</string>
+    <string name="backup_error_wrong_password">Palavra-passe incorreta ou ficheiro danificado.</string>
+    <string name="backup_error_unsupported_version">Esta cópia foi criada por uma versão mais recente do Nova Dialer e não pode ser restaurada aqui.</string>
+    <string name="backup_error_invalid_payload">A cópia está danificada ou contém dados inválidos.</string>
+
+    <!-- Call recording disclosure -->
+    <string name="recording_disclosure_title">Antes de gravar uma chamada</string>
+    <string name="recording_disclosure_body">Gravar uma chamada guarda o áudio neste dispositivo. As novas gravações devem ficar encriptadas em repouso, mas a encriptação pode falhar e, nesse caso, o Nova Dialer pode manter uma cópia não encriptada no armazenamento privado da aplicação. Limitações do dispositivo, da versão do Android, da operadora e do fabricante podem impedir a gravação ou limitar qual lado da chamada é captado. É responsável por cumprir as leis locais e por obter o consentimento que os participantes tenham de dar.</string>
+    <string name="recording_disclosure_accept">Compreendi</string>
+    <string name="recording_auto_disclosure_title">Ativar a gravação automática?</string>
+    <string name="recording_auto_disclosure_body">Enquanto estiver ativa, as chamadas que cumpram as suas condições de gravação podem ser gravadas automaticamente, sem lhe perguntar de cada vez. O aviso de gravação acima continua a aplicar-se. Pode desativá-la a qualquer momento.</string>
+    <string name="recording_auto_disclosure_confirm">Ativar gravação automática</string>
+    <string name="recording_export_warning_title">Exportar uma cópia reproduzível?</string>
+    <string name="recording_export_warning_body">O ficheiro escrito em Downloads é desencriptado e pode ser aberto por outras aplicações. Permanece no dispositivo mesmo que desinstale o Nova Dialer e deixa de estar protegido pela encriptação da aplicação.</string>
+    <string name="recording_export_warning_confirm">Exportar cópia não encriptada</string>
+    <string name="recording_share_warning_title">Partilhar uma cópia reproduzível?</string>
+    <string name="recording_share_warning_body">A cópia que partilha está desencriptada e pode ser aberta pela aplicação que escolher. O Nova Dialer não a pode apagar dessa aplicação, do dispositivo do destinatário nem de eventuais cópias de segurança que este faça, e deixa de estar protegida pela encriptação da aplicação.</string>
+    <string name="recording_share_warning_confirm">Partilhar cópia não encriptada</string>
+    <string name="recording_export_all">Exportar todas as gravações</string>
 </resources>

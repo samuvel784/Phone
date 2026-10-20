@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -52,7 +52,7 @@ object LocationHelper {
             } catch (_: Exception) {
                 null
             }
-            if (location != null && (best == null || location.time > best!!.time)) {
+            if (location != null && (best == null || location.time > best.time)) {
                 best = location
             }
         }

@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.R
 import com.example.ui.theme.AppShapes
-import com.example.ui.theme.LocalAmoledMode
 import com.example.ui.theme.LocalM3Expressive
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
@@ -73,7 +72,6 @@ fun SettingsPanel(
     }
 
     val isExpressive = LocalM3Expressive.current
-    val isAmoled = LocalAmoledMode.current
     // One tone above the page in every theme. All settings screens receive this colour, so this one line restyles them.
     val cardBgColor = MaterialTheme.colorScheme.surfaceContainerLow
 

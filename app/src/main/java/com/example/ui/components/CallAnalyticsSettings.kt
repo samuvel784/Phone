@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,13 +145,13 @@ fun CallAnalyticsSettings(
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
-                            onClick = { csvLauncher.launch("NovaDial_CallLog.csv") },
+                            onClick = { csvLauncher.launch("Nova Dialer_CallLog.csv") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(text = stringResource(R.string.export_call_log_csv))
                         }
                         FilledTonalButton(
-                            onClick = { pdfLauncher.launch("NovaDial_CallLog.pdf") },
+                            onClick = { pdfLauncher.launch("Nova Dialer_CallLog.pdf") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(

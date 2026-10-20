@@ -5,12 +5,13 @@
 
 package com.example
 
-import android.app.KeyguardManager
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.Ringtone
@@ -24,8 +25,8 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.provider.Settings
 import android.telecom.Call
+import android.widget.Toast
 import android.telecom.CallAudioState
 import android.telecom.CallEndpoint
 import android.telecom.CallEndpointException
@@ -38,22 +39,24 @@ import androidx.core.app.Person
 import androidx.core.content.ContextCompat
 import com.example.data.AppDatabase
 import com.example.model.AppSetting
-import com.example.model.CallRecording
 import com.example.telecom.AudioEndpointInfo
 import com.example.telecom.AudioRoute
 import com.example.telecom.AudioRoutePolicy
 import com.example.telecom.CallTimingLogger
 import com.example.telecom.CallDecisionStore
 import com.example.telecom.CallerAnnouncerManager
+import com.example.telecom.NotificationRecordingPolicy
+import com.example.telecom.RecordingActionExecutor
+import com.example.telecom.RecordingActionState
+import com.example.telecom.RecordingNotificationAction
+import com.example.telecom.RecordingNotificationObserver
 import com.example.telecom.RingingPolicy
 import com.example.security.IntentGuard
-import com.example.ui.components.getCurrentLocale
-import com.example.util.CallAudioHelper
 import com.example.util.CallAudioRecorder
 import com.example.util.ContactRingtonePrefs
 import com.example.util.DynamicIslandOverlayManager
 import com.example.util.FlashLightManager
-import com.example.util.RecordingFeedbackHelper
+import com.example.util.RecordingDisclosure
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -61,8 +64,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
 import androidx.core.net.toUri
 
 class MyInCallService : InCallService(), CallAudioRouteController {
@@ -76,7 +77,6 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     private var announcer: CallerAnnouncerManager? = null
 
     /** Ensures the full-screen-intent settings prompt is offered at most once per service lifetime. */
-    private var fsiPrompted = false
 
     // ---- API 34+ call endpoints -----------------------------------------------------------
     @Volatile
@@ -85,7 +85,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     @Volatile
     private var currentCallEndpoint: CallEndpoint? = null
 
-    private val audioLogTag = "NovaDialAudio"
+    private val audioLogTag = "Nova Dialer Audio"
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
@@ -139,7 +139,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     /**
      * True when the platform or the screening service asked for this call to stay
      * silent. On Android 10+ the platform sets [Call.EXTRA_SILENT_RINGING_REQUESTED];
-     * older versions (and NovaDial's own screening service) use [CallDecisionStore].
+     * older versions (and Nova Dialer's own screening service) use [CallDecisionStore].
      */
     private fun isCallSilenced(call: Call?): Boolean {
         val number = call?.details?.handle?.schemeSpecificPart ?: ""
@@ -282,7 +282,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 val flags = PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
                         PowerManager.ACQUIRE_CAUSES_WAKEUP or
                         PowerManager.ON_AFTER_RELEASE
-                wakeLock = pm?.newWakeLock(flags, "NovaDial:InCallScreenWakeLock")?.apply {
+                wakeLock = pm?.newWakeLock(flags, "Nova Dialer:InCallScreenWakeLock")?.apply {
                     setReferenceCounted(false)
                 }
             }
@@ -291,7 +291,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             try {
                 if (wakeLock == null) {
                     val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
-                    wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NovaDial:InCallCpuWakeLock")?.apply {
+                    wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Nova Dialer:InCallCpuWakeLock")?.apply {
                         setReferenceCounted(false)
                     }
                 }
@@ -316,6 +316,14 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         announcer = CallerAnnouncerManager(this)
         CallManager.registerRouteController(this)
         logFullScreenIntentAvailability()
+
+        // Event-driven, not polled: any start/stop from the notification, in-call UI, Dynamic
+        // Island or call teardown must rebuild the notification's explicit START/STOP action.
+        serviceScope.launch(Dispatchers.Main.immediate) {
+            RecordingNotificationObserver(CallAudioRecorder.isRecording) {
+                refreshActiveCallNotification()
+            }.observe()
+        }
     }
 
     override fun onDestroy() {
@@ -331,6 +339,11 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         FlashLightManager.stopFlashing(this)
         cancelIncomingNotifications()
         nm.cancel(NOTIFICATION_ID_ACTIVE)
+        // Final chance to finalise audio owned by this call. The call manager's finalizer is
+        // idempotent, so a normal call-end/save path is not repeated here.
+        if (CallAudioRecorder.isRecording.value) {
+            CallManager.stopCallRecording(context = this, playFeedback = false)
+        }
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -387,7 +400,16 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 // Android 14+ and as a legacy audio route below.
                 CallManager.toggleSpeaker()
             }
-            ACTION_TOGGLE_RECORD -> toggleCallRecordingFromNotification()
+            ACTION_START_RECORD ->
+                handleRecordingAction(
+                    RecordingNotificationAction.START,
+                    intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
+                )
+            ACTION_STOP_RECORD ->
+                handleRecordingAction(
+                    RecordingNotificationAction.STOP,
+                    intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
+                )
         }
         return START_NOT_STICKY
     }
@@ -396,7 +418,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         super.onCallAdded(call)
         val num = call.details?.handle?.schemeSpecificPart ?: ""
         val incoming = call.safeState == Call.STATE_RINGING
-        // The earliest event NovaDial can observe. Everything before this (paging, carrier
+        // The earliest event Nova Dialer can observe. Everything before this (paging, carrier
         // signalling, Telecom setup) is outside the app's control.
         val trace = CallTimingLogger.begin(CallManager.callId(call), num, incoming)
 
@@ -495,7 +517,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         }
     }
 
-    /** In-memory only: CNAP from the call details or NovaDial's contact cache. */
+    /** In-memory only: CNAP from the call details or Nova Dialer's contact cache. */
     private fun cachedCallerDisplayName(call: Call, number: String): String? {
         if (number.isBlank()) {
             return call.details?.callerDisplayName?.takeIf { it.isNotBlank() } ?: "Unknown"
@@ -521,10 +543,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             nm.cancel(NOTIFICATION_ID_ACTIVE)
 
             if (CallAudioRecorder.isRecording.value) {
-                try {
-                    CallAudioRecorder.stopRecording()
-                    CallAudioHelper.restoreAudioState(this, this)
-                } catch (_: Exception) {}
+                CallManager.stopCallRecording(context = this, playFeedback = false)
             }
         } else {
             val nextCall = remainingActiveCalls.firstOrNull()
@@ -685,14 +704,9 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                         call.details?.handle?.schemeSpecificPart ?: "",
                         resolveCallerDisplayName(call, call.details?.handle?.schemeSpecificPart ?: "")
                     )
-                    // Bring up the incoming call interface. The full-screen intent on the
-                    // notification is the platform-sanctioned route while the screen is locked;
-                    // this explicit launch only succeeds when Android already permits NovaDial to
-                    // start activities (app in foreground / default-dialer role) and is therefore
-                    // best-effort by design. It is skipped for call waiting, where the user is
-                    // already in a call and only a heads-up is appropriate.
-                    CallTimingLogger.markActive(CallTimingLogger.Event.CALL_SCREEN_LAUNCH)
-                    launchIncomingCallScreen()
+                    // Incoming UI has exactly one owner: the notification's full-screen intent
+                    // (or its heads-up fallback). No competing background startActivity call is
+                    // made here; Android would block it or show two call screens.
                 }
             }
             Call.STATE_ACTIVE, Call.STATE_DIALING, Call.STATE_CONNECTING, Call.STATE_HOLDING -> {
@@ -700,7 +714,8 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 stopCallWaitingTone()
                 FlashLightManager.stopFlashing(this)
                 showActiveCallNotification(call)
-                launchCallScreen(answerOnLaunch = false)
+                // The answered-call UI is opened by the Answer PendingIntent or by
+                // IncomingCallActivity's answer hand-off. Do not force a third activity here.
             }
         }
     }
@@ -806,10 +821,9 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 android.util.Log.w(
                     NOTIFICATION_TAG,
                     "Full-screen intent not permitted (canUseFullScreenIntent=false). " +
-                        "Incoming call will only show as a heads-up notification. " +
-                        "Full-screen intent access can be granted in system settings."
+                        "Incoming call will show as a heads-up notification; the user can " +
+                        "grant full-screen intent access from system settings."
                 )
-                promptFullScreenIntentAccessIfNeeded()
             }
             CallTimingLogger.markActive(CallTimingLogger.Event.FULL_SCREEN_INTENT)
         }
@@ -840,7 +854,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             android.util.Log.w(
                 NOTIFICATION_TAG,
-                "Notifications are disabled for NovaDial; incoming calls cannot be presented. " +
+                "Notifications are disabled for Nova Dialer; incoming calls cannot be presented. " +
                     "The user must grant POST_NOTIFICATIONS."
             )
         }
@@ -863,30 +877,6 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         }
     }
 
-    /**
-     * On Android 14+ a non-default-dialer install is not auto-granted USE_FULL_SCREEN_INTENT and
-     * would otherwise only ever show a heads-up banner. Send the user to the one-tap settings page
-     * so the lock-screen dashboard can actually appear. Best-effort: several OEM builds lack the
-     * page, in which case the banner fallback remains.
-     */
-    private fun promptFullScreenIntentAccessIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
-        if (fsiPrompted) return
-        fsiPrompted = true
-        try {
-            startActivity(
-                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
-                    .setData(Uri.fromParts("package", packageName, null))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        } catch (e: Exception) {
-            android.util.Log.w(
-                NOTIFICATION_TAG,
-                "Unable to open the full-screen-intent settings page: ${e.message}"
-            )
-        }
-    }
-
     private fun showActiveCallNotification(call: Call) {
         if (call.safeState == Call.STATE_DISCONNECTED || CallManager.calls.value.none { it == call && it.safeState != Call.STATE_DISCONNECTED }) {
             nm.cancel(NOTIFICATION_ID_ACTIVE)
@@ -894,12 +884,14 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         }
         val number = call.details?.handle?.schemeSpecificPart ?: ""
         val displayName = resolveCallerDisplayName(call, number)
+        val activeCallId = CallManager.callId(call)
 
         val contentPendingIntent = PendingIntent.getActivity(
             this, 200,
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra(EXTRA_SHOW_CALL, true)
+                putExtra(EXTRA_CALL_ID, activeCallId)
                 putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -907,15 +899,53 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
         val hangUpPendingIntent = PendingIntent.getService(
             this, 201,
-            Intent(this, MyInCallService::class.java).apply { action = ACTION_HANG_UP },
+            Intent(this, MyInCallService::class.java).apply {
+                action = ACTION_HANG_UP
+                // Scope the action to the call this notification was built for.
+                putExtra(EXTRA_CALL_ID, activeCallId)
+            },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val recordPendingIntent = PendingIntent.getService(
-            this, 202,
-            Intent(this, MyInCallService::class.java).apply { action = ACTION_TOGGLE_RECORD },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val isRecording = CallAudioRecorder.isRecording.value
+        val recordAction = NotificationRecordingPolicy.actionFor(isRecording)
+
+        // If the one-time notice has not been accepted, route the tap straight to the private
+        // activity instead of asking this service to start audio (and to try to launch UI from the
+        // background). Once acknowledged, the service receives an explicit START/STOP action; it
+        // never infers the operation from a potentially stale notification label.
+        val recordPendingIntent = if (!isRecording &&
+            !RecordingDisclosure.isManualAcknowledged(this)
+        ) {
+            PendingIntent.getActivity(
+                this, 205,
+                Intent(this, RecordingDisclosureActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(EXTRA_CALL_ID, activeCallId)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        } else {
+            PendingIntent.getService(
+                this,
+                if (recordAction == RecordingNotificationAction.START) {
+                    REQUEST_START_RECORD
+                } else {
+                    REQUEST_STOP_RECORD
+                },
+                Intent(this, MyInCallService::class.java).apply {
+                    action = when (recordAction) {
+                        RecordingNotificationAction.START -> ACTION_START_RECORD
+                        RecordingNotificationAction.STOP -> ACTION_STOP_RECORD
+                    }
+                    // Scope the action to the call this notification was built for.
+                    putExtra(EXTRA_CALL_ID, activeCallId)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
 
         val speakerPendingIntent = PendingIntent.getService(
             this, 203,
@@ -931,7 +961,6 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
         val isMuted = CallManager.audioState.value?.isMuted ?: false
         val isSpeaker = (CallManager.audioState.value?.route ?: CallAudioState.ROUTE_EARPIECE) == CallAudioState.ROUTE_SPEAKER
-        val isRecording = CallAudioRecorder.isRecording.value
         val isConference = CallManager.isConference(call) || CallManager.isConferenceActive.value
 
         val recordTitle = if (isRecording) "■ Stop Rec" else "● Record"
@@ -993,51 +1022,78 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         nm.notify(NOTIFICATION_ID_MISSED, notification)
     }
 
-    private fun toggleCallRecordingFromNotification() {
-        val isRec = CallAudioRecorder.isRecording.value
-        val prefs = getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
-        val chimeEnabled = prefs.getBoolean("recording_chime_enabled", false)
-        val autoTune = prefs.getBoolean("auto_tune_recording_volume", true)
+    private fun handleRecordingAction(
+        action: RecordingNotificationAction,
+        expectedCallId: Long = NO_CALL_ID
+    ) {
+        val currentCall = CallManager.currentCall.value
+        val actionBelongsToCurrentCall = expectedCallId == NO_CALL_ID ||
+            (currentCall != null && CallManager.callId(currentCall) == expectedCallId)
 
-        if (isRec) {
-            RecordingFeedbackHelper.triggerRecordingStopFeedback(this, chimeEnabled)
-            val result = CallAudioRecorder.stopRecording()
-            if (autoTune) {
-                CallAudioHelper.restoreAudioState(this, this)
-            }
-            val file = result.file
-            if (file != null && file.exists() && file.length() > 0L) {
-                val durationSec = result.durationSeconds.coerceAtLeast(1L)
-                val number = CallManager.callerNumber.value.ifEmpty { "Unknown" }
-                val name = CallManager.callerName.value.ifEmpty { number }
-                val locale = getCurrentLocale(this)
-                val timestamp = SimpleDateFormat("MMM d, HH:mm", locale).format(Date())
-
-                val recording = CallRecording(
-                    number = number,
-                    name = name,
-                    timestamp = timestamp,
-                    duration = durationSec,
-                    filePath = file.absolutePath
-                )
-
-                serviceScope.launch {
-                    try {
-                        AppDatabase.getDatabase(this@MyInCallService).dialerDao().insertCallRecording(recording)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        } else {
-            RecordingFeedbackHelper.triggerRecordingStartFeedback(this, chimeEnabled)
-            if (autoTune) {
-                CallAudioHelper.prepareSpeakerForRecording(this, this, CallManager.audioState.value)
-            }
-            val number = CallManager.callerNumber.value.ifEmpty { "Unknown" }
-            CallAudioRecorder.startRecording(this, number)
+        // A notification action from an old call must never start or stop audio for a newer call.
+        if (!actionBelongsToCurrentCall) {
+            refreshActiveCallNotification()
+            return
         }
-        CallManager.currentCall.value?.let { showActiveCallNotification(it) }
+
+        RecordingActionExecutor(
+            state = {
+                val call = CallManager.currentCall.value
+                RecordingActionState(
+                    isRecording = CallAudioRecorder.isRecording.value,
+                    hasLiveCall = call != null && call.safeState != Call.STATE_DISCONNECTED,
+                    microphoneGranted = ContextCompat.checkSelfPermission(
+                        this@MyInCallService,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED,
+                    disclosureAcknowledged = RecordingDisclosure.isManualAcknowledged(this@MyInCallService)
+                )
+            },
+            startRecording = { CallManager.startCallRecording(this@MyInCallService) },
+            stopRecording = {
+                CallManager.stopCallRecording(
+                    context = this@MyInCallService,
+                    playFeedback = true
+                )
+            },
+            onShowDisclosure = { launchRecordingDisclosure() },
+            onPermissionRequired = {
+                Toast.makeText(
+                    this@MyInCallService,
+                    getString(R.string.recording_start_failed),
+                    Toast.LENGTH_LONG
+                ).show()
+            },
+            onStartFailed = {
+                Toast.makeText(
+                    this@MyInCallService,
+                    getString(R.string.recording_start_failed),
+                    Toast.LENGTH_LONG
+                ).show()
+            },
+            refreshNotification = { refreshActiveCallNotification() }
+        ).execute(action)
+    }
+
+    /** Fallback for old notifications: UI must be opened by an activity, never by this service. */
+    private fun launchRecordingDisclosure() {
+        val call = CallManager.currentCall.value ?: return
+        try {
+            startActivity(
+                Intent(this, RecordingDisclosureActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(EXTRA_CALL_ID, CallManager.callId(call))
+                }
+            )
+        } catch (_: Exception) {
+            Toast.makeText(
+                this,
+                getString(R.string.recording_start_failed),
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     /**
@@ -1075,25 +1131,6 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 putExtra(EXTRA_SHOW_CALL, true)
                 putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
                 if (answerOnLaunch) putExtra(EXTRA_ANSWER, true)
-            }
-            startActivity(intent)
-        } catch (_: Exception) {}
-    }
-
-    private fun launchIncomingCallScreen() {
-        try {
-            val intent = Intent(this, IncomingCallActivity::class.java).apply {
-                action = ACTION_INCOMING_CALL
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP
-                val current = CallManager.currentCall.value
-                if (current != null) {
-                    putExtra(EXTRA_CALL_ID, CallManager.callId(current))
-                    putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, CallManager.callerName.value)
-                    putExtra(IncomingCallActivity.EXTRA_CALLER_NUMBER, CallManager.callerNumber.value)
-                }
-                putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
             }
             startActivity(intent)
         } catch (_: Exception) {}
@@ -1139,10 +1176,14 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         const val ACTION_HANG_UP = "com.example.ACTION_HANG_UP"
         const val ACTION_ANSWER = "com.example.ACTION_ANSWER"
         const val ACTION_DECLINE = "com.example.ACTION_DECLINE"
-        const val ACTION_TOGGLE_RECORD = "com.example.ACTION_TOGGLE_RECORD"
+        const val ACTION_START_RECORD = "com.example.ACTION_START_RECORD"
+        const val ACTION_STOP_RECORD = "com.example.ACTION_STOP_RECORD"
         const val ACTION_TOGGLE_SPEAKER = "com.example.ACTION_TOGGLE_SPEAKER"
         const val ACTION_TOGGLE_MUTE = "com.example.ACTION_TOGGLE_MUTE"
         const val ACTION_INCOMING_CALL = "com.example.INCOMING_CALL"
+
+        private const val REQUEST_START_RECORD = 202
+        private const val REQUEST_STOP_RECORD = 206
 
         const val EXTRA_SHOW_CALL = "SHOW_CALL_SCREEN"
         const val EXTRA_ANSWER = "ANSWER_ON_LAUNCH"
@@ -1151,13 +1192,18 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         const val EXTRA_CALL_ID = "com.example.EXTRA_CALL_ID"
         const val NO_CALL_ID = -1L
 
-        private const val NOTIFICATION_TAG = "NovaDialIncoming"
+        private const val NOTIFICATION_TAG = "Nova Dialer Incoming"
 
         @Volatile
         private var instanceRef: MyInCallService? = null
 
         fun silenceRingtone() {
             instanceRef?.stopRinging()
+        }
+
+        /** Lets the disclosure activity refresh the Record/Stop action after it starts audio. */
+        fun refreshActiveCallNotification() {
+            instanceRef?.refreshActiveCallNotification()
         }
     }
 }

@@ -59,7 +59,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.DialerViewModel
-import com.example.util.MultiSimManager
+import com.example.util.CallAudioRecorder
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.delay
 import java.io.File
@@ -79,9 +79,6 @@ fun RecentCallRow(
     val record = group.primary
     val context = LocalContext.current
     var isExpanded by remember { mutableStateOf(false) }
-
-    val isExpressive = LocalM3Expressive.current
-    val isAmoled = LocalAmoledMode.current
 
     // SQUIRCLE ARCHITECTURE: Strictly enforce AppShapes.Avatar (percent = 32)
     val avatarShape = AppShapes.Avatar
@@ -421,7 +418,7 @@ fun RecentCallRow(
                                 contentColor = if (isSpam) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.error,
                                 onClick = {
                                     RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                    if (isSpam && spamEntity != null) {
+                                    if (spamEntity != null) {
                                         viewModel.deleteSpamNumber(spamEntity)
                                         Toast.makeText(context, context.getString(R.string.spam_unmarked), Toast.LENGTH_SHORT).show()
                                     } else {
@@ -588,6 +585,7 @@ fun DirectRecordingPlayerDialog(
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var isEditingNote by remember { mutableStateOf(false) }
     var noteInput by remember(currentRecording.id) { mutableStateOf(currentRecording.note) }
+    var showShareWarning by remember { mutableStateOf(false) }
 
     fun stopPlayer() {
         try {
@@ -606,14 +604,22 @@ fun DirectRecordingPlayerDialog(
             Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
             return
         }
+        // Encrypted recordings must be decrypted into the private cache before MediaPlayer can
+        // read them. Legacy plaintext recordings are returned unchanged.
+        val playable = CallAudioRecorder.playableFile(context, file)
+        if (playable == null) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
             val mp = MediaPlayer().apply {
-                setDataSource(file.absolutePath)
+                setDataSource(playable.absolutePath)
                 prepare()
                 totalDurationMs = duration.coerceAtLeast(1000)
                 setOnCompletionListener {
                     isPlaying = false
                     currentPositionMs = 0
+                    CallAudioRecorder.clearPlaybackCache(context)
                 }
                 start()
             }
@@ -628,6 +634,37 @@ fun DirectRecordingPlayerDialog(
     DisposableEffect(currentRecording.id) {
         onDispose {
             stopPlayer()
+            // Drop the decrypted playback cache when the dialog closes.
+            CallAudioRecorder.clearPlaybackCache(context)
+        }
+    }
+
+    /** Shares a playable (decrypted) copy only, mirroring the recordings screen. */
+    fun shareRecording(rec: CallRecording) {
+        val file = File(rec.filePath)
+        if (!file.exists()) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val shareFile = CallAudioRecorder.playableFile(context, file)
+        if (shareFile == null) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                shareFile
+            )
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "audio/*"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_recording)))
+        } catch (_: Exception) {
+            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -822,24 +859,7 @@ fun DirectRecordingPlayerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(
-                        onClick = {
-                            val file = File(currentRecording.filePath)
-                            if (file.exists()) {
-                                val uri = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.provider",
-                                    file
-                                )
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "audio/*"
-                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                }
-                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_recording)))
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        onClick = { showShareWarning = true }
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -854,6 +874,7 @@ fun DirectRecordingPlayerDialog(
                                 val file = File(currentRecording.filePath)
                                 if (file.exists()) file.delete()
                             } catch (_: Exception) {}
+                            CallAudioRecorder.clearPlaybackCache(context)
                             Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
                             onDismiss()
                         },
@@ -877,4 +898,36 @@ fun DirectRecordingPlayerDialog(
             }
         }
     )
+
+    // The shared copy is decrypted, so warn before it leaves app-private storage. This mirrors
+    // the recordings screen and keeps both share paths consistent.
+    if (showShareWarning) {
+        AlertDialog(
+            onDismissRequest = { showShareWarning = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text(stringResource(R.string.recording_share_warning_title)) },
+            text = { Text(stringResource(R.string.recording_share_warning_body)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showShareWarning = false
+                        shareRecording(currentRecording)
+                    }
+                ) {
+                    Text(stringResource(R.string.recording_share_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showShareWarning = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
 }

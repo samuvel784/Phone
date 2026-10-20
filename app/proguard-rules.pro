@@ -1,5 +1,5 @@
 # Copyright (C) 2026 MovStore
-# Security, Shrinking, and Reflection Rules for NovaDial
+# Security, Shrinking, and Reflection Rules for Nova Dialer
 
 # =========================================================
 # ZERO-DATA PRIVACY: STRIP ALL LOGS IN PRODUCTION
@@ -40,31 +40,19 @@
 -dontwarn androidx.room.**
 -dontwarn androidx.sqlite.**
 
-# SQLCipher Hardware Crypto Bindings
--keep class net.sqlcipher.** { *; }
+# SQLCipher Hardware Crypto Bindings (net.zetetic:sqlcipher-android only).
+# The old net.sqlcipher / org.sqlite packages are not dependencies; keep rules that
+# referenced them made R8 fail with unresolved class names.
 -keep class net.zetetic.database.sqlcipher.** { *; }
--keep class org.sqlite.database.** { *; }
--keepclassmembers class net.sqlcipher.** { *; }
 -keepclassmembers class net.zetetic.database.sqlcipher.** { *; }
--keepclassmembers class org.sqlite.database.** { *; }
--keep class * extends net.sqlcipher.database.SQLiteOpenHelper { *; }
 -keep class * extends net.zetetic.database.sqlcipher.SQLiteOpenHelper { *; }
--keep class * extends org.sqlite.database.sqlite.SQLiteOpenHelper { *; }
--keep class net.sqlcipher.database.SQLiteDatabase {
-    native <methods>;
-}
 -keep class net.zetetic.database.sqlcipher.SQLiteDatabase {
-    native <methods>;
-}
--keep class org.sqlite.database.sqlite.SQLiteDatabase {
     native <methods>;
 }
 -keepclasseswithmembernames class * {
     native <methods>;
 }
--dontwarn net.sqlcipher.**
 -dontwarn net.zetetic.database.sqlcipher.**
--dontwarn org.sqlite.database.**
 
 # =========================================================
 # 3. EXTERNAL LIBRARIES (Coil)
@@ -113,7 +101,6 @@
     @androidx.compose.runtime.Composable *;
 }
 -keepclassmembers class androidx.compose.runtime.Recomposer { *; }
--keep class androidx.paging.** { *; }
 -dontwarn androidx.compose.**
 -dontwarn androidx.paging.**
 -dontwarn androidx.navigation.**

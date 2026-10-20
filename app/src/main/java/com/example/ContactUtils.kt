@@ -167,9 +167,3 @@ suspend fun getSavedCnapName(context: Context, number: String): String? {
         }
     }
 }
-
-fun getSavedCnapNameSync(context: Context, number: String): String? {
-    if (number.isBlank()) return null
-    // FIXED: Non-blocking in-memory resolution only on synchronous Telephony path
-    return ContactCache.getCnapName(number)
-}

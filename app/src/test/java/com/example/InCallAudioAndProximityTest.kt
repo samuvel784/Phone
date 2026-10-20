@@ -122,8 +122,8 @@ class InCallAudioAndProximityTest {
         assertTrue("Proximity WakeLock should be held on earpiece", latestWakeLock.isHeld)
         val shadowWakeLock = shadowOf(latestWakeLock)
         assertEquals(
-            "WakeLock tag should match NovaDial proximity tag",
-            "NovaDial:InCallProximityWakeLock",
+            "WakeLock tag should match Nova Dialer proximity tag",
+            "Nova Dialer:InCallProximityWakeLock",
             shadowWakeLock.tag
         )
     }

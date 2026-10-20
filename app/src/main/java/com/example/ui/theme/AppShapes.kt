@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2026 MovStore
- * NovaDial "Aurora" shape engine - single source of truth for UI geometry.
+ * Nova Dialer "Aurora" shape engine - single source of truth for UI geometry.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -44,6 +44,9 @@ object BlockedNumberContractManager {
             } catch (_: Exception) {}
 
             val cleanNum = trimmed.filter { it.isDigit() || it == '+' }
+            val localVariants = linkedSetOf(trimmed, cleanNum, cleanNum.filter { it.isDigit() })
+                .filter { it.isNotBlank() }
+                .toList()
 
             // 1. Check System BlockedNumberContract (requires default dialer role)
             try {
@@ -54,14 +57,11 @@ object BlockedNumberContractManager {
                 }
             } catch (_: Exception) {}
 
-            // 2. Check Local Room Database (handles exact match, formatted match, and wildcard rules)
+            // 2. Check Local Room Database in ONE query. This handles exact, formatted and
+            // wildcard rules without the six sequential queries used by the old implementation.
             try {
-                if (dao != null) {
-                    val isLocalBlocked = dao.isBlocked(cleanNum) || 
-                                         dao.isBlocked(trimmed) || 
-                                         dao.isBlockedSql(cleanNum) ||
-                                         dao.isBlockedSql(trimmed)
-                    if (isLocalBlocked) return@withContext true
+                if (dao != null && dao.isBlockedAny(cleanNum, localVariants)) {
+                    return@withContext true
                 }
             } catch (_: Exception) {}
 

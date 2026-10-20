@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -15,7 +15,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Sos
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,6 +55,7 @@ import com.example.util.RichHapticEngine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Emergency SOS screen.
@@ -79,18 +78,17 @@ fun EmergencySosSettings(
     var includeLocation by remember { mutableStateOf(EmergencySosPrefs.isIncludeLocation(context)) }
     var callNumber by remember { mutableStateOf(EmergencySosPrefs.getEmergencyCallNumber(context)) }
     var customMessage by remember { mutableStateOf(EmergencySosPrefs.getCustomMessage(context)) }
-    var countdownSeconds by remember { mutableStateOf(EmergencySosPrefs.getCountdownSeconds(context)) }
+    var countdownSeconds by remember { mutableIntStateOf(EmergencySosPrefs.getCountdownSeconds(context)) }
     var shakeEnabled by remember { mutableStateOf(EmergencySosPrefs.isShakeToTriggerEnabled(context)) }
 
     // Non-zero while a cancellable countdown is running before the alert is sent.
-    var countdownRemaining by remember { mutableStateOf(0) }
+    var countdownRemaining by remember { mutableIntStateOf(0) }
     var countdownJob by remember { mutableStateOf<Job?>(null) }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var contactSearchInput by remember { mutableStateOf("") }
     val allContacts by viewModel.allContactsFlow.collectAsStateWithLifecycle()
 
-    var hasSms by remember { mutableStateOf(EmergencySosManager.canSendSms(context)) }
     var hasLocation by remember { mutableStateOf(LocationHelper.hasLocationPermission(context)) }
     var activating by remember { mutableStateOf(false) }
 
@@ -99,7 +97,6 @@ fun EmergencySosSettings(
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        hasSms = EmergencySosManager.canSendSms(context)
         hasLocation = LocationHelper.hasLocationPermission(context)
     }
 
@@ -115,9 +112,6 @@ fun EmergencySosSettings(
                 when {
                     contacts.isEmpty() -> snackbarHostState.showSnackbar(
                         context.getString(R.string.sos_no_contacts_toast)
-                    )
-                    !EmergencySosManager.canSendSms(context) -> snackbarHostState.showSnackbar(
-                        context.getString(R.string.sos_permissions_needed)
                     )
                     else -> {
                         val message = EmergencySosManager.buildAlertMessage(context, includeLocation, location)
@@ -156,7 +150,7 @@ fun EmergencySosSettings(
         countdownJob = scope.launch {
             var remaining = total
             while (remaining > 0) {
-                delay(1000)
+                delay(1.seconds)
                 remaining--
                 countdownRemaining = remaining
             }
@@ -168,10 +162,6 @@ fun EmergencySosSettings(
     fun sendTestAlert() {
         if (contacts.isEmpty()) {
             scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.sos_no_contacts_toast)) }
-            return
-        }
-        if (!EmergencySosManager.canSendSms(context)) {
-            scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.sos_permissions_needed)) }
             return
         }
         scope.launch {
@@ -233,9 +223,9 @@ fun EmergencySosSettings(
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = if (hasSms && hasLocation) Icons.Default.CheckCircle else Icons.Default.Warning,
+                            imageVector = if (hasLocation) Icons.Default.CheckCircle else Icons.Default.Warning,
                             contentDescription = null,
-                            tint = if (hasSms && hasLocation) {
+                            tint = if (hasLocation) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.error
@@ -245,19 +235,18 @@ fun EmergencySosSettings(
                         Spacer(Modifier.width(12.dp))
                         Text(
                             text = stringResource(
-                                if (hasSms && hasLocation) R.string.sos_permissions_ok else R.string.sos_permissions_needed
+                                if (hasLocation) R.string.sos_permissions_ok else R.string.sos_permissions_needed
                             ),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    if (!hasSms || !hasLocation) {
+                    if (!hasLocation) {
                         Spacer(Modifier.height(10.dp))
                         Button(
                             onClick = {
                                 val perms = mutableListOf(
-                                    Manifest.permission.SEND_SMS,
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.ACCESS_COARSE_LOCATION
                                 )

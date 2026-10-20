@@ -203,7 +203,7 @@ fun PrivacySecurityAboutSettings(
             PreferenceHeader(stringResource(R.string.header_app_specs))
         }
 
-        // About NovaDial Card
+        // About Nova Dialer Card
         item {
             HighlightableCard(
                 modifier = Modifier

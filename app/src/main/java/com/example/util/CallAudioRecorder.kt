@@ -98,6 +98,9 @@ object CallAudioRecorder {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val isStoppingOrStopped = AtomicBoolean(false)
 
+    /** A few hundred bytes means a failed/empty container, not a recording. */
+    private const val MIN_VALID_RECORDING_BYTES = 1024L
+
     @Volatile
     private var cachedLastResult: RecordingResult? = null
 
@@ -206,9 +209,16 @@ object CallAudioRecorder {
         val file = currentOutputFile
         val phoneNumber = currentPhoneNumber
 
+        var stopSucceeded = true
         try {
             mediaRecorder?.let { recorder ->
-                try { recorder.stop() } catch (_: Exception) {}
+                try {
+                    recorder.stop()
+                } catch (_: Exception) {
+                    // MediaRecorder throws when it could not write a valid container (for
+                    // example when stopped before the first frame). The file is not usable.
+                    stopSucceeded = false
+                }
                 try { recorder.reset() } catch (_: Exception) {}
                 try { recorder.release() } catch (_: Exception) {}
             }
@@ -220,19 +230,25 @@ object CallAudioRecorder {
             currentPhoneNumber = ""
         }
 
-        val result = if (file != null && file.exists()) {
-            if (file.length() <= 128L) {
-                try { file.delete() } catch (_: Exception) {}
-                RecordingResult(null, 0L, phoneNumber)
-            } else {
-                RecordingResult(file, finalDuration.coerceAtLeast(1L), phoneNumber)
-            }
+        val result = if (stopSucceeded && file != null && file.exists() &&
+            file.length() >= MIN_VALID_RECORDING_BYTES
+        ) {
+            RecordingResult(file, finalDuration.coerceAtLeast(1L), phoneNumber)
         } else {
+            try { if (file != null && file.exists()) file.delete() } catch (_: Exception) {}
             RecordingResult(null, 0L, phoneNumber)
         }
 
         cachedLastResult = result
         return result
+    }
+
+    /**
+     * Clears the idempotency cache once a finalizer owns the result. Without this a later call
+     * ending with no active recorder could rediscover an already-saved file.
+     */
+    fun clearLastResult() = synchronized(this) {
+        cachedLastResult = null
     }
 
     fun getSelectedCompressionProfile(context: Context): RecordingCompressionProfile {
@@ -261,12 +277,19 @@ object CallAudioRecorder {
         return cleaned
     }
 
+    /**
+     * Recordings that exist on disk, newest first.
+     *
+     * The decrypted playback cache (`cacheDir/CallRecordings`) is deliberately **not** scanned:
+     * those files are throw-away plaintext copies of already-known recordings, so treating them
+     * as sources would recover a second, duplicate row for one recording and leave a dangling
+     * entry behind as soon as the cache is cleared.
+     */
     fun getRecordedFiles(context: Context): List<File> {
         val dirs = listOfNotNull(
             File(context.filesDir, "CallRecordings"),
             File(context.getExternalFilesDir(null), "CallRecordings"),
-            File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings"),
-            File(context.cacheDir, "CallRecordings")
+            File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
         )
         return dirs.filter { it.exists() }
             .flatMap { it.listFiles()?.filter { f ->
@@ -372,7 +395,7 @@ object CallAudioRecorder {
                 val contentValues = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                     put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/NovaDial")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Nova Dialer")
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
                 val resolver = context.contentResolver
@@ -386,7 +409,7 @@ object CallAudioRecorder {
                 return true
             } else {
                 @Suppress("DEPRECATION")
-                val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "NovaDial").apply {
+                val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Nova Dialer").apply {
                     if (!exists()) mkdirs()
                 }
                 val destFile = File(publicDir, fileName)

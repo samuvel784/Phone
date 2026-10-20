@@ -39,6 +39,12 @@ suspend fun DialerRepository.exportBackup(password: String = ""): String =
 suspend fun DialerRepository.importBackup(rawData: String, password: String = ""): Boolean =
     BackupRestoreManager.importBackup(context, rawData, password)
 
+suspend fun DialerRepository.importBackupResult(
+    rawData: String,
+    password: String = ""
+): BackupRestoreManager.ImportResult =
+    BackupRestoreManager.importBackupResult(context, rawData, password)
+
 // Speed Dial
 fun DialerRepository.getSpeedDial(): Flow<List<SpeedDial>> = dao.getSpeedDialFlow()
 suspend fun DialerRepository.saveSpeedDial(key: Int, number: String, name: String) =
@@ -123,6 +129,4 @@ suspend fun DialerRepository.exportSpamNumbersToCsv(): String {
 // Call Reminders
 fun DialerRepository.getAllReminders(): Flow<List<CallReminder>> = dao.getAllRemindersFlow()
 suspend fun DialerRepository.saveReminder(reminder: CallReminder): Long = dao.insertReminder(reminder)
-suspend fun DialerRepository.updateReminder(reminder: CallReminder) = dao.updateReminder(reminder)
 suspend fun DialerRepository.deleteReminder(reminder: CallReminder) = dao.deleteReminder(reminder)
-suspend fun DialerRepository.deleteReminderById(id: Int) = dao.deleteReminderById(id)

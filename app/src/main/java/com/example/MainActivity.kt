@@ -96,12 +96,11 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // Only authoritative Telecom/fake-call state may open the call surface. MainActivity
-        // is exported for DIAL/VIEW, so intent extras/actions alone must never be treated as
-        // proof of a call. Token-gated answer/fake-call handling happens in handleIntent().
+        // Only authoritative Telecom state may open the call surface. MainActivity is exported
+        // for DIAL/VIEW, so intent extras/actions alone must never be treated as proof of a call.
+        // Token-gated answer handling happens in handleIntent().
         val hasRealCall = CallManager.currentCall.value != null ||
                 CallManager.calls.value.isNotEmpty() ||
-                viewModel.isFakeCallActive.value ||
                 CallManager.calls.value.any { it.safeState == Call.STATE_RINGING }
 
         if (hasRealCall) {
@@ -121,10 +120,9 @@ class MainActivity : ComponentActivity() {
 
             val allCalls by CallManager.calls.collectAsStateWithLifecycle()
             val currentCall by CallManager.currentCall.collectAsStateWithLifecycle()
-            LaunchedEffect(allCalls, currentCall, viewModel.isFakeCallActive.value) {
+            LaunchedEffect(allCalls, currentCall) {
                 val hasCall = currentCall != null ||
                         allCalls.isNotEmpty() ||
-                        viewModel.isFakeCallActive.value ||
                         allCalls.any { it.safeState == Call.STATE_RINGING }
                 if (hasCall) {
                     setLockScreenVisibility(true)
@@ -158,8 +156,7 @@ class MainActivity : ComponentActivity() {
                     if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                         updateDefaultDialerStatus(context)
                         val hasActiveCall = CallManager.currentCall.value != null ||
-                                CallManager.calls.value.isNotEmpty() ||
-                                viewModel.isFakeCallActive.value
+                                CallManager.calls.value.isNotEmpty()
                         if (hasTrustedToken() || (hasActiveCall && isAppAuthenticated.value)) {
                             isAppAuthenticated.value = true
                             setLockScreenVisibility(true)
@@ -324,8 +321,7 @@ class MainActivity : ComponentActivity() {
             com.example.telecom.EmergencySosService.start(this)
         }
         val hasRealCall = CallManager.currentCall.value != null ||
-                CallManager.calls.value.isNotEmpty() ||
-                viewModel.isFakeCallActive.value
+                CallManager.calls.value.isNotEmpty()
         if (hasTrustedToken() || (hasRealCall && isAppAuthenticated.value)) {
             isAppAuthenticated.value = true
             setLockScreenVisibility(true)
@@ -340,8 +336,7 @@ class MainActivity : ComponentActivity() {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         val hasRealCall = CallManager.currentCall.value != null ||
-                CallManager.calls.value.isNotEmpty() ||
-                viewModel.isFakeCallActive.value
+                CallManager.calls.value.isNotEmpty()
         if (hasTrustedToken() || (hasRealCall && isAppAuthenticated.value)) {
             setLockScreenVisibility(true)
         }
@@ -353,8 +348,8 @@ class MainActivity : ComponentActivity() {
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return
         if (keyguardManager.isDeviceSecure) {
             val intent = keyguardManager.createConfirmDeviceCredentialIntent(
-                "NovaDial",
-                "Authenticate to open NovaDial"
+                "Nova Dialer",
+                "Authenticate to open Nova Dialer"
             )
             if (intent != null) {
                 isAuthenticating = true
@@ -407,7 +402,7 @@ class MainActivity : ComponentActivity() {
         viewModel.isDefaultDialer.value = com.example.util.CallScreenPermissionHelper.isDefaultDialer(context)
     }
 
-    /** True when the current intent carries NovaDial's private per-install token. */
+    /** True when the current intent carries Nova Dialer's private per-install token. */
     private fun hasTrustedToken(intent: Intent? = this.intent): Boolean =
         IntentGuard.isValid(this, intent?.getStringExtra(IntentGuard.EXTRA_GUARD_TOKEN))
 
@@ -424,26 +419,9 @@ class MainActivity : ComponentActivity() {
         // actions. MainActivity is exported, so any app can send it an explicit intent.
         val trusted = IntentGuard.isValid(this, intent.getStringExtra(IntentGuard.EXTRA_GUARD_TOKEN))
         try {
-            if (intent.getBooleanExtra("TRIGGER_FAKE_CALL", false) && trusted) {
-                if (viewModel.isFakeCallSimulatorEnabled.value) {
-                    viewModel.isFakeCallActive.value = true
-                    viewModel.fakeCallerName.value = intent.getStringExtra("FAKE_CALLER_NAME") ?: "Unknown"
-                    viewModel.fakeCallerNumber.value = intent.getStringExtra("FAKE_CALLER_NUMBER") ?: "Unknown"
-                    viewModel.fakeCallState.value = "RINGING"
-                    viewModel.isSettingsVisible.value = false
-                    viewModel.isCallMinimized.value = false
-                    // A fake call may use the lock-screen call surface, but it must not
-                    // silently mark the rest of the app (contacts/history/settings) unlocked.
-                    viewModel.isCallActive.value = true
-                    isLaunchedForCall = true
-                    viewModel.isLaunchedForCall.value = true
-                    setLockScreenVisibility(true)
-                }
-            }
-
             // Answering is a sensitive Telecom action. An exported activity may be started
             // by any app, so ANSWER_ON_LAUNCH/ACTION_ANSWER are honoured only when they
-            // carry NovaDial's private token (notification/FSI/IncomingCallActivity paths).
+            // carry Nova Dialer's private token (notification/FSI/IncomingCallActivity paths).
             val isAnswerRequest = trusted && (
                     intent.getBooleanExtra("ANSWER_ON_LAUNCH", false) ||
                             intent.action == MyInCallService.ACTION_ANSWER
@@ -469,10 +447,9 @@ class MainActivity : ComponentActivity() {
             }
 
             // Never derive "a call is active" from exported intent extras. Only the
-            // authoritative Telecom/fake-call state may open the in-call surface.
+            // authoritative Telecom state may open the in-call surface.
             val hasGenuineActiveCall = CallManager.currentCall.value != null ||
                     CallManager.calls.value.isNotEmpty() ||
-                    viewModel.isFakeCallActive.value ||
                     CallManager.calls.value.any { it.safeState == Call.STATE_RINGING }
             if (hasGenuineActiveCall) {
                 viewModel.isCallActive.value = true
@@ -482,7 +459,7 @@ class MainActivity : ComponentActivity() {
                 setLockScreenVisibility(true)
             }
 
-            // Recents contains private call history, so only a NovaDial-owned notification
+            // Recents contains private call history, so only a Nova Dialer-owned notification
             // may preselect it. The normal app lock still applies before it is displayed.
             if (trusted && (
                             intent.getBooleanExtra("SHOW_CALL_LOG", false) ||

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -7,23 +7,24 @@ package com.example.telecom
 
 import android.os.SystemClock
 import android.util.Log
+import com.example.util.LogRedaction
 import java.util.concurrent.ConcurrentLinkedDeque
 
 /**
  * Application-side timing instrumentation for the incoming-call path (Phase 7).
  *
  * It answers a single question honestly: **how much of the incoming-call delay is caused by
- * NovaDial itself?** Everything is measured with [SystemClock.uptimeMillis] (monotonic, unaffected
- * by wall-clock changes) relative to the earliest event NovaDial can observe — the platform
+ * Nova Dialer itself?** Everything is measured with [SystemClock.uptimeMillis] (monotonic, unaffected
+ * by wall-clock changes) relative to the earliest event Nova Dialer can observe — the platform
  * calling `InCallService.onCallAdded`.
  *
  * Time spent before that callback (radio paging, carrier signalling, Telecom connection setup and
  * the ringtone start request ordering) is invisible to the application and is therefore *not*
- * attributed to NovaDial.
+ * attributed to Nova Dialer.
  */
 object CallTimingLogger {
 
-    const val TAG = "NovaDialTiming"
+    const val TAG = "Nova Dialer Timing"
 
     /** Event names used across the incoming-call path. */
     object Event {
@@ -43,6 +44,11 @@ object CallTimingLogger {
     data class Mark(val event: String, val offsetMs: Long)
 
     data class Report(
+        /**
+         * Caller identifier for diagnostics. This is **always redacted** (see [LogRedaction]):
+         * [Trace.toReport] stores only the masked value, and [format] masks anything that is not
+         * already masked. A full phone number is never retained in, or rendered from, a report.
+         */
         val number: String,
         val isIncoming: Boolean,
         val startedAtUptimeMs: Long,
@@ -54,9 +60,20 @@ object CallTimingLogger {
         val totalMs: Long get() = marks.maxOfOrNull { it.offsetMs } ?: 0L
 
         fun format(): String = buildString {
-            append("call=").append(number.ifBlank { "<unknown>" })
+            append("call=").append(safeNumber())
             append(" incoming=").append(isIncoming)
             marks.forEach { append(" | ").append(it.event).append("=").append(it.offsetMs).append("ms") }
+        }
+
+        /**
+         * Defence in depth: even if a [Report] is constructed by hand with a raw number, the
+         * rendered diagnostics never contain it. Already-masked values are passed through so the
+         * output stays stable ("***" prefix is the marker used by [LogRedaction]).
+         */
+        private fun safeNumber(): String = when {
+            number.isBlank() -> "<unknown>"
+            number.startsWith("***") -> number
+            else -> LogRedaction.redactPhone(number)
         }
     }
 
@@ -116,12 +133,19 @@ object CallTimingLogger {
         fun mark(event: String) {
             val offset = SystemClock.uptimeMillis() - startedAt
             marks.add(Mark(event, offset))
-            Log.i(TAG, "event=$event offset=${offset}ms call=$number incoming=$isIncoming")
+            // Never log the full number: it is personal data. The mask keeps the last 4 characters
+            // so the same call can still be correlated across log lines.
+            Log.i(TAG, "event=$event offset=${offset}ms id=$callId call=${LogRedaction.redactPhone(number)} incoming=$isIncoming")
         }
 
         @Synchronized
-        fun toReport(): Report = Report(number, isIncoming, startedAt, marks.toList())
-
-        fun elapsedMs(): Long = SystemClock.uptimeMillis() - startedAt
+        fun toReport(): Report = Report(
+            // Redact at the boundary into the retained diagnostics buffer: the full number lives
+            // only in the short-lived Trace and is never copied into the ring buffer.
+            number = if (number.isBlank()) "" else LogRedaction.redactPhone(number),
+            isIncoming = isIncoming,
+            startedAtUptimeMs = startedAt,
+            marks = marks.toList()
+        )
     }
 }

@@ -12,7 +12,6 @@
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
 
     <!-- Emergency SOS: opt-in location attached to alerts. Never used for anything else. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -37,7 +36,7 @@
     <!-- Biometric / device-credential unlock for the encrypted recording vault (API 28+) -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
-    <!-- Exact Alarms for Call Reminders and Fake Calls (API 31+) -->
+    <!-- Exact alarms for user-created callback reminders (API 31+) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Allow installation on devices without native telephony (tablets, Chromebooks, Wi-Fi calling) -->
@@ -128,6 +127,22 @@
             tools:ignore="UnusedAttribute"
             android:theme="@style/Theme.MyApplication" />
 
+        <!--
+            Private disclosure surface for the notification Record action. It is launched only by
+            the active-call notification or MyInCallService, never exported, and kept out of Recents.
+        -->
+        <activity
+            android:name=".RecordingDisclosureActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            tools:ignore="UnusedAttribute"
+            android:theme="@style/Theme.MyApplication" />
+
         <!-- Favourites-widget call target: private, invisible, never exported -->
         <activity
             android:name=".WidgetCallActivity"
@@ -153,7 +168,7 @@
             </intent-filter>
         </service>
 
-        <!-- NovaDial caller ID & call screening (Focus mode + call protection) -->
+        <!-- Nova Dialer caller ID & call screening (Focus mode + call protection) -->
         <service
             android:name=".telecom.NovaDialCallScreeningService"
             android:permission="android.permission.BIND_SCREENING_SERVICE"
@@ -185,11 +200,6 @@
         <!-- Call Reminders Alarm Receiver -->
         <receiver
             android:name=".util.ReminderAlarmReceiver"
-            android:exported="false" />
-
-        <!-- Fake Call Simulation Alarm Receiver -->
-        <receiver
-            android:name=".util.FakeCallReceiver"
             android:exported="false" />
 
         <!-- Home-screen favourites widget -->

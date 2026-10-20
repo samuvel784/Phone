@@ -17,8 +17,6 @@
 
 package com.example.ui.components
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,14 +38,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.Manifest
-import android.content.pm.PackageManager
 import android.widget.Toast
 import com.example.R
 import com.example.ui.viewmodel.DialerViewModel
-import com.example.util.CallScreenPermissionHelper
 import com.example.util.RichHapticEngine
 
 @Composable
@@ -59,13 +53,6 @@ fun QuickResponsesSettings(
     val quickResponses by viewModel.quickResponsesFlow.collectAsStateWithLifecycle()
     var newQuickRespInput by remember { mutableStateOf("") }
     var directSmsEnabled by remember { mutableStateOf(viewModel.isQuickReplyDirectSms.value) }
-    val smsPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) {
-            Toast.makeText(context, context.getString(R.string.sms_permission_required), Toast.LENGTH_SHORT).show()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -114,27 +101,14 @@ fun QuickResponsesSettings(
                 Switch(
                     checked = directSmsEnabled,
                     onCheckedChange = { enabled ->
-                        if (enabled && !CallScreenPermissionHelper.isDefaultDialer(context)) {
-                            // Direct SMS quick replies are only permitted for the default
-                            // Phone handler. Keep the setting off and explain why.
-                            directSmsEnabled = false
-                            viewModel.updateQuickReplyDirectSms(false)
+                        directSmsEnabled = enabled
+                        viewModel.updateQuickReplyDirectSms(enabled)
+                        if (enabled) {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.default_dialer_warning),
-                                Toast.LENGTH_LONG
+                                context.getString(R.string.quick_reply_sms_handoff_toast),
+                                Toast.LENGTH_SHORT
                             ).show()
-                        } else {
-                            directSmsEnabled = enabled
-                            viewModel.updateQuickReplyDirectSms(enabled)
-                            if (enabled) {
-                                val granted = ContextCompat.checkSelfPermission(
-                                    context, Manifest.permission.SEND_SMS
-                                ) == PackageManager.PERMISSION_GRANTED
-                                if (!granted) {
-                                    smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
-                                }
-                            }
                         }
                     }
                 )

@@ -235,7 +235,7 @@ abstract class AppDatabase : RoomDatabase() {
          * adds any columns introduced in v9. Existing rows are preserved; SQLite supplies
          * the declared defaults for the new columns.
          */
-        private fun ensureSchemaV9(db: SupportSQLiteDatabase) {
+        internal fun ensureSchemaV9(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE TABLE IF NOT EXISTS `contacts` (`id` INTEGER NOT NULL, `rawContactId` INTEGER NOT NULL, `contactId` INTEGER NOT NULL, `number` TEXT NOT NULL, `name` TEXT NOT NULL, `label` TEXT NOT NULL, `favorite` INTEGER NOT NULL, `avatarText` TEXT NOT NULL, `avatarBgValue` INTEGER NOT NULL, `avatarTextColorValue` INTEGER NOT NULL, `t9Mapping` TEXT NOT NULL, `email` TEXT NOT NULL, `photoUri` TEXT NOT NULL, `accountName` TEXT NOT NULL, `accountType` TEXT NOT NULL, `numbers` TEXT NOT NULL, `emails` TEXT NOT NULL, `addresses` TEXT NOT NULL, `note` TEXT NOT NULL, PRIMARY KEY(`id`))")
             db.execSQL("CREATE TABLE IF NOT EXISTS `call_history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `number` TEXT NOT NULL, `label` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `type` TEXT NOT NULL, `avatarText` TEXT NOT NULL, `avatarBgValue` INTEGER NOT NULL, `avatarTextColorValue` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `hasVoicemail` INTEGER NOT NULL, `photoUri` TEXT NOT NULL, `timestampMs` INTEGER NOT NULL, `isVerified` INTEGER NOT NULL, `simSlot` INTEGER NOT NULL)")
             db.execSQL("CREATE TABLE IF NOT EXISTS `blocked_numbers` (`number` TEXT NOT NULL, PRIMARY KEY(`number`))")
@@ -285,6 +285,10 @@ abstract class AppDatabase : RoomDatabase() {
             ensureColumn(db, "call_recordings", "note", "TEXT NOT NULL DEFAULT ''")
             ensureColumn(db, "spam_numbers", "label", "TEXT NOT NULL DEFAULT 'Spam'")
             ensureColumn(db, "call_reminders", "note", "TEXT NOT NULL DEFAULT ''")
+            // Defensive, idempotent guard: a legacy v8 database may predate the completion
+            // flag. Adding it with the pending default preserves every reminder row, and
+            // ensureColumn is a no-op when the column already exists.
+            ensureColumn(db, "call_reminders", "isCompleted", "INTEGER NOT NULL DEFAULT 0")
 
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_contacts_number` ON `contacts` (`number`)")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_contacts_name` ON `contacts` (`name`)")

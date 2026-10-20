@@ -167,7 +167,7 @@ class DialerScreenshotTest {
             val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.app.Application>()
             val viewModel = DialerViewModel(context)
             MyApplicationTheme(darkTheme = false) {
-                com.example.ui.components.DialpadOverlay(
+                DialpadOverlay(
                     inputValue = "",
                     onValueChange = {},
                     onClose = {},

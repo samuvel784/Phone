@@ -268,7 +268,7 @@ fun MyApplicationTheme(
     // Building a colour scheme allocates dozens of objects, so it is done once per setting change,
     // not on every recomposition.
     val colorScheme = remember(mode, useDynamic, themeColor, customColorHex) {
-        if (useDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (useDynamic) {
             val dynamic = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (mode == ThemeMode.NIGHT) nightOverride(dynamic) else dynamic.copy(surfaceTint = Color.Transparent)
         } else {
@@ -278,7 +278,7 @@ fun MyApplicationTheme(
     }
 
     val novaColors = remember(colorScheme, dark) {
-        buildNovaColors(colorScheme.primary, colorScheme.outlineVariant, colorScheme.surface, dark)
+        buildNovaColors(colorScheme.primary, dark)
     }
     val unifiedShapes = remember { calculateUnifiedShapes(ShapeStyle.SQUIRCLE) }
     val isNight = mode == ThemeMode.NIGHT

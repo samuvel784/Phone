@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -29,7 +29,6 @@ class MultiCallStateMachineTest {
     private val holdCaps = Call.Details.CAPABILITY_HOLD
     private val supportHoldCaps = Call.Details.CAPABILITY_SUPPORT_HOLD
     private val mergeCaps = Call.Details.CAPABILITY_MERGE_CONFERENCE
-    private val swapConferenceCaps = Call.Details.CAPABILITY_SWAP_CONFERENCE
     private val manageConferenceCaps = Call.Details.CAPABILITY_MANAGE_CONFERENCE
 
     private fun call(

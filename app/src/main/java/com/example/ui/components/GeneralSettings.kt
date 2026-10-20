@@ -127,7 +127,6 @@ fun GeneralSettings(
     onNavigateToTab: (Int, String?) -> Unit
 ) {
     val context = LocalContext.current
-    val isDefaultDialer = viewModel.isDefaultDialer.value
     var searchQuery by remember { mutableStateOf("") }
 
     val settingsIndex = remember {

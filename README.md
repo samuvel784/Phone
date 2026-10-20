@@ -1,13 +1,12 @@
-# NovaDial
+# Nova Dialer
 
 A real Android default dialer. It uses your phone's own contacts, call log, SIM cards and
-voicemail — no sample data, no cloud, and no internet permission. An optional fake-call
-simulator is included for demonstration purposes and is clearly presented as a simulation.
+voicemail — no sample data, no cloud, and no internet permission.
 
 Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version 2.1.0 (versionCode 4)
 
-> **Rebuilt, not patched.** NovaDial 2.0 uses the mature **Secure Dialer** codebase
-> (`com.example`, GPL-3.0-or-later) as its foundation, rebranded to NovaDial, with NovaDial's
+> **Rebuilt, not patched.** Nova Dialer 2.0 uses the mature **Secure Dialer** codebase
+> (`com.example`, GPL-3.0-or-later) as its foundation, rebranded to Nova Dialer, with Nova Dialer's
 > unique features re-added on top. See **[docs/PORTING_PLAN.md](docs/PORTING_PLAN.md)** for the full audit of
 > the original issues and how each one is resolved, plus the status of the deferred features
 > (Emergency SOS, Analytics).
@@ -15,7 +14,7 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 ## Build
 1. Open the folder in **Android Studio** and let Gradle sync.
 2. Build Variants -> `debug` -> Build > Build APK(s). Install it on a real phone.
-3. On the phone: Settings > Apps > Default apps > Phone app > NovaDial. Accept every permission prompt.
+3. On the phone: Settings > Apps > Default apps > Phone app > Nova Dialer. Accept every permission prompt.
 4. Release build: set `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (or put
    `my-upload-key.jks` in the project folder). The release build deliberately fails fast without
    these credentials; it never falls back to the debug key.
@@ -38,7 +37,7 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
   Bluetooth, speaker).
 - Signal bars and dBm come from Android (nothing estimated); network type says "4G LTE" / "5G".
 
-### Focus Mode & Call Protection (NovaDial feature, re-added)
+### Focus Mode & Call Protection (Nova Dialer feature, re-added)
 - A real `CallScreeningService` (`NovaDialCallScreeningService`) screens calls **before they ring**.
 - **Focus mode:** Off · Saved contacts only · VIP only · Silence all.
 - **Protection level:** Standard · Strict (silence unsaved) · Maximum (only VIP/favorites/repeat).
@@ -47,7 +46,7 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 - **Emergency numbers are never silenced or blocked.**
 - Silenced calls still appear in the call log as missed calls (Android 10+).
 
-### Caller Announcer (NovaDial feature, re-added)
+### Caller Announcer (Nova Dialer feature, re-added)
 - Speaks the caller's name while the phone is ringing (TextToSpeech, ringtone audio stream).
 - Message presets (Friendly / Formal / Playful) or a custom template with `{name}` `{user}` `{type}`.
 - Your name, repeat count (1–3), speech speed, pitch and volume.
@@ -58,8 +57,8 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 ### Everything else
 - Contacts, recents, dialpad, favorites, voicemail, speed dial, quick replies.
 - Offline spam protection: local blocklist + CSV import (no network, no invented database).
-- Call recording encrypted at rest with an Android Keystore AES-256-GCM key, call notes, callback
-  reminders, and an explicitly labelled fake-call simulator.
+- Call recording encrypted at rest with an Android Keystore AES-256-GCM key (with an explicitly
+  flagged unencrypted fallback when encryption fails), call notes and callback reminders.
 - Dynamic Island call capsule, appearance/theming, biometric app lock, password-encrypted local
   backup (contacts, call history, notes and settings), vCard import/export.
 
@@ -73,8 +72,10 @@ Settings is a multi-tab panel. Tab 0 is the category list; tabs 1–8 are the co
   rest; backups are AES-256 encrypted and require a password.
 - Data leaves the device only when the user explicitly exports, shares or restores it.
 - `allowBackup=false`, so Android cloud backup does not copy app data.
-- Call Log and SMS permissions are used only after NovaDial holds the default Phone role (SOS
-  emergency SMS is the documented exception and is always user-initiated).
+- Nova Dialer holds **no SMS permission** and never sends SMS itself. A decline reply uses
+  Android's decline-with-message, or hands a pre-filled draft to your own messaging app once the
+  call is no longer ringing; SOS opens your messaging app for confirmation. Call Log access is
+  requested only after Nova Dialer holds the default Phone role.
 - Full policy text: [`PRIVACY.md`](PRIVACY.md). A public HTTPS URL is still required for the Play
   Console listing.
 - Remaining publishing tasks and Data safety draft:
@@ -82,21 +83,26 @@ Settings is a multi-tab panel. Tab 0 is the category list; tabs 1–8 are the co
 
 ## License and credits
 
-NovaDial is licensed **GPL-3.0-or-later**. The full license text is in [`LICENSE`](LICENSE).
+Nova Dialer is licensed **GPL-3.0-or-later**. The full license text is in [`LICENSE`](LICENSE).
 
-NovaDial is a GPLv3 port built on the **Secure Dialer** codebase
+Nova Dialer is a GPLv3 port built on the **Secure Dialer** codebase
 (<https://github.com/Secure-Phone-apps/Secure-Dialer>), **Copyright (C) 2026 MovStore**,
 GPL-3.0-or-later. Every file derived from Secure Dialer keeps its original
-`Copyright (C) 2026 MovStore` / SPDX header unchanged; the files written for NovaDial are
-listed in [`NOTICE.md`](NOTICE.md) and carry a `Copyright (C) 2026 NovaDial contributors`
+`Copyright (C) 2026 MovStore` / SPDX header unchanged; the files written for Nova Dialer are
+listed in [`NOTICE.md`](NOTICE.md) and carry a `Copyright (C) 2026 Nova Dialer contributors`
 header. See [`docs/PORTING_PLAN.md`](docs/PORTING_PLAN.md) for the full derivation log.
 
 Third-party components are open-source only (AndroidX, Room, SQLCipher, Coil — Apache-2.0
 or MIT). There are no ads, no analytics, no server and no `INTERNET` permission.
 
-### The name "NovaDial"
+### The name "Nova Dialer"
 
-An unrelated open-source project also uses the name "NovaDial". This app is **not**
+This app was previously branded "NovaDial" and is now named **"Nova Dialer"** everywhere it is
+shown to users. The former name is retained only in non-user-facing machine identifiers that must
+not change (the Kotlin class `NovaDialCallScreeningService` and the Android Keystore alias
+`NovaDialRecordingKey`), plus the `applicationId`.
+
+An unrelated open-source project also uses the older name "NovaDial". This app is **not**
 affiliated with it. If you distribute builds, keep the `applicationId` distinct (see
 below) so the two packages never collide in a store or on a device.
 
@@ -148,13 +154,13 @@ A new design system, applied to every page, plus a round of performance work.
   (`GeneralSettingsSupportCard`, three unused view-model functions, the old unreachable palettes).
 - The `reference/` archive, the `.idea/` folder and the design-files copy. `PORTING_PLAN.md` moved to `docs/`.
 
-> The debug build, 221 JVM tests and lint (0 errors) pass locally. The app has not been tested on a
+> The debug build, 260 JVM tests and lint (0 errors) pass locally. The app has not been tested on a
 > physical phone in this environment, so Telecom, full-screen intents, encrypted recordings, SOS,
 > reboot behavior and OEM background restrictions still need the checklist below.
 
 ## Phone test checklist
 1. Install, set as default phone app, accept permissions.
-2. Close NovaDial. Have someone call you: the call screen opens with the caller's name (or the
+2. Close Nova Dialer. Have someone call you: the call screen opens with the caller's name (or the
    notification, if the phone is locked).
 3. Answer, then ask the caller to hang up: the call screen must close by itself.
 4. During a call, tap mute / speaker / hold / audio: the buttons must match what you hear.

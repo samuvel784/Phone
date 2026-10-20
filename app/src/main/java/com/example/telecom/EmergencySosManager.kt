@@ -1,20 +1,16 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 package com.example.telecom
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
-import android.os.Build
-import android.telephony.SmsManager
-import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.example.R
 import com.example.util.LocationHelper
 
@@ -28,9 +24,11 @@ import com.example.util.LocationHelper
  */
 object EmergencySosManager {
 
-    fun canSendSms(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) ==
-            PackageManager.PERMISSION_GRANTED
+    /**
+     * Nova Dialer is a dialer, not the default SMS handler, so it never requests the restricted
+     * SEND_SMS permission. The alert is handed to the user's own SMS app for confirmation.
+     */
+    fun canSendSms(context: Context): Boolean = true
 
     /** Builds the alert text, appending a map link when a location is available. */
     fun buildAlertMessage(context: Context, includeLocation: Boolean, location: Location?): String {
@@ -63,39 +61,35 @@ object EmergencySosManager {
     }
 
     /**
-     * Sends [message] to each contact.
-     * @return the number of messages successfully handed to the SMS stack.
+     * Opens the user's SMS app once with every emergency contact pre-addressed and the alert
+     * pre-filled. No restricted SEND_SMS permission is needed; the user confirms the send.
+     *
+     * @return 1 when the SMS composer was opened, 0 otherwise.
      */
-    @SuppressLint("MissingPermission")
+    @SuppressLint("QueryPermissionsNeeded")
     fun alertContacts(
         context: Context,
         contacts: List<EmergencySosPrefs.SosContact>,
         message: String
     ): Int {
-        if (!canSendSms(context) || contacts.isEmpty()) return 0
+        if (contacts.isEmpty()) return 0
+        val recipients = contacts
+            .map { it.number.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(";")
+        if (recipients.isBlank()) return 0
 
-        val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(SmsManager::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            SmsManager.getDefault()
-        } ?: return 0
-
-        var sent = 0
-        for (contact in contacts) {
-            try {
-                val parts = smsManager.divideMessage(message)
-                if (parts.size > 1) {
-                    smsManager.sendMultipartTextMessage(contact.number, null, parts, null, null)
-                } else {
-                    smsManager.sendTextMessage(contact.number, null, message, null, null)
+        return try {
+            context.startActivity(
+                Intent(Intent.ACTION_SENDTO, "smsto:$recipients".toUri()).apply {
+                    putExtra("sms_body", message)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                sent++
-            } catch (_: Exception) {
-                // Skip a single bad number rather than aborting the whole alert.
-            }
+            )
+            1
+        } catch (_: Exception) {
+            0
         }
-        return sent
     }
 
     /**

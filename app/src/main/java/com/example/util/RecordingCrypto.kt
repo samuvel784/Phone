@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -23,8 +23,13 @@ import javax.crypto.spec.GCMParameterSpec
  * AES-256-GCM protection for call recordings while they are at rest.
  *
  * The key lives in the Android Keystore and never leaves it. Recordings are encrypted in place
- * as soon as a call ends. The only plaintext copies are short-lived cache files created for
- * playback, sharing or export, and those stay inside app-private cache storage.
+ * as soon as a call ends.
+ *
+ * Playback and sharing use a plaintext cache copy inside app-private cache storage; the UI clears
+ * that cache when playback stops, a recording is deleted, or the recordings screen is left.
+ * Export is deliberately different: it writes a decrypted copy to the user's public Downloads
+ * folder, where it stays until the user deletes it. Nova Dialer can never delete a copy that
+ * another app or person has received.
  */
 object RecordingCrypto {
 

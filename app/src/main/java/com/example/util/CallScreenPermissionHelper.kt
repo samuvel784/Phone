@@ -150,22 +150,20 @@ object CallScreenPermissionHelper {
     }
 
     fun requestOverlayPermission(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                "package:${context.packageName}".toUri()
+            ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+            context.startActivity(intent)
+        } catch (_: Exception) {
             try {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    "package:${context.packageName}".toUri()
-                ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
                 context.startActivity(intent)
             } catch (_: Exception) {
-                try {
-                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    context.startActivity(intent)
-                } catch (_: Exception) {
-                    openAppDetailsSettings(context)
-                }
+                openAppDetailsSettings(context)
             }
         }
     }

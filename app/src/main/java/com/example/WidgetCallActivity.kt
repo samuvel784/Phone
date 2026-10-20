@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 NovaDial contributors
+ * Copyright (C) 2026 Nova Dialer contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -19,7 +19,7 @@ import com.example.widget.FavoritesWidgetProvider
  *
  * This activity is **not exported**, so only the widget's own PendingIntent can
  * start it. It never marks the app as authenticated: a widget tap must not unlock
- * NovaDial. It only places the call when CALL_PHONE is granted; otherwise it opens
+ * Nova Dialer. It only places the call when CALL_PHONE is granted; otherwise it opens
  * MainActivity with an ACTION_DIAL tel: intent so the number is merely shown in the
  * dialpad and the user decides whether to call.
  */

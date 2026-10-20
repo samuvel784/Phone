@@ -43,8 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.AppShapes
-import com.example.ui.theme.LocalAmoledMode
-import com.example.ui.theme.LocalM3Expressive
 import com.example.util.RichHapticEngine
 
 @Composable
@@ -63,8 +61,6 @@ fun InCallButton(
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
-    val isExpressive = LocalM3Expressive.current
-    val isAmoled = LocalAmoledMode.current
 
     // Off: soft tonal tile. On: solid accent colour with its contrasting icon, so the state is obvious at a glance.
     val targetColor = when {

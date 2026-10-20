@@ -71,7 +71,7 @@ class CallRecordingComprehensiveTest {
             assertFalse(CallAudioRecorder.isRecording.value)
 
             if (result.file != null) {
-                val name = result.file!!.name
+                val name = result.file.name
                 assertTrue("Filename must sanitize digits", name.contains("15552345678"))
                 assertTrue("Filename must end with .m4a", name.endsWith(".m4a"))
             }
@@ -87,7 +87,7 @@ class CallRecordingComprehensiveTest {
 
             val result = CallAudioRecorder.stopRecording()
             if (result.file != null) {
-                assertTrue("Blank phone number should default to Unknown", result.file!!.name.contains("Unknown"))
+                assertTrue("Blank phone number should default to Unknown", result.file.name.contains("Unknown"))
             }
         }
     }
@@ -125,15 +125,15 @@ class CallRecordingComprehensiveTest {
             val files = recordDir.listFiles() ?: emptyArray()
             val latestFile = files.maxByOrNull { it.lastModified() }
 
-            // Write 512 bytes of simulated audio
-            latestFile?.writeBytes(ByteArray(512))
+            // Write 4 KB of simulated audio (comfortably above the minimum valid recording size)
+            latestFile?.writeBytes(ByteArray(4096))
 
             val result = CallAudioRecorder.stopRecording()
             assertFalse(CallAudioRecorder.isRecording.value)
 
             if (latestFile != null) {
-                assertTrue("File > 128 bytes should be retained on disk", latestFile.exists())
-                assertEquals(512L, latestFile.length())
+                assertTrue("A recording above the minimum valid size should be retained on disk", latestFile.exists())
+                assertEquals(4096L, latestFile.length())
                 latestFile.delete()
             }
         }
@@ -254,7 +254,8 @@ class CallRecordingComprehensiveTest {
         assertEquals("com.example.ACTION_HANG_UP", MyInCallService.ACTION_HANG_UP)
         assertEquals("com.example.ACTION_ANSWER", MyInCallService.ACTION_ANSWER)
         assertEquals("com.example.ACTION_DECLINE", MyInCallService.ACTION_DECLINE)
-        assertEquals("com.example.ACTION_TOGGLE_RECORD", MyInCallService.ACTION_TOGGLE_RECORD)
+        assertEquals("com.example.ACTION_START_RECORD", MyInCallService.ACTION_START_RECORD)
+        assertEquals("com.example.ACTION_STOP_RECORD", MyInCallService.ACTION_STOP_RECORD)
         assertEquals("com.example.ACTION_TOGGLE_SPEAKER", MyInCallService.ACTION_TOGGLE_SPEAKER)
         assertEquals("com.example.ACTION_TOGGLE_MUTE", MyInCallService.ACTION_TOGGLE_MUTE)
     }

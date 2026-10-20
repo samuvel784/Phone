@@ -10,7 +10,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
 
@@ -52,12 +51,12 @@ class DialerAudioRecorderTest {
             if (result.file != null) {
                 assertTrue(
                     "New recordings must not expose the phone number in the filename",
-                    result.file!!.name.startsWith("RECV_") &&
-                        !result.file!!.name.contains("15550199")
+                    result.file.name.startsWith("RECV_") &&
+                        !result.file.name.contains("15550199")
                 )
                 assertEquals("+15550199", result.phoneNumber)
-                assertTrue("File should have .m4a extension", result.file!!.name.endsWith(".m4a"))
-                assertEquals("Should be saved in CallRecordings directory", "CallRecordings", result.file!!.parentFile?.name)
+                assertTrue("File should have .m4a extension", result.file.name.endsWith(".m4a"))
+                assertEquals("Should be saved in CallRecordings directory", "CallRecordings", result.file.parentFile?.name)
             }
         }
     }

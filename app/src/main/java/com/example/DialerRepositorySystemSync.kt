@@ -209,7 +209,7 @@ suspend fun DialerRepository.fetchSystemContacts(): List<Contact> = withContext(
             val contactIdVal = if (cidIdx != -1) c.getLong(cidIdx) else 0L
             val num = if (numIdx != -1) c.getString(numIdx) ?: "" else ""
             val rawName = if (nameIdx != -1) c.getString(nameIdx) else null
-            val name = if (rawName.isNullOrBlank()) (if (num.isBlank()) "Unknown" else num) else rawName
+            val name = rawName?.takeIf { it.isNotBlank() } ?: num.ifBlank { "Unknown" }
             val fav = favIdx != -1 && c.getInt(favIdx) == 1
             val photoUri = if (photoIdx != -1) c.getString(photoIdx) ?: "" else ""
             val contactIdStr = if (cidIdx != -1) c.getString(cidIdx) ?: "" else ""
@@ -277,8 +277,8 @@ suspend fun DialerRepository.fetchSystemContacts(): List<Contact> = withContext(
                     accountName = existing.accountName.ifEmpty { accName },
                     accountType = existing.accountType.ifEmpty { accType },
                     numbers = existingNumbers,
-                    emails = if (existing.emails.isNotEmpty()) existing.emails else emailsForContact,
-                    addresses = if (existing.addresses.isNotEmpty()) existing.addresses else addressesForContact
+                    emails = existing.emails.ifEmpty { emailsForContact },
+                    addresses = existing.addresses.ifEmpty { addressesForContact }
                 )
             }
         }
