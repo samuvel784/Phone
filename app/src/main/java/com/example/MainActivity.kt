@@ -316,10 +316,6 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         volumeControlStream = AudioManager.STREAM_VOICE_CALL
         CallManager.setAppInForeground(true)
-        // Re-arm the opt-in shake-to-SOS watch whenever the app is opened.
-        if (com.example.telecom.EmergencySosPrefs.isShakeToTriggerEnabled(this)) {
-            com.example.telecom.EmergencySosService.start(this)
-        }
         val hasRealCall = CallManager.currentCall.value != null ||
                 CallManager.calls.value.isNotEmpty()
         if (hasTrustedToken() || (hasRealCall && isAppAuthenticated.value)) {

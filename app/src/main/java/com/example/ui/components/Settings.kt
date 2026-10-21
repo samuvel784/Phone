@@ -88,14 +88,8 @@ fun SettingsPanel(
                             2 -> stringResource(R.string.cat_sound_gestures)
                             3 -> stringResource(R.string.cat_calling_accounts)
                             4 -> stringResource(R.string.cat_speed_dial_quick_responses)
-                            5 -> stringResource(R.string.cat_call_blocking)
                             6 -> stringResource(R.string.cat_contacts_data)
-                            7 -> stringResource(R.string.cat_advanced_features)
                             8 -> stringResource(R.string.cat_privacy_security_about)
-                            9 -> stringResource(R.string.cat_focus_protection)
-                            10 -> stringResource(R.string.home_call_analytics)
-                            11 -> stringResource(R.string.dup_finder_title)
-                            13 -> stringResource(R.string.sos_title)
                             else -> stringResource(R.string.settings_title)
                         },
                         style = MaterialTheme.typography.titleLarge,
@@ -168,11 +162,6 @@ fun SettingsPanel(
                         cardBgColor = cardBgColor,
                         highlightedTitle = highlightedTitle
                     )
-                    5 -> CallBlockingSettings(
-                        viewModel = viewModel,
-                        cardBgColor = cardBgColor,
-                        highlightedTitle = highlightedTitle
-                    )
                     6 -> ContactsAndDataSettings(
                         viewModel = viewModel,
                         cardBgColor = cardBgColor,
@@ -182,11 +171,6 @@ fun SettingsPanel(
                             activeTab = tab
                         }
                     )
-                    7 -> AdvancedFeaturesSettings(
-                        viewModel = viewModel,
-                        cardBgColor = cardBgColor,
-                        highlightedTitle = highlightedTitle
-                    )
                     8 -> PrivacySecurityAboutSettings(
                         viewModel = viewModel,
                         cardBgColor = cardBgColor,
@@ -194,22 +178,13 @@ fun SettingsPanel(
                         onShowAbout = { showAboutDialog = true },
                         onShowPrivacy = { showPrivacyDialog = true }
                     )
-                    9 -> FocusAndProtectionSettings(
+                    else -> GeneralSettings(
                         viewModel = viewModel,
                         cardBgColor = cardBgColor,
-                        highlightedTitle = highlightedTitle
-                    )
-                    10 -> CallAnalyticsSettings(
-                        viewModel = viewModel,
-                        cardBgColor = cardBgColor
-                    )
-                    11 -> DuplicateFinderSettings(
-                        viewModel = viewModel,
-                        cardBgColor = cardBgColor
-                    )
-                    13 -> EmergencySosSettings(
-                        viewModel = viewModel,
-                        cardBgColor = cardBgColor
+                        onNavigateToTab = { tab, title ->
+                            highlightedTitle = title
+                            activeTab = tab
+                        }
                     )
                 }
             }

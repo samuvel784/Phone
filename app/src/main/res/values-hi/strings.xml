@@ -147,18 +147,14 @@
     <string name="cat_sound_gestures">ध्वनि और जेस्चर</string>
     <string name="cat_calling_accounts">सिम और कॉलिंग खाते</string>
     <string name="cat_speed_dial_quick_responses">स्पीड डायल और त्वरित उत्तर</string>
-    <string name="cat_call_blocking">कॉल ब्लॉकिंग और स्पैम</string>
     <string name="cat_contacts_data">संपर्क और डेटा</string>
-    <string name="cat_advanced_features">उन्नत टूल</string>
     <string name="cat_privacy_security_about">गोपनीयता और ऐप के बारे में</string>
     <string name="cat_appearance_color">उपस्थिति</string>
     <string name="cat_appearance_color_sub">डार्क मोड, रंग और डायनेमिक स्टाइलिंग</string>
     <string name="cat_sound_gestures_sub">रिंगटोन, कीपैड टोन और जेस्चर</string>
     <string name="cat_calling_accounts_sub">सिम कार्ड, कॉल वेटिंग और वॉयसमेल</string>
     <string name="cat_speed_dial_quick_responses_sub">स्पीड डायल और एसएमएस त्वरित उत्तर</string>
-    <string name="cat_call_blocking_sub">ब्लॉक किए गए नंबर और कॉलर आईडी</string>
     <string name="cat_contacts_data_sub">सिंक, आयात और बैकअप</string>
-    <string name="cat_advanced_features_sub">कॉल रिकॉर्डिंग, नोट्स और रिमाइंडर्स</string>
     <string name="cat_privacy_security_about_sub">ऐप लॉक, सुरक्षा और ऐप जानकारी</string>
     <string name="settings_title">सेटिंग्स</string>
     <string name="settings_back">वापस</string>
@@ -336,14 +332,6 @@
     <string name="btn_unlock_vault">वॉल्ट अनलॉक करें</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
-    <string name="settings_dynamic_island_title">डायनामिक आइलैंड कॉल कैप्सूल</string>
-    <string name="settings_dynamic_island_sub">चल रही कॉल के लिए कैमरा कटआउट के पास एक इंटरैक्टिव फ्लोटिंग पिल दिखाएं</string>
-    <string name="settings_dynamic_island_speaker_only">केवल स्पीकर पर दिखाएं</string>
-    <string name="settings_dynamic_island_speaker_only_sub">डायनामिक आइलैंड केवल तब दिखाएं जब स्पीकरफ़ोन सक्रिय हो</string>
-    <string name="settings_dynamic_island_floating_permission">फ्लोटिंग ओवरले अनुमति</string>
-    <string name="settings_dynamic_island_floating_permission_sub">अन्य ऐप्स के ऊपर कैप्सूल प्रदर्शित करने की अनुमति दें</string>
-    <string name="dynamic_island_muted">म्यूट</string>
-
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">प्रदर्शित करने के लिए संपर्क</string>
     <string name="settings_default_account_for_new">नए संपर्कों के लिए डिफ़ॉल्ट खाता</string>
@@ -434,11 +422,9 @@
     <string name="btn_grant">अनुमति दें</string>
     <string name="btn_configure">कॉन्फ़िगर करें</string>
     <string name="btn_set_default">डिफ़ॉल्ट सेट करें</string>
-    <string name="status_granted">स्वीकृत</string>
     <string name="settings_lockscreen_calling_title">लॉक स्क्रीन पर फ़ुल-स्क्रीन कॉल</string>
     <string name="settings_lockscreen_calling_sub">डिवाइस लॉक होने या स्क्रीन बंद होने पर तुरंत इनकमिंग कॉल स्क्रीन दिखाएं</string>
     <string name="settings_full_screen_intent_warning">फुल-स्क्रीन इनकमिंग कॉल अलर्ट सिस्टम द्वारा प्रतिबंधित हैं</string>
-    <string name="settings_overlay_permission_warning">डायनामिक आइलैंड को अन्य ऐप्स के ऊपर दिखाने के लिए ओवरले अनुमति आवश्यक है</string>
     <string name="feature_enable_prompt">सक्रिय करने के लिए ऊपर स्विच चालू करें</string>
     <string name="feature_disabled_hint">सुविधा अक्षम है</string>
     <string name="btn_enable_feature">सुविधा सक्षम करें</string>
@@ -453,9 +439,9 @@
     <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">गोपनीयता नीति</string>
     <string name="privacy_intro">Nova Dialer में, हम आपकी गोपनीयता को प्राथमिकता देते हैं।</string>
-    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
-    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call history, or any other app data to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, and notifications are used only for the features you use. For quick replies Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. An exported backup is protected only by the password you set.</string>
     <string name="settings_support_desc" formatted="false">Nova Dialer 100% मुफ़्त, ओपन-सोर्स और विज्ञापन-मुक्त है। यदि यह ऐप उपयोगी लगे, तो योगदान पर विचार करें।</string>
     <string name="settings_contribute_github">GitHub पर योगदान करें</string>
 
@@ -469,8 +455,6 @@
     <!-- Duplicate Finder -->
     <string name="dup_finder_title">डुप्लिकेट खोजक</string>
     <string name="dup_finder_sub">समान नंबर वाले संपर्कों को ढूंढें, फिर उन्हें मर्ज करें या अतिरिक्त हटाएं।</string>
-    <string name="dup_finder_entry">डुप्लिकेट खोजक</string>
-    <string name="dup_finder_entry_sub">डुप्लिकेट संपर्कों का पता लगाएं और उन्हें मर्ज या स्थायी रूप से हटाएं</string>
     <string name="dup_scanning">संपर्कों को स्कैन किया जा रहा है…</string>
     <string name="dup_groups_found">%1$d डुप्लिकेट समूह</string>
     <string name="dup_none_title">कोई डुप्लिकेट नहीं मिला</string>
@@ -500,8 +484,6 @@
     <string name="history">इतिहास</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="cat_focus_protection">फोकस और सुरक्षा</string>
-    <string name="cat_focus_protection_sub">फोकस मोड, VIP कॉलर और कॉलर अनाउंसर</string>
     <string name="header_focus_mode">फोकस मोड</string>
     <string name="header_call_protection">कॉल सुरक्षा स्तर</string>
     <string name="header_vip_numbers">VIP नंबर</string>
@@ -605,48 +587,6 @@
     <string name="widget_tap_hint">Tap a favourite to call</string>
     <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
-    <string name="sos_title">आपातकालीन SOS</string>
-    <string name="sos_sub">अपनी लोकेशन के साथ आपातकालीन अलर्ट भेजें और आपातकालीन सेवाओं को कॉल करें</string>
-    <string name="sos_instructions_title">यह कैसे काम करता है</string>
-    <string name="sos_instructions_body">1. नीचे एक या अधिक आपातकालीन संपर्क जोड़ें।\n2. SOS बटन को दबाकर रखें।\n3. Nova Dialer उन संपर्कों को आपकी लोकेशन भेजता है और आपके आपातकालीन नंबर पर कॉल करता है।</string>
-    <string name="sos_button_label">SOS</string>
-    <string name="sos_hold_hint">सक्रिय करने के लिए दबाकर रखें</string>
-    <string name="sos_contacts_title">आपातकालीन संपर्क</string>
-    <string name="sos_contact_add">आपातकालीन संपर्क जोड़ें</string>
-    <string name="sos_contacts_empty">अभी कोई आपातकालीन संपर्क नहीं</string>
-    <string name="sos_auto_alert_title">संपर्कों को स्वतः सूचित करें</string>
-    <string name="sos_auto_alert_sub">SOS सक्रिय होने पर आपके सहेजे गए आपातकालीन संपर्कों को संदेश भेजता है</string>
-    <string name="sos_include_location_title">मेरी लोकेशन शामिल करें</string>
-    <string name="sos_include_location_sub">अलर्ट में आपकी GPS स्थिति के साथ मैप लिंक जोड़ता है</string>
-    <string name="sos_call_number_title">कॉल करने के लिए आपातकालीन नंबर</string>
-    <string name="sos_call_number_sub">SOS सक्रिय होने पर डायल किया जाने वाला नंबर (जैसे 112)</string>
-    <string name="sos_grant_permissions">आवश्यक अनुमतियाँ दें</string>
-    <string name="sos_permissions_needed">पूर्ण अलर्ट के लिए SMS और लोकेशन अनुमतियाँ आवश्यक हैं</string>
-    <string name="sos_permissions_ok">अनुमतियाँ दी गईं</string>
-    <string name="sos_sent_toast">SOS अलर्ट %1$d संपर्क को भेजा गया</string>
-    <string name="sos_no_contacts_toast">पहले कम से कम एक आपातकालीन संपर्क जोड़ें</string>
-    <string name="sos_test_alert">परीक्षण अलर्ट भेजें</string>
-    <string name="sos_alert_message">आपातकाल–मुझे मदद चाहिए। यह Nova Dialer से एक स्वचालित SOS अलर्ट है।</string>
-    <string name="sos_alert_location_label">मेरी लोकेशन:</string>
-    <string name="sos_no_location">लोकेशन उपलब्ध नहीं–मैप लिंक के लिए GPS चालू करें</string>
-    <string name="sos_custom_message_title">Custom alert message</string>
-    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
-    <string name="sos_countdown_title">Emergency SOS</string>
-    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
-    <string name="sos_countdown_now">Send now</string>
-    <string name="sos_countdown_setting">Countdown before sending</string>
-    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
-    <string name="sos_shake_title">Shake to trigger SOS</string>
-    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_watch_notification_title">Shake to SOS is on</string>
-    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
-    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
-    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
-    <string name="sos_cancel_countdown_action">Cancel SOS</string>
-    <string name="sos_stop_watch_action">Stop watch</string>
-    <string name="sos_watch_channel_name">Shake to SOS watch</string>
-    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
-    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">बिना एन्क्रिप्शन वाली बैकअप फ़ाइल</string>
     <string name="backup_plaintext_warning_body">यह एक पुराना बैकअप है जो एन्क्रिप्टेड नहीं है। इसमें संपर्क, फ़ोन नंबर, कॉल इतिहास, नोट्स, रिमाइंडर और सेटिंग्स पढ़ने योग्य रूप में हो सकते हैं। बहाल करने पर यह आपके मौजूदा डेटा के साथ मिल जाता है और आपका पहले से मौजूद सब कुछ बना रहता है। केवल तभी जारी रखें जब आप इस फ़ाइल पर भरोसा करते हैं।</string>

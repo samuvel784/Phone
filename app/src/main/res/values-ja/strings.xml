@@ -147,18 +147,14 @@
     <string name="cat_sound_gestures">音とジェスチャー</string>
     <string name="cat_calling_accounts">SIMと通話アカウント</string>
     <string name="cat_speed_dial_quick_responses">スピードダイヤルとクイック返信</string>
-    <string name="cat_call_blocking">着信拒否とスパム</string>
     <string name="cat_contacts_data">連絡先とデータ</string>
-    <string name="cat_advanced_features">高度なツール</string>
     <string name="cat_privacy_security_about">プライバシーとアプリ情報</string>
     <string name="cat_appearance_color">外観とテーマ</string>
     <string name="cat_appearance_color_sub">ダークモード、カラー、ダイナミックデザイン</string>
     <string name="cat_sound_gestures_sub">着信音、キーパッド音、ジェスチャー</string>
     <string name="cat_calling_accounts_sub">SIMカード、割り込み通話、留守番電話</string>
     <string name="cat_speed_dial_quick_responses_sub">スピードダイヤルとSMSクイック返信</string>
-    <string name="cat_call_blocking_sub">拒否リストと発信者ID</string>
     <string name="cat_contacts_data_sub">同期、インポート、バックアップ</string>
-    <string name="cat_advanced_features_sub">通話録音、メモ、リマインダー</string>
     <string name="cat_privacy_security_about_sub">アプリロック、セキュリティ、情報</string>
     <string name="settings_title">設定</string>
     <string name="settings_back">戻る</string>
@@ -336,14 +332,6 @@
     <string name="btn_unlock_vault">保管庫のロック解除</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
-    <string name="settings_dynamic_island_title">ダイナミックアイランド通話カプセル</string>
-    <string name="settings_dynamic_island_sub">通話中、カメラ周囲に対話型の通話ピルを表示</string>
-    <string name="settings_dynamic_island_speaker_only">スピーカー時のみ表示</string>
-    <string name="settings_dynamic_island_speaker_only_sub">スピーカー通話中のみダイナミックアイランドを表示</string>
-    <string name="settings_dynamic_island_floating_permission">フローティング表示の権限</string>
-    <string name="settings_dynamic_island_floating_permission_sub">他のアプリの上にカプセルを表示（Galaxy、Xiaomi、Xperia等に対応）</string>
-    <string name="dynamic_island_muted">ミュート中</string>
-
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">表示する連絡先</string>
     <string name="settings_default_account_for_new">新規連絡先のデフォルトアカウント</string>
@@ -434,11 +422,9 @@
     <string name="btn_grant">許可</string>
     <string name="btn_configure">設定</string>
     <string name="btn_set_default">デフォルトに設定</string>
-    <string name="status_granted">許可済み</string>
     <string name="settings_lockscreen_calling_title">ロック画面での全画面着信</string>
     <string name="settings_lockscreen_calling_sub">端末がロック中や画面オフでも即座に全画面着信画面を表示</string>
     <string name="settings_full_screen_intent_warning">全画面着信通知がシステムによって制限されています</string>
-    <string name="settings_overlay_permission_warning">他のアプリの上にダイナミックアイランドを表示するには権限が必要です</string>
     <string name="feature_enable_prompt">上のスイッチを切り替えて有効化してください</string>
     <string name="feature_disabled_hint">機能は無効です</string>
     <string name="btn_enable_feature">機能を有効化</string>
@@ -453,9 +439,9 @@
     <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">プライバシーポリシー</string>
     <string name="privacy_intro">Nova Dialerではプライバシーを最優先しています。</string>
-    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
-    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call history, or any other app data to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, and notifications are used only for the features you use. For quick replies Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. An exported backup is protected only by the password you set.</string>
     <string name="settings_support_desc" formatted="false">Nova Dialerは100%無料、オープンソース、広告なし、プライバシー重視です。コードや翻訳の貢献を歓迎します。</string>
     <string name="settings_contribute_github">GitHubで貢献する</string>
 
@@ -469,8 +455,6 @@
     <!-- Duplicate Finder -->
     <string name="dup_finder_title">重複検出</string>
     <string name="dup_finder_sub">同じ電話番号を持つ連絡先を検出し、統合または削除します。</string>
-    <string name="dup_finder_entry">重複検出</string>
-    <string name="dup_finder_entry_sub">重複する連絡先を検出して統合または永久削除します</string>
     <string name="dup_scanning">連絡先をスキャン中…</string>
     <string name="dup_groups_found">%1$d件の重複グループ</string>
     <string name="dup_none_title">重複は見つかりませんでした</string>
@@ -500,8 +484,6 @@
     <string name="history">履歴</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="cat_focus_protection">集中 &amp; 保護</string>
-    <string name="cat_focus_protection_sub">集中モード、VIP着信、着信読み上げ</string>
     <string name="header_focus_mode">集中モード</string>
     <string name="header_call_protection">着信保護レベル</string>
     <string name="header_vip_numbers">VIP番号</string>
@@ -605,48 +587,6 @@
     <string name="widget_tap_hint">Tap a favourite to call</string>
     <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
-    <string name="sos_title">緊急SOS</string>
-    <string name="sos_sub">位置情報を添えて緊急アラートを送信し、緊急サービスに電話します</string>
-    <string name="sos_instructions_title">使い方</string>
-    <string name="sos_instructions_body">1. 下で緊急連絡先を1つ以上追加します。\n2. SOSボタンを長押しします。\n3. Nova Dialerが位置情報を連絡先に送信し、緊急番号に電話します。</string>
-    <string name="sos_button_label">SOS</string>
-    <string name="sos_hold_hint">長押しして有効化</string>
-    <string name="sos_contacts_title">緊急連絡先</string>
-    <string name="sos_contact_add">緊急連絡先を追加</string>
-    <string name="sos_contacts_empty">緊急連絡先がまだありません</string>
-    <string name="sos_auto_alert_title">連絡先に自動で通知</string>
-    <string name="sos_auto_alert_sub">SOSの発動時に保存済みの緊急連絡先へメッセージを送信します</string>
-    <string name="sos_include_location_title">現在地を含める</string>
-    <string name="sos_include_location_sub">アラートにGPS位置の地図リンクを添付します</string>
-    <string name="sos_call_number_title">発信する緊急番号</string>
-    <string name="sos_call_number_sub">SOSの発動時に発信する番号（例: 112）</string>
-    <string name="sos_grant_permissions">必要な権限を許可</string>
-    <string name="sos_permissions_needed">完全なアラートにはSMSと位置情報の権限が必要です</string>
-    <string name="sos_permissions_ok">権限が許可されました</string>
-    <string name="sos_sent_toast">SOSアラートを%1$d件の連絡先に送信しました</string>
-    <string name="sos_no_contacts_toast">先に緊急連絡先を1つ以上追加してください</string>
-    <string name="sos_test_alert">テストアラートを送信</string>
-    <string name="sos_alert_message">緊急–助けが必要です。これはNova Dialerからの自動SOSアラートです。</string>
-    <string name="sos_alert_location_label">現在地:</string>
-    <string name="sos_no_location">位置情報を取得できません–地図リンクにはGPSを有効にしてください</string>
-    <string name="sos_custom_message_title">Custom alert message</string>
-    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
-    <string name="sos_countdown_title">Emergency SOS</string>
-    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
-    <string name="sos_countdown_now">Send now</string>
-    <string name="sos_countdown_setting">Countdown before sending</string>
-    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
-    <string name="sos_shake_title">Shake to trigger SOS</string>
-    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_watch_notification_title">Shake to SOS is on</string>
-    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
-    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
-    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
-    <string name="sos_cancel_countdown_action">Cancel SOS</string>
-    <string name="sos_stop_watch_action">Stop watch</string>
-    <string name="sos_watch_channel_name">Shake to SOS watch</string>
-    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
-    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">暗号化されていないバックアップ</string>
     <string name="backup_plaintext_warning_body">これは暗号化されていない古いバックアップです。連絡先、電話番号、通話履歴、メモ、リマインダー、設定が読み取り可能な形で含まれている可能性があります。復元すると現在のデータに統合され、すでにあるデータは保持されます。このファイルを信頼できる場合のみ続行してください。</string>

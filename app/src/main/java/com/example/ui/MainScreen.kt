@@ -376,11 +376,15 @@ fun MainScreen(
     ) { paddingValues ->
         val tabSlots = listOf("HOME", "RECENTS", "FAVORITES")
 
-        BackHandler(enabled = isDialpadVisible || isSettingsVisible) {
+        BackHandler(enabled = isDialpadVisible || isSettingsVisible || (isCallActive && !isCallMinimized) || selectedTab != 0) {
             if (isDialpadVisible) {
                 isDialpadVisible = false
             } else if (isSettingsVisible) {
                 isSettingsVisible = false
+            } else if (isCallActive && !isCallMinimized) {
+                isCallMinimized = true
+            } else if (selectedTab != 0) {
+                selectedTab = 0
             }
         }
 
@@ -660,29 +664,19 @@ fun MainScreen(
                 }
 
                 if (isCallActive && isCallMinimized) {
-                    val isDynamicIsland = viewModel.isDynamicIslandEnabled.value
-                    val speakerOnly = viewModel.isDynamicIslandSpeakerOnly.value
-                    val isSpeakerOn = systemAudioState?.route == android.telecom.CallAudioState.ROUTE_SPEAKER
-
-                    if (!isDynamicIsland || (speakerOnly && !isSpeakerOn)) {
-                        MinimizedCallBanner(
-                            contactName = callingContactName,
-                            contactNumber = callingContactNumber,
-                            callState = systemCallState,
-                            onExpand = { isCallMinimized = false },
-                            onHangUp = {
-                                CallManager.disconnect()
-                                isCallActive = false
-                            }
-                        )
-                    }
+                    MinimizedCallBanner(
+                        contactName = callingContactName,
+                        contactNumber = callingContactNumber,
+                        callState = systemCallState,
+                        onExpand = { isCallMinimized = false },
+                        onHangUp = {
+                            CallManager.disconnect()
+                            isCallActive = false
+                        }
+                    )
                 }
 
                 // Bottom navigation (Home / Recent / Favourites).
-                // It is the LAST child of the Column and has no other layout wrapped around it, so it is always
-                // flush with the bottom edge of the screen. (Before, it shared a Box with the keypad button; that
-                // Box grew to 172 dp because of the button's bottom padding, and the bar was drawn at the TOP of it,
-                // floating about 90 dp above the bottom and overlapping the button.)
                 if (!WindowInsets.isImeVisible) {
                     BottomNavBar(
                         selectedTab = selectedTab,
@@ -693,44 +687,6 @@ fun MainScreen(
                             }
                         },
                         tabSlots = tabSlots
-                    )
-                }
-            }
-
-            // TOP-FLOATING DYNAMIC ISLAND (Framed around camera cutout at the top of the display)
-            val isDynamicIsland = viewModel.isDynamicIslandEnabled.value
-            val speakerOnly = viewModel.isDynamicIslandSpeakerOnly.value
-            val isSpeakerOn = systemAudioState?.route == android.telecom.CallAudioState.ROUTE_SPEAKER
-            val isPlacedOrAnswered = systemCallState == android.telecom.Call.STATE_ACTIVE ||
-                    systemCallState == android.telecom.Call.STATE_DIALING ||
-                    systemCallState == android.telecom.Call.STATE_CONNECTING ||
-                    systemCallState == android.telecom.Call.STATE_HOLDING
-
-            if (isCallActive && isCallMinimized && isDynamicIsland && isPlacedOrAnswered && (!speakerOnly || isSpeakerOn)) {
-                val callerPhotoUri by CallManager.callerPhotoUri.collectAsState()
-                val callerLabel by CallManager.callerLabel.collectAsState()
-                val currentSimSlot by CallManager.currentSimSlot.collectAsState()
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(top = 8.dp)
-                        .align(Alignment.TopCenter)
-                ) {
-                    DynamicIslandPill(
-                        callerName = callingContactName,
-                        callerNumber = callingContactNumber,
-                        callState = systemCallState,
-                        audioState = systemAudioState,
-                        photoUri = callerPhotoUri,
-                        callerLabel = callerLabel,
-                        simSlot = currentSimSlot,
-                        onExpandToFullScreen = { isCallMinimized = false },
-                        onHangUp = {
-                            CallManager.disconnect()
-                            isCallActive = false
-                        }
                     )
                 }
             }
@@ -761,28 +717,23 @@ fun MainScreen(
                 val allContacts by viewModel.allContactsFlow.collectAsStateWithLifecycle()
                 val quickResponsesEntities by viewModel.quickResponsesFlow.collectAsStateWithLifecycle()
                 val quickResponses = remember(quickResponsesEntities) { quickResponsesEntities.map { it.message } }
-                val spamList by viewModel.spamFlow.collectAsStateWithLifecycle()
-                val isSpamCaller = remember(spamList, callingContactNumber) {
-                    if (callingContactNumber.isBlank()) false
-                    else spamList.any { ContactRingtonePrefs.numbersMatch(it.number, callingContactNumber) }
-                }
 
                 ActiveCallScreen(
                     contactName = callingContactName,
                     contactNumber = callingContactNumber,
                     preferredSim = preferredSim,
                     quickResponses = quickResponses,
-                    isSpam = isSpamCaller,
+                    isSpam = false,
                     onHangUp = { CallManager.disconnect() },
                     onAnswer = { CallManager.answer() },
                     onQuickDecline = { CallManager.disconnect() },
                     isIncoming = systemCallState == android.telecom.Call.STATE_RINGING,
                     contacts = allContacts,
                     callState = systemCallState,
-                    recordingEnabled = viewModel.recordingEnabled.value,
-                    autoTuneVolume = viewModel.autoTuneRecordingVolume.value,
-                    recordingChimeEnabled = viewModel.recordingChimeEnabled.value,
-                    alwaysRecordEnabled = viewModel.isAutoRecordCallsEnabled.value,
+                    recordingEnabled = false,
+                    autoTuneVolume = false,
+                    recordingChimeEnabled = false,
+                    alwaysRecordEnabled = false,
                     callNotesEnabled = viewModel.isCallNotesEnabled.value,
                     onSaveNote = { content -> viewModel.saveCallNote(callingContactNumber, content) },
                     onMinimize = { isCallMinimized = true },
@@ -792,92 +743,6 @@ fun MainScreen(
             }
 
             MainScreenContactDialogs(viewModel = viewModel)
-
-            val pendingRecNote = viewModel.pendingPostCallRecordingNote.value
-            if (pendingRecNote != null) {
-                var noteInput by remember(pendingRecNote.id) { mutableStateOf("") }
-                AlertDialog(
-                    onDismissRequest = { viewModel.dismissPostCallRecordingNote() },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    title = { Text(stringResource(R.string.jot_call_note_title)) },
-                    text = {
-                        Column {
-                            Text(
-                                text = "${pendingRecNote.name.ifEmpty { pendingRecNote.number }} (${pendingRecNote.duration}s recording)",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            OutlinedTextField(
-                                value = noteInput,
-                                onValueChange = { noteInput = it },
-                                placeholder = { Text(stringResource(R.string.note_placeholder)) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(110.dp),
-                                singleLine = false
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                viewModel.savePostCallRecordingNote(
-                                    pendingRecNote.id,
-                                    pendingRecNote.number,
-                                    noteInput.trim()
-                                )
-                                Toast.makeText(context, context.getString(R.string.note_saved), Toast.LENGTH_SHORT).show()
-                            }
-                        ) {
-                            Text(stringResource(R.string.btn_save_note))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = { viewModel.dismissPostCallRecordingNote() }
-                        ) {
-                            Text(stringResource(R.string.btn_cancel))
-                        }
-                    }
-                )
-            }
-
-            val showDuplicatePrompt by viewModel.showDuplicatePrompt
-            val duplicateGroups by viewModel.duplicateGroups
-            if (showDuplicatePrompt && duplicateGroups.isNotEmpty()) {
-                AlertDialog(
-                    onDismissRequest = { viewModel.showDuplicatePrompt.value = false },
-                    title = { Text(stringResource(R.string.dup_finder_title), fontWeight = FontWeight.Bold) },
-                    text = {
-                        Column {
-                            Text(stringResource(R.string.dup_finder_sub))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Found ${duplicateGroups.size} duplicate contact group(s). Review and merge/delete duplicates in Settings.", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    },
-                    confirmButton = {
-                        Button(onClick = {
-                            viewModel.showDuplicatePrompt.value = false
-                            settingsInitialTab = 11
-                            isSettingsVisible = true
-                        }) {
-                            Text("View Duplicates")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { viewModel.showDuplicatePrompt.value = false }) {
-                            Text("Dismiss")
-                        }
-                    }
-                )
-            }
 
             // The scrim fades in/out with the dialpad sheet. The alpha has to depend on
             // isDialpadVisible for the animation to run at all (a constant targetValue never

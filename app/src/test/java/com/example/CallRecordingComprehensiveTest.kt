@@ -254,8 +254,6 @@ class CallRecordingComprehensiveTest {
         assertEquals("com.example.ACTION_HANG_UP", MyInCallService.ACTION_HANG_UP)
         assertEquals("com.example.ACTION_ANSWER", MyInCallService.ACTION_ANSWER)
         assertEquals("com.example.ACTION_DECLINE", MyInCallService.ACTION_DECLINE)
-        assertEquals("com.example.ACTION_START_RECORD", MyInCallService.ACTION_START_RECORD)
-        assertEquals("com.example.ACTION_STOP_RECORD", MyInCallService.ACTION_STOP_RECORD)
         assertEquals("com.example.ACTION_TOGGLE_SPEAKER", MyInCallService.ACTION_TOGGLE_SPEAKER)
         assertEquals("com.example.ACTION_TOGGLE_MUTE", MyInCallService.ACTION_TOGGLE_MUTE)
     }
@@ -302,23 +300,6 @@ class CallRecordingComprehensiveTest {
         viewModel.updateRecordingsBiometricLockEnabled(false)
         assertFalse(viewModel.isRecordingsBiometricLockEnabled.value)
         assertFalse(prefs.getBoolean("is_recordings_biometric_lock_enabled", true))
-    }
-
-    @Test
-    fun testVaultBiometricAuthHelperGracefulFallback() {
-        val activity = Robolectric.buildActivity(android.app.Activity::class.java).setup().get()
-        var successCalled = false
-
-        com.example.util.VaultBiometricAuthHelper.authenticate(
-            activity = activity,
-            onSuccess = {
-                successCalled = true
-            },
-            onError = {}
-        )
-
-        // In Robolectric test environment with no hardware secure lock, fallback automatically invokes onSuccess
-        assertTrue(successCalled)
     }
 
     @Test

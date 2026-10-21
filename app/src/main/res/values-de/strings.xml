@@ -147,18 +147,14 @@
     <string name="cat_sound_gestures">Ton &amp; Gesten</string>
     <string name="cat_calling_accounts">SIM &amp; Anrufkonten</string>
     <string name="cat_speed_dial_quick_responses">Kurzwahl &amp; Schnellantworten</string>
-    <string name="cat_call_blocking">Spam- &amp; Anrufsperre</string>
     <string name="cat_contacts_data">Kontakte &amp; Daten</string>
-    <string name="cat_advanced_features">Erweiterte Tools</string>
     <string name="cat_privacy_security_about">Datenschutz &amp; Über</string>
     <string name="cat_appearance_color">Erscheinungsbild</string>
     <string name="cat_appearance_color_sub">Dynamik, Dunkelmodus &amp; Farben</string>
     <string name="cat_sound_gestures_sub">Klingeltöne, Töne &amp; Gesten</string>
     <string name="cat_calling_accounts_sub">SIM-Karten, Anklopfen &amp; Mailbox</string>
     <string name="cat_speed_dial_quick_responses_sub">Kurzwahl &amp; SMS-Schnellantworten</string>
-    <string name="cat_call_blocking_sub">Blockierte Nummern &amp; Anrufer-ID</string>
     <string name="cat_contacts_data_sub">Synchronisierung, Import &amp; Sicherung</string>
-    <string name="cat_advanced_features_sub">Aufnahme, Notizen &amp; Rückruf</string>
     <string name="cat_privacy_security_about_sub">App-Sperre, Sicherheit &amp; App-Info</string>
     <string name="settings_title">Einstellungen</string>
     <string name="settings_back">Zurück</string>
@@ -336,14 +332,6 @@
     <string name="btn_unlock_vault">Tresor entsperren</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
-    <string name="settings_dynamic_island_title">Dynamic Island Anruf-Kapsel</string>
-    <string name="settings_dynamic_island_sub">Schwebende interaktive Anrufpille um die Frontkamera für laufende Telefonate anzeigen</string>
-    <string name="settings_dynamic_island_speaker_only">Nur im Freisprechmodus anzeigen</string>
-    <string name="settings_dynamic_island_speaker_only_sub">Dynamic Island ausschließlich bei aktivem Lautsprechermodus einblenden</string>
-    <string name="settings_dynamic_island_floating_permission">Berechtigung für schwebendes Overlay</string>
-    <string name="settings_dynamic_island_floating_permission_sub">Schwebende Kapsel über anderen Apps erlauben (Unterstützung für OnePlus, Xiaomi, Vivo, Samsung)</string>
-    <string name="dynamic_island_muted">Stumm</string>
-
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">Anzuzeigende Kontakte</string>
     <string name="settings_default_account_for_new">Standardkonto für neue Kontakte</string>
@@ -434,11 +422,9 @@
     <string name="btn_grant">Gewähren</string>
     <string name="btn_configure">Konfigurieren</string>
     <string name="btn_set_default">Als Standard festlegen</string>
-    <string name="status_granted">Gewährt</string>
     <string name="settings_lockscreen_calling_title">Vollbild-Anrufe auf dem Sperrbildschirm</string>
     <string name="settings_lockscreen_calling_sub">Eingehende Anrufe sofort im Vollbildmodus anzeigen, wenn das Gerät gesperrt oder der Bildschirm aus ist</string>
     <string name="settings_full_screen_intent_warning">Vollbild-Anrufbenachrichtigungen sind vom System eingeschränkt</string>
-    <string name="settings_overlay_permission_warning">Berechtigung über anderen Apps erforderlich für Dynamic Island</string>
     <string name="feature_enable_prompt">Schalter oben zum Aktivieren umschalten</string>
     <string name="feature_disabled_hint">Funktion ist deaktiviert</string>
     <string name="btn_enable_feature">Funktion aktivieren</string>
@@ -453,9 +439,9 @@
     <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">Datenschutzerklärung</string>
     <string name="privacy_intro">Bei Nova Dialer steht Ihre Privatsphäre an erster Stelle.</string>
-    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
-    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call history, or any other app data to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, and notifications are used only for the features you use. For quick replies Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. An exported backup is protected only by the password you set.</string>
     <string name="settings_support_desc" formatted="false">Nova Dialer ist 100 % kostenlos, Open-Source, werbefrei und datenschutzorientiert.</string>
     <string name="settings_contribute_github">Auf GitHub beitragen</string>
 
@@ -469,8 +455,6 @@
     <!-- Duplicate Finder -->
     <string name="dup_finder_title">Duplikatsuche</string>
     <string name="dup_finder_sub">Finden Sie Kontakte mit derselben Nummer und führen Sie diese zusammen oder löschen Sie Extras.</string>
-    <string name="dup_finder_entry">Duplikatsuche</string>
-    <string name="dup_finder_entry_sub">Doppelte Kontakte erkennen und dauerhaft zusammenführen oder löschen</string>
     <string name="dup_scanning">Kontakte werden gescannt…</string>
     <string name="dup_groups_found">%1$d Duplikatgruppen</string>
     <string name="dup_none_title">Keine Duplikate gefunden</string>
@@ -500,8 +484,6 @@
     <string name="history">Verlauf</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="cat_focus_protection">Fokus &amp; Schutz</string>
-    <string name="cat_focus_protection_sub">Fokusmodus, VIP-Anrufer &amp; Anrufer-Ansage</string>
     <string name="header_focus_mode">FOKUSMODUS</string>
     <string name="header_call_protection">ANRUFSCHUTZ-LEVEL</string>
     <string name="header_vip_numbers">VIP-NUMMERN</string>
@@ -605,48 +587,6 @@
     <string name="widget_tap_hint">Tap a favourite to call</string>
     <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
-    <string name="sos_title">Notruf SOS</string>
-    <string name="sos_sub">Sende einen Notruf mit deinem Standort und rufe den Notdienst an</string>
-    <string name="sos_instructions_title">So funktioniert es</string>
-    <string name="sos_instructions_body">1. Füge unten einen oder mehrere Notfallkontakte hinzu.\n2. Halte die SOS-Taste gedrückt.\n3. Nova Dialer sendet deinen Standort an diese Kontakte und ruft deine Notrufnummer an.</string>
-    <string name="sos_button_label">SOS</string>
-    <string name="sos_hold_hint">Zum Auslösen gedrückt halten</string>
-    <string name="sos_contacts_title">Notfallkontakte</string>
-    <string name="sos_contact_add">Notfallkontakt hinzufügen</string>
-    <string name="sos_contacts_empty">Noch keine Notfallkontakte</string>
-    <string name="sos_auto_alert_title">Kontakte automatisch benachrichtigen</string>
-    <string name="sos_auto_alert_sub">Sendet deinen gespeicherten Notfallkontakten eine SMS, wenn SOS ausgelöst wird</string>
-    <string name="sos_include_location_title">Meinen Standort anhängen</string>
-    <string name="sos_include_location_sub">Fügt dem Notruf einen Kartenlink mit deiner GPS-Position hinzu</string>
-    <string name="sos_call_number_title">Notrufnummer zum Anrufen</string>
-    <string name="sos_call_number_sub">Die Nummer, die bei SOS angerufen wird (zum Beispiel 112)</string>
-    <string name="sos_grant_permissions">Erforderliche Berechtigungen erteilen</string>
-    <string name="sos_permissions_needed">Für den vollständigen Notruf werden SMS- und Standortberechtigungen benötigt</string>
-    <string name="sos_permissions_ok">Berechtigungen erteilt</string>
-    <string name="sos_sent_toast">SOS-Notruf an %1$d Kontakt(e) gesendet</string>
-    <string name="sos_no_contacts_toast">Füge zuerst mindestens einen Notfallkontakt hinzu</string>
-    <string name="sos_test_alert">Testwarnung senden</string>
-    <string name="sos_alert_message">NOTFALL–Ich brauche Hilfe. Dies ist ein automatischer SOS-Notruf von Nova Dialer.</string>
-    <string name="sos_alert_location_label">Mein Standort:</string>
-    <string name="sos_no_location">Standort nicht verfügbar–aktiviere GPS für einen Kartenlink</string>
-    <string name="sos_custom_message_title">Custom alert message</string>
-    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
-    <string name="sos_countdown_title">Emergency SOS</string>
-    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
-    <string name="sos_countdown_now">Send now</string>
-    <string name="sos_countdown_setting">Countdown before sending</string>
-    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
-    <string name="sos_shake_title">Shake to trigger SOS</string>
-    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_watch_notification_title">Shake to SOS is on</string>
-    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
-    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
-    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
-    <string name="sos_cancel_countdown_action">Cancel SOS</string>
-    <string name="sos_stop_watch_action">Stop watch</string>
-    <string name="sos_watch_channel_name">Shake to SOS watch</string>
-    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
-    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">Unverschlüsselte Sicherungsdatei</string>
     <string name="backup_plaintext_warning_body">Dies ist eine ältere Sicherung, die NICHT verschlüsselt ist. Sie kann Kontakte, Telefonnummern, Anrufverlauf, Notizen, Erinnerungen und Einstellungen im Klartext enthalten. Beim Wiederherstellen wird sie mit deinen aktuellen Daten zusammengeführt, und alles Vorhandene bleibt erhalten. Fahre nur fort, wenn du dieser Datei vertraust.</string>

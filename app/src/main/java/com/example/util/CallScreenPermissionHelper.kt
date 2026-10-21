@@ -55,11 +55,6 @@ object CallScreenPermissionHelper {
         }
     }
 
-    fun canDrawOverlays(context: Context): Boolean {
-        // minSdk 24 > M (23); the overlay permission check is always available.
-        return Settings.canDrawOverlays(context)
-    }
-
     fun canUseFullScreenIntent(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
@@ -149,35 +144,22 @@ object CallScreenPermissionHelper {
         }
     }
 
-    fun requestOverlayPermission(context: Context) {
-        try {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                "package:${context.packageName}".toUri()
-            ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-            context.startActivity(intent)
-        } catch (_: Exception) {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                openAppDetailsSettings(context)
-            }
-        }
-    }
-
     fun requestFullScreenIntentPermission(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             try {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
-                    "package:${context.packageName}".toUri()
-                ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                    data = "package:${context.packageName}".toUri()
+                    if (findActivity(context) == null) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                }
                 context.startActivity(intent)
                 return
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                // Fallback to general app details if action is unsupported by an OEM flavor
+                openAppDetailsSettings(context)
+                return
+            }
         }
         openChannelNotificationSettings(context)
     }

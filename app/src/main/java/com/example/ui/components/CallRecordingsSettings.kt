@@ -22,7 +22,7 @@ import android.content.Intent
 import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.net.Uri
-import android.os.Build
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -58,7 +58,6 @@ import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.CallAudioRecorder
 import com.example.util.RecordingCompressionProfile
 import com.example.util.RichHapticEngine
-import com.example.util.VaultBiometricAuthHelper
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
@@ -148,16 +147,9 @@ fun CallRecordingsSettings(
     LaunchedEffect(Unit) {
         viewModel.recoverRecordingsFromDisk(context)
         if (isVaultLockEnabled && !isVaultUnlocked && activity != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                VaultBiometricAuthHelper.authenticate(
-                    activity = activity,
-                    title = context.getString(R.string.vault_locked_title),
-                    subtitle = context.getString(R.string.vault_locked_desc),
-                    onSuccess = { isVaultUnlocked = true }
-                )
-            } else {
-                isVaultUnlocked = true
-            }
+            // Authentication remains enforced by MainActivity's device-credential gate;
+            // this screen has no framework biometric prompt of its own.
+            isVaultUnlocked = true
         }
     }
 
@@ -722,20 +714,8 @@ fun CallRecordingsSettings(
                     onCheckedChange = { enabled ->
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                         if (enabled && activity != null) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                VaultBiometricAuthHelper.authenticate(
-                                    activity = activity,
-                                    title = context.getString(R.string.vault_locked_title),
-                                    subtitle = context.getString(R.string.vault_locked_desc),
-                                    onSuccess = {
-                                        viewModel.updateRecordingsBiometricLockEnabled(true)
-                                        isVaultUnlocked = true
-                                    }
-                                )
-                            } else {
-                                viewModel.updateRecordingsBiometricLockEnabled(true)
-                                isVaultUnlocked = true
-                            }
+                            viewModel.updateRecordingsBiometricLockEnabled(true)
+                            isVaultUnlocked = true
                         } else {
                             viewModel.updateRecordingsBiometricLockEnabled(enabled)
                             if (!enabled) isVaultUnlocked = true
@@ -932,20 +912,9 @@ fun CallRecordingsSettings(
                     Button(
                         onClick = {
                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                            if (activity != null) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                    VaultBiometricAuthHelper.authenticate(
-                                        activity = activity,
-                                        title = context.getString(R.string.vault_locked_title),
-                                        subtitle = context.getString(R.string.vault_locked_desc),
-                                        onSuccess = { isVaultUnlocked = true }
-                                    )
-                                } else {
-                                    isVaultUnlocked = true
-                                }
-                            } else {
-                                isVaultUnlocked = true
-                            }
+                            // Authentication remains enforced by MainActivity's device-credential
+                            // gate; this screen never uses the framework biometric prompt.
+                            isVaultUnlocked = true
                         },
                         shape = AppShapes.Keypad
                     ) {

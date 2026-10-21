@@ -47,9 +47,18 @@ class CallScreenPermissionsTest {
     }
 
     @Test
-    fun testOverlayPermissionCheckDoesNotCrash() {
-        val canOverlay = CallScreenPermissionHelper.canDrawOverlays(context)
-        assertNotNull(canOverlay)
+    fun testOverlayPermissionHelperWasRemovedFromTheShippedV1() {
+        // The Deferred overlay feature was removed with the simplified v1; its permission
+        // helpers must no longer exist on CallScreenPermissionHelper. Uses reflection so the
+        // test compiles (and keeps passing) regardless of the helper's remaining API.
+        val overlayCheck = runCatching {
+            CallScreenPermissionHelper::class.java.getDeclaredMethod("canDrawOverlays", android.content.Context::class.java)
+        }
+        val overlayRequest = runCatching {
+            CallScreenPermissionHelper::class.java.getDeclaredMethod("requestOverlayPermission", android.content.Context::class.java)
+        }
+        assertTrue("canDrawOverlays must be removed from the simplified v1", overlayCheck.isFailure)
+        assertTrue("requestOverlayPermission must be removed from the simplified v1", overlayRequest.isFailure)
     }
 
     @Test
@@ -63,7 +72,6 @@ class CallScreenPermissionsTest {
     fun testRequestIntentsDoNotThrowExceptions() {
         // Test fallback intent execution safely
         CallScreenPermissionHelper.requestDefaultDialer(context)
-        CallScreenPermissionHelper.requestOverlayPermission(context)
         CallScreenPermissionHelper.requestFullScreenIntentPermission(context)
         CallScreenPermissionHelper.openChannelNotificationSettings(context)
         CallScreenPermissionHelper.openAppDetailsSettings(context)

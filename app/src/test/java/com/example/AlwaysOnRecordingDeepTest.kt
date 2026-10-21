@@ -19,13 +19,11 @@ package com.example
 
 import android.app.Application
 import android.content.Context
-import android.telecom.CallAudioState
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.AppDatabase
 import com.example.model.CallRecording
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.CallAudioRecorder
-import com.example.util.DynamicIslandOverlayManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -39,7 +37,7 @@ import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class AlwaysOnAndDynamicIslandDeepTest {
+class AlwaysOnRecordingDeepTest {
 
     private lateinit var context: Application
     private lateinit var database: AppDatabase
@@ -51,13 +49,11 @@ class AlwaysOnAndDynamicIslandDeepTest {
         database = AppDatabase.getDatabase(context)
         viewModel = DialerViewModel(context)
         CallAudioRecorder.stopRecording()
-        DynamicIslandOverlayManager.stopCallMonitoring()
     }
 
     @After
     fun tearDown() {
         CallAudioRecorder.stopRecording()
-        DynamicIslandOverlayManager.stopCallMonitoring()
     }
 
     // ==========================================
@@ -145,88 +141,11 @@ class AlwaysOnAndDynamicIslandDeepTest {
     }
 
     // ==========================================
-    // 2. DYNAMIC ISLAND CALL CAPSULE RIGOROUS TESTS
+    // 2. CALLMANAGER IN-CALL STATE TESTS
     // ==========================================
 
     @Test
-    fun `test dynamic island preferences and speaker-only filter matrix`() {
-        val prefs = context.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
-
-        // Test Default states
-        viewModel.updateDynamicIslandEnabled(true)
-        viewModel.updateDynamicIslandSpeakerOnly(false)
-
-        assertTrue(viewModel.isDynamicIslandEnabled.value)
-        assertFalse(viewModel.isDynamicIslandSpeakerOnly.value)
-        assertTrue(prefs.getBoolean("is_dynamic_island_enabled", false))
-        assertFalse(prefs.getBoolean("is_dynamic_island_speaker_only", true))
-
-        // Toggle speaker-only constraint
-        viewModel.updateDynamicIslandSpeakerOnly(true)
-        assertTrue(viewModel.isDynamicIslandSpeakerOnly.value)
-        assertTrue(prefs.getBoolean("is_dynamic_island_speaker_only", false))
-
-        // Matrix Verification:
-        // Scenario A: Enabled=true, SpeakerOnly=true, CurrentRoute=EARPIECE -> should NOT surface
-        val routeEarpiece = CallAudioState(false, CallAudioState.ROUTE_EARPIECE, CallAudioState.ROUTE_EARPIECE or CallAudioState.ROUTE_SPEAKER)
-        val shouldSurfaceA = viewModel.isDynamicIslandEnabled.value && (!viewModel.isDynamicIslandSpeakerOnly.value || routeEarpiece.route == CallAudioState.ROUTE_SPEAKER)
-        assertFalse("Should not surface on earpiece when speaker-only is active", shouldSurfaceA)
-
-        // Scenario B: Enabled=true, SpeakerOnly=true, CurrentRoute=SPEAKER -> should surface
-        val routeSpeaker = CallAudioState(false, CallAudioState.ROUTE_SPEAKER, CallAudioState.ROUTE_EARPIECE or CallAudioState.ROUTE_SPEAKER)
-        val shouldSurfaceB = viewModel.isDynamicIslandEnabled.value && (!viewModel.isDynamicIslandSpeakerOnly.value || routeSpeaker.route == CallAudioState.ROUTE_SPEAKER)
-        assertTrue("Should surface on speaker when speaker-only is active", shouldSurfaceB)
-
-        // Scenario C: Enabled=true, SpeakerOnly=false, CurrentRoute=EARPIECE -> should surface
-        viewModel.updateDynamicIslandSpeakerOnly(false)
-        val shouldSurfaceC = viewModel.isDynamicIslandEnabled.value && (!viewModel.isDynamicIslandSpeakerOnly.value || routeEarpiece.route == CallAudioState.ROUTE_SPEAKER)
-        assertTrue("Should surface regardless of audio route when speaker-only is disabled", shouldSurfaceC)
-
-        // Scenario D: Enabled=false -> should NOT surface regardless of route
-        viewModel.updateDynamicIslandEnabled(false)
-        val shouldSurfaceD = viewModel.isDynamicIslandEnabled.value && (!viewModel.isDynamicIslandSpeakerOnly.value || routeSpeaker.route == CallAudioState.ROUTE_SPEAKER)
-        assertFalse("Should never surface when master toggle is disabled", shouldSurfaceD)
-    }
-
-    @Test
-    fun `test dynamic island physics docking calculations and anchor snapping`() {
-        // Dynamic Island anchor math test:
-        // Left dock threshold: < -80f -> snaps to -130f
-        // Right dock threshold: > 80f -> snaps to 130f
-        // Center dock threshold: between -80f and 80f -> snaps to 0f
-
-        fun computeTargetX(dragOffset: Float): Float {
-            return when {
-                dragOffset < -80f -> -130f
-                dragOffset > 80f -> 130f
-                else -> 0f
-            }
-        }
-
-        assertEquals(-130f, computeTargetX(-150f), 0.01f)
-        assertEquals(-130f, computeTargetX(-85f), 0.01f)
-        assertEquals(0f, computeTargetX(-79f), 0.01f)
-        assertEquals(0f, computeTargetX(0f), 0.01f)
-        assertEquals(0f, computeTargetX(79f), 0.01f)
-        assertEquals(130f, computeTargetX(85f), 0.01f)
-        assertEquals(130f, computeTargetX(200f), 0.01f)
-    }
-
-    @Test
-    fun `test dynamic island overlay lifecycle manager teardown and safety`() {
-        // Verify overlay teardown without exceptions
-        DynamicIslandOverlayManager.showOverlay(context)
-        DynamicIslandOverlayManager.hideOverlay()
-        DynamicIslandOverlayManager.stopCallMonitoring()
-
-        // Repeating teardown calls must be completely idempotent and crash-free
-        DynamicIslandOverlayManager.hideOverlay()
-        DynamicIslandOverlayManager.stopCallMonitoring()
-        assertTrue("Overlay manager must remain stable after multiple teardowns", true)
-    }
-
-    @Test
-    fun `test in-capsule telephony action bindings`() {
+    fun `test in-call telephony action bindings`() {
         // Test mute and speaker state propagation through CallManager
         CallManager.setMuted(true)
         CallManager.setMuted(false)
@@ -234,12 +153,12 @@ class AlwaysOnAndDynamicIslandDeepTest {
         CallManager.setSpeaker(false)
         CallManager.disconnect()
 
-        assertTrue("CallManager operations from Dynamic Island action buttons must execute cleanly", true)
+        assertTrue("CallManager in-call operations must execute cleanly", true)
     }
 
     @Test
-    fun `test dynamic island caller name and contact details resolution`() {
-        // Test that CallManager holds and propagates contact name and details to Dynamic Island
+    fun `test caller name and contact details resolution`() {
+        // Test that CallManager holds and propagates contact name and details during a call
         CallManager.setCallerDetails(
             name = "Sarah Connor",
             photoUri = "content://com.android.contacts/display_photo/1",
@@ -258,8 +177,8 @@ class AlwaysOnAndDynamicIslandDeepTest {
     }
 
     @Test
-    fun `test dynamic island call state gating - active only when placed or answered, never when ringing`() {
-        // Dynamic Island must only activate when placed (DIALING/CONNECTING) or answered (ACTIVE/HOLDING)
+    fun `test call state gating - active only when placed or answered, never when ringing`() {
+        // Call surfaces must only activate when placed (DIALING/CONNECTING) or answered (ACTIVE/HOLDING)
         // It must NEVER activate during incoming call ringing (RINGING)
         fun isCallPlacedOrAnswered(callState: Int): Boolean {
             return callState == android.telecom.Call.STATE_ACTIVE ||
@@ -281,27 +200,5 @@ class AlwaysOnAndDynamicIslandDeepTest {
         // Answered (in-call) -> True
         assertTrue(isCallPlacedOrAnswered(android.telecom.Call.STATE_ACTIVE))
         assertTrue(isCallPlacedOrAnswered(android.telecom.Call.STATE_HOLDING))
-    }
-
-    @Test
-    fun `test dynamic island vertical placement below status bar and camera hole`() {
-        val density = 2.625f // typical FHD+ density (e.g. Nothing Phone)
-        val statusBarHeightPx = (38 * density).toInt() // 38dp status bar
-        val marginBelowCutoutPx = (8 * density).toInt() // 8dp below status bar and camera hole
-
-        val compactY = statusBarHeightPx + marginBelowCutoutPx
-        assertTrue("Compact pill Y position must be below the status bar and camera cutout", compactY > statusBarHeightPx)
-        assertEquals(statusBarHeightPx + marginBelowCutoutPx, compactY)
-
-        // Pill width constraint verification: 210dp max width on 393dp screen width
-        val screenWidthDp = 393f
-        val maxPillWidthDp = 210f
-        val horizontalMarginPerSideDp = (screenWidthDp - maxPillWidthDp) / 2f // ~91.5dp per side
-
-        // Required clearances:
-        // Right side: Wi-Fi (~16dp) + Cellular (~16dp) + VPN (~16dp) + Battery (~20dp) = ~68dp
-        // Left side: Clock (~50dp) + notification icons (~25dp) = ~75dp
-        assertTrue("Dynamic Island leaves at least 90dp clearance for right-side status indicators (Wi-Fi, VPN, cellular)", horizontalMarginPerSideDp >= 90f)
-        assertTrue("Dynamic Island leaves at least 90dp clearance for left-side clock and notifications", horizontalMarginPerSideDp >= 90f)
     }
 }

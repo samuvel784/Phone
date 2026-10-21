@@ -131,9 +131,6 @@ fun GeneralSettings(
 
     val settingsIndex = remember {
         listOf(
-            SettingsSearchItem("Call Analytics", "Total calls, missed calls and call-duration insights", "Call Analytics", 10, Icons.Default.BarChart),
-            SettingsSearchItem("Call Log Summary Dashboard & Analytics", "Analytics dashboard displaying total call duration, call counts, and stats", "Call Analytics", 10, Icons.Default.BarChart),
-
             // 1. APPEARANCE
             SettingsSearchItem("Appearance Settings", "Dark mode, themes, colors & layout styles", "Appearance", 1, Icons.Default.Palette),
             SettingsSearchItem("Dark Mode & Theme Mode", "Switch between Dark, Light, or System default theme", "Appearance", 1, Icons.Default.DarkMode),
@@ -157,55 +154,22 @@ fun GeneralSettings(
             SettingsSearchItem("Carrier Voicemail Setup", "Configure carrier voicemail number and quick dial action", "SIM & Calling", 3, Icons.Default.Voicemail),
             SettingsSearchItem("Hide Caller ID (CLIR)", "Suppress outgoing number so recipient sees Private or Unknown Caller", "SIM & Calling", 3, Icons.Default.VisibilityOff),
             SettingsSearchItem("Caller ID Prefix & Codes", "Select carrier CLIR prefix: #31#, *67, 141, 1831 or custom dial code", "SIM & Calling", 3, Icons.Default.Pin),
-            SettingsSearchItem("Carrier SIM Hardware Caller ID", "Direct system shortcut to per-SIM network Caller ID settings", "SIM & Calling", 3, Icons.Default.SimCard),
 
             // 4. SPEED DIAL & QUICK REPLY
             SettingsSearchItem("Speed Dial & Quick Reply Settings", "Number key shortcuts and quick decline SMS responses", "Speed Dial & Quick Reply", 4, Icons.Default.TouchApp),
             SettingsSearchItem("Speed Dial Shortcuts (Keys 1–9)", "Assign favorite contacts to dialpad number keys for 1-tap quick calling", "Speed Dial & Quick Reply", 4, Icons.Default.Speed),
             SettingsSearchItem("Quick Decline Text Replies", "Manage predefined SMS messages to decline incoming calls with text", "Speed Dial & Quick Reply", 4, Icons.Default.Sms),
 
-            // 5. SPAM & CALL BLOCK
-            SettingsSearchItem("Spam & Call Block Settings", "Blocked numbers list, spam database & unknown number blocking", "Spam & Call Block", 5, Icons.Default.Shield),
-            SettingsSearchItem("Blocked Numbers & Blacklist", "Add, manage, or remove phone numbers from your block list", "Spam & Call Block", 5, Icons.Default.Block),
-            SettingsSearchItem("Offline Spam Database & Protection", "Identify spam calls locally without internet using built-in database", "Spam & Call Block", 5, Icons.Default.Security),
-            SettingsSearchItem("Block Unknown & Private Calls", "Automatically decline calls from hidden, private, or unknown numbers", "Spam & Call Block", 5, Icons.Default.PhonelinkErase),
-
             // 6. CONTACTS & DATA
             SettingsSearchItem("Contacts & Data Settings", "Account filters, vCard import/export & database backup", "Contacts & Data", 6, Icons.Default.Contacts),
             SettingsSearchItem("Account Display Filters", "Choose which account contacts to display (Google, Phone, SIM)", "Contacts & Data", 6, Icons.Default.FilterList),
             SettingsSearchItem("Default Save Account", "Set default account location for saving newly created contacts", "Contacts & Data", 6, Icons.Default.AccountBox),
-            SettingsSearchItem("Export Contacts (vCard / .vcf)", "Export all contacts to a standard .vcf backup file", "Contacts & Data", 6, Icons.Default.Upload),
-            SettingsSearchItem("Import Contacts", "Restore contacts from a saved .vcf file", "Contacts & Data", 6, Icons.Default.Download),
-            SettingsSearchItem("Database Backup & Restore", "Backup or restore local call logs, settings, and app data", "Contacts & Data", 6, Icons.Default.Backup),
-            SettingsSearchItem("Duplicate Finder", "Find duplicate contacts and merge or delete them permanently", "Contacts & Data", 11, Icons.Default.ContentCopy),
-
-            // 7. ADVANCED TOOLS
-            SettingsSearchItem("Advanced Tools Settings", "Call recording, callback reminders, call notes & fake call simulator", "Advanced Tools", 7, Icons.Default.AutoAwesome),
-            SettingsSearchItem("Call Recording & Local Audio Storage", "Enable in-call recording controls and view saved local call audio recordings", "Advanced Tools", 7, Icons.Default.Mic),
-            SettingsSearchItem("Scheduled Callback Reminders Dashboard", "Dashboard for viewing and setting scheduled call alarms and reminders", "Advanced Tools", 7, Icons.Default.Schedule),
-            SettingsSearchItem("Call Notes & Memos", "Create, view, and search notes linked to specific phone numbers", "Advanced Tools", 7, Icons.Default.NoteAlt),
-            SettingsSearchItem("Fake Call Simulator", "Schedule simulated incoming phone calls with custom caller name & timer", "Advanced Tools", 7, Icons.Default.PhoneInTalk),
 
             // 8. PRIVACY & ABOUT
-            SettingsSearchItem("Privacy & Security Settings", "Biometric app lock, pocket protection, app lock & app specs", "Privacy & About", 8, Icons.Default.Lock),
-            SettingsSearchItem("Biometric App Lock", "Require fingerprint or PIN lock to open dialer application", "Privacy & About", 8, Icons.Default.Fingerprint),
+            SettingsSearchItem("Privacy & Security Settings", "App version, pocket protection & app specs", "Privacy & About", 8, Icons.Default.Lock),
             SettingsSearchItem("Pocket Protection Mode", "Prevent accidental pocket touches using proximity sensor", "Privacy & About", 8, Icons.Default.PhonelinkLock),
             SettingsSearchItem("App Version & Device Specifications", "View application version, build numbers, and system permissions", "Privacy & About", 8, Icons.Default.Info),
-            SettingsSearchItem("Help & Customer Support", "Send feedback or contact developer support", "Privacy & About", 8, Icons.AutoMirrored.Filled.Help),
-
-            // 9. FOCUS & PROTECTION
-            SettingsSearchItem("Focus Mode & Call Protection Settings", "Priority ringing rules, VIP callers, and caller announcements", "Focus & Protection", 9, Icons.Default.DoNotDisturbOn),
-            SettingsSearchItem("Focus Mode", "Allow only saved contacts or VIPs, or silence all calls while focusing", "Focus & Protection", 9, Icons.Default.DoNotDisturbOn),
-            SettingsSearchItem("Call Protection Level", "Strict and maximum modes silence unknown or unscreened callers", "Focus & Protection", 9, Icons.Default.Security),
-            SettingsSearchItem("VIP Numbers", "Add numbers that always break through Focus mode and call protection", "Focus & Protection", 9, Icons.Default.Star),
-            SettingsSearchItem("Caller Announcer (Speak Caller Name)", "Read the caller's name aloud while the phone is ringing", "Focus & Protection", 9, Icons.Default.Campaign),
-
-
-            // 10. EMERGENCY SOS
-            SettingsSearchItem("Emergency SOS", "Alert your emergency contacts with your location and call local emergency services", "Emergency SOS", 13, Icons.Default.Sos),
-            SettingsSearchItem("Emergency Contacts", "Add or remove the contacts who receive your SOS alert", "Emergency SOS", 13, Icons.Default.Contacts),
-            SettingsSearchItem("Share Location in Emergency", "Attach a map link with your GPS position to the emergency alert", "Emergency SOS", 13, Icons.Default.LocationOn),
-            SettingsSearchItem("Emergency Number to Call", "Choose the number dialed when the SOS button is activated, such as 112", "Emergency SOS", 13, Icons.Default.LocalPhone)
+            SettingsSearchItem("Help & Customer Support", "Send feedback or contact developer support", "Privacy & About", 8, Icons.AutoMirrored.Filled.Help)
         )
     }
 
@@ -333,26 +297,6 @@ fun GeneralSettings(
                 CallSystemPermissionsCard(viewModel = viewModel)
             }
 
-            // 0. Call Analytics (moved out of Recents into the hamburger menu)
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    SettingsRowNav(
-                        title = stringResource(R.string.home_call_analytics),
-                        subtitle = stringResource(R.string.cat_call_analytics_sub),
-                        onClick = { onNavigateToTab(10, null) },
-                        icon = Icons.Default.BarChart,
-                        iconBgColor = MaterialTheme.colorScheme.primaryContainer,
-                        iconTint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
             // 1. Appearance
             item {
                 Card(
@@ -433,26 +377,6 @@ fun GeneralSettings(
                 }
             }
 
-            // 5. Spam & Call Block
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    SettingsRowNav(
-                        title = stringResource(R.string.cat_call_blocking),
-                        subtitle = stringResource(R.string.cat_call_blocking_sub),
-                        onClick = { onNavigateToTab(5, null) },
-                        icon = Icons.Default.Shield,
-                        iconBgColor = MaterialTheme.colorScheme.errorContainer,
-                        iconTint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
             // 6. Contacts & Data
             item {
                 Card(
@@ -473,26 +397,6 @@ fun GeneralSettings(
                 }
             }
 
-            // 7. Advanced Tools
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    SettingsRowNav(
-                        title = stringResource(R.string.cat_advanced_features),
-                        subtitle = stringResource(R.string.cat_advanced_features_sub),
-                        onClick = { onNavigateToTab(7, null) },
-                        icon = Icons.Default.AutoAwesome,
-                        iconBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
-                        iconTint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
             // 8. Privacy & About
             item {
                 Card(
@@ -509,47 +413,6 @@ fun GeneralSettings(
                         icon = Icons.Default.Lock,
                         iconBgColor = MaterialTheme.colorScheme.surfaceVariant,
                         iconTint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // 9. Focus & Protection
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    SettingsRowNav(
-                        title = stringResource(R.string.cat_focus_protection),
-                        subtitle = stringResource(R.string.cat_focus_protection_sub),
-                        onClick = { onNavigateToTab(9, null) },
-                        icon = Icons.Default.DoNotDisturbOn,
-                        iconBgColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        iconTint = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-
-
-            // 11. Emergency SOS
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    SettingsRowNav(
-                        title = stringResource(R.string.sos_title),
-                        subtitle = stringResource(R.string.sos_sub),
-                        onClick = { onNavigateToTab(13, null) },
-                        icon = Icons.Default.Sos,
-                        iconBgColor = MaterialTheme.colorScheme.errorContainer,
-                        iconTint = MaterialTheme.colorScheme.error
                     )
                 }
             }

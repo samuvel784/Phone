@@ -216,27 +216,6 @@ fun ContactsAndDataSettings(
             }
         }
 
-        // Duplicate Finder Card
-        item {
-            HighlightableCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                cardBgColor = cardBgColor,
-                isHighlighted = isMatchTitle("Duplicate Finder", highlightedTitle),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                SettingsRowNav(
-                    title = stringResource(R.string.dup_finder_entry),
-                    subtitle = stringResource(R.string.dup_finder_entry_sub),
-                    onClick = { onNavigateToTab(11, "Duplicate Finder") },
-                    icon = Icons.Default.ContentCopy,
-                    iconBgColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                    iconTint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-
         // [Header] BACKUP & RESTORE
         item {
             Spacer(modifier = Modifier.height(12.dp))

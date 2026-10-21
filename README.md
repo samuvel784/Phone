@@ -21,13 +21,13 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 5. Unit tests: `./gradlew testDebugUnitTest`; lint: `./gradlew lintDebug`.
 
 > The debug build and JVM unit tests are verified locally. Telecom, full-screen intents,
-> recordings, SOS, boot behavior and OEM-specific background restrictions still require
+> multi-call transitions and OEM-specific background restrictions still require
 > physical-device testing before release.
 
 ## Features
 
 ### Calling (from the Secure Dialer core)
-- One `CallManager` shared across the InCallService, notifications and the floating widget, so the
+- One `CallManager` shared across the InCallService, notifications and the call screen, so the
   call screen always reflects the real call state.
 - Mute / speaker / hold / answer reflect Android's confirmed state; the app does not change the
   phone's audio settings by itself.
@@ -36,46 +36,37 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 - An **audio** button cycles the outputs the phone really offers (earpiece, wired headset,
   Bluetooth, speaker).
 - Signal bars and dBm come from Android (nothing estimated); network type says "4G LTE" / "5G".
-
-### Focus Mode & Call Protection (Nova Dialer feature, re-added)
-- A real `CallScreeningService` (`NovaDialCallScreeningService`) screens calls **before they ring**.
-- **Focus mode:** Off · Saved contacts only · VIP only · Silence all.
-- **Protection level:** Standard · Strict (silence unsaved) · Maximum (only VIP/favorites/repeat).
-- **Repeat caller** grace: a second call from the same number within 3 minutes always rings.
-- **VIP numbers** always break through. Blocked numbers and offline-spam entries are rejected.
-- **Emergency numbers are never silenced or blocked.**
-- Silenced calls still appear in the call log as missed calls (Android 10+).
-
-### Caller Announcer (Nova Dialer feature, re-added)
-- Speaks the caller's name while the phone is ringing (TextToSpeech, ringtone audio stream).
-- Message presets (Friendly / Formal / Playful) or a custom template with `{name}` `{user}` `{type}`.
-- Your name, repeat count (1–3), speech speed, pitch and volume.
-- "Headphones only" mode and "announce unknown numbers" toggle, plus a test button.
-- Never longer than 15 seconds; stops when you answer or reject; stays quiet in silent mode and
-  Do Not Disturb; skipped entirely for calls that Focus mode / protection silenced.
+- Multi-call support (swap, merge, targeted answer/decline of the exact ringing call).
+- A lock-screen incoming-call surface launched by the notification's full-screen intent.
 
 ### Everything else
 - Contacts, recents, dialpad, favorites, voicemail, speed dial, quick replies.
-- Offline spam protection: local blocklist + CSV import (no network, no invented database).
-- Call recording encrypted at rest with an Android Keystore AES-256-GCM key (with an explicitly
-  flagged unencrypted fallback when encryption fails), call notes and callback reminders.
-- Dynamic Island call capsule, appearance/theming, biometric app lock, password-encrypted local
-  backup (contacts, call history, notes and settings), vCard import/export.
+- Call notes attached to a number.
+- App lock backed by the device's screen-lock credential (enable it in Privacy settings; unlocking
+  Nova Dialer after it leaves the foreground then requires your device PIN/pattern/biometric).
+- Appearance/theming, password-encrypted local backup (contacts, call history, notes and settings),
+  vCard import/export.
 
-## Settings layout
-Settings is a multi-tab panel. Tab 0 is the category list; tabs 1–8 are the core categories, and
-**tab 9 is "Focus & Protection"** (focus mode, protection level, VIP numbers, caller announcer).
+### Deferred in this build (not implemented in the current simplified v1)
+- Focus mode / call protection (no call-screening service is registered).
+- Caller announcer.
+- Offline spam block / blocklists.
+- Call recording (no microphone permission; no recording UI).
+- Callback reminders.
+- Duplicate-contact finder (no settings entry point ships in this build).
+- Dynamic Island floating capsule (the overlay permission and all overlay UI were removed).
+- Emergency SOS (deferred code and its settings/triggers were removed in this build).
 
 ## Privacy
 - `INTERNET` permission is explicitly **removed** from the manifest — the app cannot use the network.
-- Contacts, call history, notes and recordings are stored locally. Recordings are encrypted at
-  rest; backups are AES-256 encrypted and require a password.
+- Contacts, call history and notes are stored locally; backups are AES-256 encrypted and require
+  a password.
 - Data leaves the device only when the user explicitly exports, shares or restores it.
 - `allowBackup=false`, so Android cloud backup does not copy app data.
 - Nova Dialer holds **no SMS permission** and never sends SMS itself. A decline reply uses
   Android's decline-with-message, or hands a pre-filled draft to your own messaging app once the
-  call is no longer ringing; SOS opens your messaging app for confirmation. Call Log access is
-  requested only after Nova Dialer holds the default Phone role.
+  call is no longer ringing. Call Log access is requested only after Nova Dialer holds the default
+  Phone role.
 - Full policy text: [`PRIVACY.md`](PRIVACY.md). A public HTTPS URL is still required for the Play
   Console listing.
 - Remaining publishing tasks and Data safety draft:
@@ -154,9 +145,12 @@ A new design system, applied to every page, plus a round of performance work.
   (`GeneralSettingsSupportCard`, three unused view-model functions, the old unreachable palettes).
 - The `reference/` archive, the `.idea/` folder and the design-files copy. `PORTING_PLAN.md` moved to `docs/`.
 
-> The debug build, 260 JVM tests and lint (0 errors) pass locally. The app has not been tested on a
-> physical phone in this environment, so Telecom, full-screen intents, encrypted recordings, SOS,
-> reboot behavior and OEM background restrictions still need the checklist below.
+> The debug build, 284 JVM unit tests and lint pass locally: `lintDebug`/`lintRelease` now report
+> **0 errors** (37 warnings remain, in deferred-feature code, Gradle/dependency housekeeping and
+> style suggestions — see `docs/PLAY_RELEASE_CHECKLIST.md`).
+> The app has not been tested on a physical phone in this environment, so Telecom,
+> full-screen intent handling, multi-call transitions and OEM background restrictions still need
+> the checklist below.
 
 ## Phone test checklist
 1. Install, set as default phone app, accept permissions.
@@ -165,15 +159,11 @@ A new design system, applied to every page, plus a round of performance work.
 3. Answer, then ask the caller to hang up: the call screen must close by itself.
 4. During a call, tap mute / speaker / hold / audio: the buttons must match what you hear.
 5. Make a call on SIM 2 (if you have two SIMs): it must use SIM 2.
-6. Block a number (Settings > Spam & Call Block). Call from it: it must not ring. Repeat with the
-   number written two ways (with and without +country code).
-7. Settings > Focus & Protection > Focus mode: choose "Saved contacts only", call from an unknown
-   number: silent ring, shown as missed.
-8. Settings > Focus & Protection > Caller announcer > Test announcement. Then take a real call: the
-   name is spoken and stops when you answer.
-9. Put the phone on silent: no announcement. Turn on Do Not Disturb: no announcement.
-10. Recents > Voicemail (only if your carrier supports visual voicemail): play a message.
-11. Recents: call history, notes and recordings open and play.
+6. With a call active, receive a second call: answer it (first call held) and decline it; the
+   active call must never be ended by the decline.
+7. While the phone is locked, receive a call: the full-screen call screen (or heads-up fallback)
+   must appear over the keyguard.
+8. Recents > Voicemail (only if your carrier supports visual voicemail): play a message.
 
 ## License
 GPL-3.0-or-later — see [`LICENSE`](LICENSE) and the **License and credits** section above

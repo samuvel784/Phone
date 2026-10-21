@@ -13,31 +13,15 @@
     <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-    <!-- Emergency SOS: opt-in location attached to alerts. Never used for anything else. -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Audio, Bluetooth & Hardware Controls -->
+    <!-- Audio & Hardware Controls -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- Opt-in "shake to trigger SOS" background watch (visible notification, user-enabled only) -->
+    <!-- Foreground Service & Notifications -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    
-    <!-- System UI, Overlays & Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <!-- Biometric / device-credential unlock for the encrypted recording vault (API 28+) -->
-    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-
-    <!-- Exact alarms for user-created callback reminders (API 31+) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Allow installation on devices without native telephony (tablets, Chromebooks, Wi-Fi calling) -->
     <uses-feature
@@ -48,12 +32,6 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.bluetooth"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.location.gps"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.location.network"
         android:required="false" />
 
     <application
@@ -121,36 +99,12 @@
             android:launchMode="singleTop"
             android:excludeFromRecents="true"
             android:taskAffinity=""
+            android:showOnLockScreen="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             tools:ignore="UnusedAttribute"
             android:theme="@style/Theme.MyApplication" />
-
-        <!--
-            Private disclosure surface for the notification Record action. It is launched only by
-            the active-call notification or MyInCallService, never exported, and kept out of Recents.
-        -->
-        <activity
-            android:name=".RecordingDisclosureActivity"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:excludeFromRecents="true"
-            android:taskAffinity=""
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            tools:ignore="UnusedAttribute"
-            android:theme="@style/Theme.MyApplication" />
-
-        <!-- Favourites-widget call target: private, invisible, never exported -->
-        <activity
-            android:name=".WidgetCallActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:taskAffinity=""
-            android:theme="@style/Theme.MyApplication.Translucent" />
 
         <!-- Telecom InCallService Binding -->
         <service
@@ -168,54 +122,7 @@
             </intent-filter>
         </service>
 
-        <!-- Nova Dialer caller ID & call screening (Focus mode + call protection) -->
-        <service
-            android:name=".telecom.NovaDialCallScreeningService"
-            android:permission="android.permission.BIND_SCREENING_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.telecom.CallScreeningService" />
-            </intent-filter>
-        </service>
-
-        <!-- Opt-in shake-to-trigger SOS watch (only runs while the user has it enabled) -->
-        <service
-            android:name=".telecom.EmergencySosService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="emergency_shake_detection" />
-        </service>
-
-        <!-- Re-arms the shake watch after a reboot when the user enabled it -->
-        <receiver
-            android:name=".telecom.EmergencySosBootReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Call Reminders Alarm Receiver -->
-        <receiver
-            android:name=".util.ReminderAlarmReceiver"
-            android:exported="false" />
-
-        <!-- Home-screen favourites widget -->
-        <receiver
-            android:name=".widget.FavoritesWidgetProvider"
-            android:exported="true"
-            android:label="@string/widget_favorites_title">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/favorites_widget_info" />
-        </receiver>
-
-        <!-- FileProvider for Sharing Recordings and Export Files -->
+        <!-- FileProvider for Sharing Export Files -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

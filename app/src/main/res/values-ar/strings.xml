@@ -147,18 +147,14 @@
     <string name="cat_sound_gestures">الصوت والإيماءات</string>
     <string name="cat_calling_accounts">شريحة SIM والحسابات</string>
     <string name="cat_speed_dial_quick_responses">الاتصال السريع والردود السريعة</string>
-    <string name="cat_call_blocking">حظر المكالمات والبريد العشوائي</string>
     <string name="cat_contacts_data">جهات الاتصال والبيانات</string>
-    <string name="cat_advanced_features">أدوات متقدمة</string>
     <string name="cat_privacy_security_about">الخصوصية حول التطبيق</string>
     <string name="cat_appearance_color">المظهر</string>
     <string name="cat_appearance_color_sub">الوضع الداكن والألوان والديناميكية</string>
     <string name="cat_sound_gestures_sub">النغمات ونغمات اللمس والإيماءات</string>
     <string name="cat_calling_accounts_sub">بطاقات SIM والانتظار والبريد الصوتي</string>
     <string name="cat_speed_dial_quick_responses_sub">الاتصال السريع والردود النصية السريعة</string>
-    <string name="cat_call_blocking_sub">الأرقام المحظورة وهوية المتصل</string>
     <string name="cat_contacts_data_sub">المزامنة والاستيراد والنسخ الاحتياطي</string>
-    <string name="cat_advanced_features_sub">تسجيل المكالمات والملاحظات والتذكيرات</string>
     <string name="cat_privacy_security_about_sub">قفل التطبيق والأمان ومعلومات التطبيق</string>
     <string name="settings_title">الإعدادات</string>
     <string name="settings_back">رجوع</string>
@@ -336,14 +332,6 @@
     <string name="btn_unlock_vault">فتح الخزنة</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
-    <string name="settings_dynamic_island_title">كبسولة الجزيرة التفاعلية (Dynamic Island)</string>
-    <string name="settings_dynamic_island_sub">إظهار كبسولة اتصال عائمة وتفاعلية حول ثقب الكاميرا أثناء المكالمات الجارية</string>
-    <string name="settings_dynamic_island_speaker_only">إظهار عند تشغيل مكبر الصوت فقط</string>
-    <string name="settings_dynamic_island_speaker_only_sub">عرض الجزيرة التفاعلية حصرياً عندما يكون وضع مكبر الصوت نشطاً</string>
-    <string name="settings_dynamic_island_floating_permission">إذن العرض فوق التطبيقات</string>
-    <string name="settings_dynamic_island_floating_permission_sub">السماح للكبسولة بالطفو فوق التطبيقات الأخرى (يدعم سامسونج وشاومي وون بلس)</string>
-    <string name="dynamic_island_muted">صامت</string>
-
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">جهات الاتصال للعرض</string>
     <string name="settings_default_account_for_new">الحساب الافتراضي لجهات الاتصال الجديدة</string>
@@ -434,11 +422,9 @@
     <string name="btn_grant">منح</string>
     <string name="btn_configure">تهيئة</string>
     <string name="btn_set_default">تعيين كافتراضي</string>
-    <string name="status_granted">ممنوح</string>
     <string name="settings_lockscreen_calling_title">مكالمات ملء الشاشة على شاشة القفل</string>
     <string name="settings_lockscreen_calling_sub">عرض شاشة المكالمة الواردة بملء الشاشة فوراً عندما يكون الهاتف مقفلاً أو الشاشة مغلقة</string>
     <string name="settings_full_screen_intent_warning">تنبيهات المكالمات بملء الشاشة مقيدة بواسطة النظام</string>
-    <string name="settings_overlay_permission_warning">يلزم إذن العرض فوق التطبيقات لعرض الجزيرة التفاعلية</string>
     <string name="feature_enable_prompt">قم بتبديل المفتاح أعلاه للتفعيل</string>
     <string name="feature_disabled_hint">الميزة معطلة</string>
     <string name="btn_enable_feature">تفعيل الميزة</string>
@@ -453,9 +439,9 @@
     <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">سياسة الخصوصية</string>
     <string name="privacy_intro">In Nova Dialer, we prioritize your privacy.</string>
-    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
-    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call history, or any other app data to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, and notifications are used only for the features you use. For quick replies Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. An exported backup is protected only by the password you set.</string>
     <string name="settings_support_desc" formatted="false">Nova Dialer مجاني 100%، مفتوح المصدر، بدون إعلانات ويهتم بالخصوصية.</string>
     <string name="settings_contribute_github">المساهمة على GitHub</string>
 
@@ -469,8 +455,6 @@
     <!-- Duplicate Finder -->
     <string name="dup_finder_title">مكتشف التكرارات</string>
     <string name="dup_finder_sub">العثور على جهات الاتصال التي تشترك في نفس الرقم، ثم دمج أو حذف الإضافية.</string>
-    <string name="dup_finder_entry">مكتشف التكرارات</string>
-    <string name="dup_finder_entry_sub">اكتشاف جهات الاتصال المكررة ودمجها أو حذفها نهائيًا</string>
     <string name="dup_scanning">جاري فحص جهات الاتصال…</string>
     <string name="dup_groups_found">%1$d مجموعات مكررة</string>
     <string name="dup_none_title">لم يتم العثور على تكرارات</string>
@@ -500,8 +484,6 @@
     <string name="history">السجل</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="cat_focus_protection">التركيز والحماية</string>
-    <string name="cat_focus_protection_sub">وضع التركيز، متصلو VIP وأداة الإعلان عن المتصل</string>
     <string name="header_focus_mode">وضع التركيز</string>
     <string name="header_call_protection">مستوى حماية المكالمات</string>
     <string name="header_vip_numbers">أرقام VIP</string>
@@ -605,48 +587,6 @@
     <string name="widget_tap_hint">Tap a favourite to call</string>
     <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
-    <string name="sos_title">طوارئ SOS</string>
-    <string name="sos_sub">أرسل تنبيه طوارئ مع موقعك واتصل بخدمات الطوارئ</string>
-    <string name="sos_instructions_title">كيف يعمل</string>
-    <string name="sos_instructions_body">١. أضف جهة اتصال طوارئ واحدة أو أكثر أدناه.\n٢. اضغط مطولًا على زر SOS.\n٣. يرسل Nova Dialer موقعك إلى تلك الجهات ويتصل برقم الطوارئ الخاص بك.</string>
-    <string name="sos_button_label">SOS</string>
-    <string name="sos_hold_hint">اضغط مطولًا للتفعيل</string>
-    <string name="sos_contacts_title">جهات اتصال الطوارئ</string>
-    <string name="sos_contact_add">إضافة جهة اتصال طوارئ</string>
-    <string name="sos_contacts_empty">لا توجد جهات اتصال طوارئ بعد</string>
-    <string name="sos_auto_alert_title">تنبيه جهات الاتصال تلقائيًا</string>
-    <string name="sos_auto_alert_sub">يرسل رسالة إلى جهات اتصال الطوارئ المحفوظة عند تفعيل SOS</string>
-    <string name="sos_include_location_title">تضمين موقعي</string>
-    <string name="sos_include_location_sub">يضيف رابط خريطة بموقعك عبر GPS إلى التنبيه</string>
-    <string name="sos_call_number_title">رقم الطوارئ للاتصال</string>
-    <string name="sos_call_number_sub">الرقم الذي يتم طلبه عند تفعيل SOS (مثل ١١٢)</string>
-    <string name="sos_grant_permissions">منح الأذونات المطلوبة</string>
-    <string name="sos_permissions_needed">هناك حاجة إلى أذونات الرسائل والموقع للتنبيه الكامل</string>
-    <string name="sos_permissions_ok">تم منح الأذونات</string>
-    <string name="sos_sent_toast">تم إرسال تنبيه SOS إلى %1$d جهة اتصال</string>
-    <string name="sos_no_contacts_toast">أضف جهة اتصال طوارئ واحدة على الأقل أولًا</string>
-    <string name="sos_test_alert">إرسال تنبيه تجريبي</string>
-    <string name="sos_alert_message">طوارئ–أحتاج إلى المساعدة. هذا تنبيه SOS تلقائي من Nova Dialer.</string>
-    <string name="sos_alert_location_label">موقعي:</string>
-    <string name="sos_no_location">الموقع غير متاح–شغّل GPS للحصول على رابط خريطة</string>
-    <string name="sos_custom_message_title">Custom alert message</string>
-    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
-    <string name="sos_countdown_title">Emergency SOS</string>
-    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
-    <string name="sos_countdown_now">Send now</string>
-    <string name="sos_countdown_setting">Countdown before sending</string>
-    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
-    <string name="sos_shake_title">Shake to trigger SOS</string>
-    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_watch_notification_title">Shake to SOS is on</string>
-    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
-    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
-    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
-    <string name="sos_cancel_countdown_action">Cancel SOS</string>
-    <string name="sos_stop_watch_action">Stop watch</string>
-    <string name="sos_watch_channel_name">Shake to SOS watch</string>
-    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
-    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">ملف نسخة احتياطية غير مشفّر</string>
     <string name="backup_plaintext_warning_body">هذه نسخة احتياطية قديمة وغير مشفّرة. قد تحتوي على جهات اتصال وأرقام هواتف وسجل مكالمات وملاحظات وتذكيرات وإعدادات بشكل مقروء. الاستعادة تدمجها مع بياناتك الحالية وتحتفظ بكل ما لديك. تابع فقط إذا كنت تثق بهذا الملف.</string>

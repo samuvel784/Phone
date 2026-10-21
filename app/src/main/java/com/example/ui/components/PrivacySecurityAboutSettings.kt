@@ -17,7 +17,6 @@
 
 package com.example.ui.components
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -40,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
-import com.example.util.VaultBiometricAuthHelper
 import androidx.core.net.toUri
 
 @Composable
@@ -52,7 +50,6 @@ fun PrivacySecurityAboutSettings(
     highlightedTitle: String? = null
 ) {
     val context = LocalContext.current
-    val activity = context as? Activity
     val isBiometricLockEnabled by viewModel.isBiometricLockEnabled
     val isPocketProtectionEnabled by viewModel.isPocketProtectionEnabled
 
@@ -65,7 +62,7 @@ fun PrivacySecurityAboutSettings(
             PreferenceHeader(stringResource(R.string.header_privacy_protection))
         }
 
-        // Biometric Lock Card (FIXED: Authenticates before enabling to prevent permanent lockouts)
+        // Biometric Lock Card (unlock enforcement lives in MainActivity's device credential gate)
         item {
             HighlightableCard(
                 modifier = Modifier
@@ -84,22 +81,9 @@ fun PrivacySecurityAboutSettings(
                     checked = isBiometricLockEnabled,
                     onCheckedChange = { enabled ->
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                        if (enabled && activity != null) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                VaultBiometricAuthHelper.authenticate(
-                                    activity = activity,
-                                    title = context.getString(R.string.settings_biometric_lock),
-                                    subtitle = context.getString(R.string.settings_biometric_lock_sub),
-                                    onSuccess = {
-                                        viewModel.updateBiometricLockEnabled(true)
-                                    }
-                                )
-                            } else {
-                                viewModel.updateBiometricLockEnabled(true)
-                            }
-                        } else {
-                            viewModel.updateBiometricLockEnabled(enabled)
-                        }
+                        // Unlock enforcement is MainActivity's device-credential gate, so the
+                        // toggle enables the lock directly on every API level (pre-P behaviour).
+                        viewModel.updateBiometricLockEnabled(enabled)
                     },
                     icon = Icons.Default.Lock,
                     iconBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),

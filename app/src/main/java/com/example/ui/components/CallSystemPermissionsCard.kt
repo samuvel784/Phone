@@ -50,10 +50,8 @@ fun CallSystemPermissionsCard(
 ) {
     val context = LocalContext.current
     val isDefaultDialer by viewModel.isDefaultDialer
-    val isDynamicIslandEnabled by viewModel.isDynamicIslandEnabled
 
     var canFullScreen by remember { mutableStateOf(CallScreenPermissionHelper.canUseFullScreenIntent(context)) }
-    var canOverlay by remember { mutableStateOf(CallScreenPermissionHelper.canDrawOverlays(context)) }
 
     // Native Activity Result Launcher guarantees system role prompt opens & updates state immediately
     val defaultDialerLauncher = rememberLauncherForActivityResult(
@@ -70,7 +68,6 @@ fun CallSystemPermissionsCard(
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 viewModel.isDefaultDialer.value = CallScreenPermissionHelper.isDefaultDialer(context)
                 canFullScreen = CallScreenPermissionHelper.canUseFullScreenIntent(context)
-                canOverlay = CallScreenPermissionHelper.canDrawOverlays(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -79,9 +76,8 @@ fun CallSystemPermissionsCard(
 
     val needsDefaultDialer = !isDefaultDialer
     val needsFullScreen = !canFullScreen
-    val needsOverlay = isDynamicIslandEnabled && !canOverlay
 
-    if (!needsDefaultDialer && !needsFullScreen && !needsOverlay) {
+    if (!needsDefaultDialer && !needsFullScreen) {
         return
     }
 
@@ -103,8 +99,7 @@ fun CallSystemPermissionsCard(
         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
         when {
             needsDefaultDialer -> CallScreenPermissionHelper.requestDefaultDialer(context, defaultDialerLauncher)
-            needsFullScreen -> CallScreenPermissionHelper.requestFullScreenIntentPermission(context)
-            else -> CallScreenPermissionHelper.requestOverlayPermission(context)
+            else -> CallScreenPermissionHelper.requestFullScreenIntentPermission(context)
         }
     }
 
@@ -134,11 +129,7 @@ fun CallSystemPermissionsCard(
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = when {
-                            needsDefaultDialer -> Icons.Default.PhoneInTalk
-                            needsFullScreen -> Icons.Default.LockOpen
-                            else -> Icons.Default.PictureInPicture
-                        },
+                        imageVector = if (needsDefaultDialer) Icons.Default.PhoneInTalk else Icons.Default.LockOpen,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -150,22 +141,16 @@ fun CallSystemPermissionsCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = when {
-                        needsDefaultDialer -> stringResource(R.string.default_dialer_warning)
-                        needsFullScreen -> stringResource(R.string.settings_full_screen_intent_warning)
-                        else -> stringResource(R.string.settings_overlay_permission_warning)
-                    },
+                    text = if (needsDefaultDialer) stringResource(R.string.default_dialer_warning)
+                    else stringResource(R.string.settings_full_screen_intent_warning),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = when {
-                        needsDefaultDialer -> stringResource(R.string.btn_set_default)
-                        needsFullScreen -> stringResource(R.string.btn_configure)
-                        else -> stringResource(R.string.btn_grant)
-                    },
+                    text = if (needsDefaultDialer) stringResource(R.string.btn_set_default)
+                    else stringResource(R.string.btn_configure),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -184,11 +169,8 @@ fun CallSystemPermissionsCard(
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = when {
-                        needsDefaultDialer -> stringResource(R.string.btn_set_default)
-                        needsFullScreen -> stringResource(R.string.btn_configure)
-                        else -> stringResource(R.string.btn_grant)
-                    },
+                    text = if (needsDefaultDialer) stringResource(R.string.btn_set_default)
+                    else stringResource(R.string.btn_configure),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )

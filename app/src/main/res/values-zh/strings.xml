@@ -147,18 +147,14 @@
     <string name="cat_sound_gestures">声音与手势</string>
     <string name="cat_calling_accounts">SIM 卡与通话</string>
     <string name="cat_speed_dial_quick_responses">快速拨号与快捷回复</string>
-    <string name="cat_call_blocking">骚扰与拦截</string>
     <string name="cat_contacts_data">联系人与数据</string>
-    <string name="cat_advanced_features">高级工具</string>
     <string name="cat_privacy_security_about">隐私与关于</string>
     <string name="cat_appearance_color">外观</string>
     <string name="cat_appearance_color_sub">动态取色、深色模式与配色</string>
     <string name="cat_sound_gestures_sub">铃声、提示音与手势</string>
     <string name="cat_calling_accounts_sub">SIM 卡、呼叫等待与语音信箱</string>
     <string name="cat_speed_dial_quick_responses_sub">快速拨号与快捷回复</string>
-    <string name="cat_call_blocking_sub">拦截号码与来电识别</string>
     <string name="cat_contacts_data_sub">同步、导入与备份</string>
-    <string name="cat_advanced_features_sub">通话录音、备注与回拨</string>
     <string name="cat_privacy_security_about_sub">应用锁、安全与应用信息</string>
     <string name="settings_title">设置</string>
     <string name="settings_back">返回</string>
@@ -336,14 +332,6 @@
     <string name="btn_unlock_vault">解锁保险箱</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
-    <string name="settings_dynamic_island_title">灵动岛通话胶囊</string>
-    <string name="settings_dynamic_island_sub">通话进行时在屏幕前置摄像头周围悬浮交互式通话胶囊</string>
-    <string name="settings_dynamic_island_speaker_only">仅在免提扬声器时显示</string>
-    <string name="settings_dynamic_island_speaker_only_sub">仅在开启扬声器免提模式时显示灵动岛</string>
-    <string name="settings_dynamic_island_floating_permission">悬浮窗悬停权限</string>
-    <string name="settings_dynamic_island_floating_permission_sub">允许通话胶囊悬浮于其他应用之上（支持小米、OPPO、vivo、三星等）</string>
-    <string name="dynamic_island_muted">已静音</string>
-
     <!-- Settings - Contacts, Deduplication & Storage -->
     <string name="settings_contacts_to_display">显示的联系人</string>
     <string name="settings_default_account_for_new">新联系人的默认账户</string>
@@ -434,11 +422,9 @@
     <string name="btn_grant">授予</string>
     <string name="btn_configure">配置</string>
     <string name="btn_set_default">设为默认</string>
-    <string name="status_granted">已授予</string>
     <string name="settings_lockscreen_calling_title">锁屏全屏来电界面</string>
     <string name="settings_lockscreen_calling_sub">设备锁屏或息屏时立即显示全屏来电接听界面</string>
     <string name="settings_full_screen_intent_warning">全屏来电通知受到系统限制</string>
-    <string name="settings_overlay_permission_warning">需要悬浮窗权限以在其他应用上方显示灵动岛</string>
     <string name="feature_enable_prompt">开启上方开关即可启用</string>
     <string name="feature_disabled_hint">功能已停用</string>
     <string name="btn_enable_feature">启用功能</string>
@@ -453,9 +439,9 @@
     <string name="about_app_desc">Nova Dialer is a privacy-focused communication tool designed to put you in control of your data. Core dialer data is stored on your device; it leaves only when you call, text, export or share.</string>
     <string name="privacy_policy_title">隐私政策</string>
     <string name="privacy_intro">在 Nova Dialer，我们高度重视您的隐私。</string>
-    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call logs or recordings to a server. The app has no INTERNET permission.</string>
-    <string name="privacy_section_2_desc">Contacts, call history, the microphone (recording only), and optional SOS location are used only for the features you invoke. For quick replies and SOS alerts Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
-    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. Recordings you export or share are decrypted copies that other apps can open, and an exported backup is protected only by the password you set.</string>
+    <string name="privacy_section_1_desc">Nova Dialer does not upload your contacts, call history, or any other app data to a server. The app has no INTERNET permission.</string>
+    <string name="privacy_section_2_desc">Contacts, call history, and notifications are used only for the features you use. For quick replies Nova Dialer hands a pre-filled message to your own messaging app; it does not send SMS by itself.</string>
+    <string name="privacy_section_3_desc">Nova Dialer does not sell or share data with third parties. Data leaves the device only when you call, text, export or share. An exported backup is protected only by the password you set.</string>
     <string name="settings_support_desc" formatted="false">Nova Dialer 100% 免费、开源、无广告，并始终以隐私为先。如果您觉得这款应用对您有帮助，欢迎贡献代码、提交翻译，或支持自由且安全的工具的开发。</string>
     <string name="settings_contribute_github">在 GitHub 上贡献</string>
 
@@ -469,8 +455,6 @@
     <!-- Duplicate Finder -->
     <string name="dup_finder_title">重复联系人查找器</string>
     <string name="dup_finder_sub">查找共享同一号码的联系人，然后合并或删除多余条目。</string>
-    <string name="dup_finder_entry">重复联系人查找器</string>
-    <string name="dup_finder_entry_sub">检测重复联系人并合并或永久删除</string>
     <string name="dup_scanning">正在扫描联系人…</string>
     <string name="dup_groups_found">%1$d 组重复联系人</string>
     <string name="dup_none_title">未发现重复联系人</string>
@@ -500,8 +484,6 @@
     <string name="history">历史记录</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="cat_focus_protection">专注与保护</string>
-    <string name="cat_focus_protection_sub">专注模式、VIP 来电与来电播报</string>
     <string name="header_focus_mode">专注模式</string>
     <string name="header_call_protection">通话保护级别</string>
     <string name="header_vip_numbers">VIP 号码</string>
@@ -605,48 +587,6 @@
     <string name="widget_tap_hint">Tap a favourite to call</string>
     <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
-    <string name="sos_title">紧急 SOS</string>
-    <string name="sos_sub">发送带位置的紧急警报，并拨打紧急服务电话</string>
-    <string name="sos_instructions_title">使用方法</string>
-    <string name="sos_instructions_body">1. 在下方添加一个或多个紧急联系人。\n2. 长按 SOS 按钮。\n3. Nova Dialer 会将您的位置发送给这些联系人，并拨打您的紧急号码。</string>
-    <string name="sos_button_label">SOS</string>
-    <string name="sos_hold_hint">长按以激活</string>
-    <string name="sos_contacts_title">紧急联系人</string>
-    <string name="sos_contact_add">添加紧急联系人</string>
-    <string name="sos_contacts_empty">还没有紧急联系人</string>
-    <string name="sos_auto_alert_title">自动通知联系人</string>
-    <string name="sos_auto_alert_sub">触发 SOS 时向已保存的紧急联系人发送短信</string>
-    <string name="sos_include_location_title">包含我的位置</string>
-    <string name="sos_include_location_sub">在警报中附加包含您 GPS 位置的地图链接</string>
-    <string name="sos_call_number_title">要拨打的紧急号码</string>
-    <string name="sos_call_number_sub">触发 SOS 时拨打的号码（例如 112）</string>
-    <string name="sos_grant_permissions">授予所需权限</string>
-    <string name="sos_permissions_needed">完整警报需要短信和位置权限</string>
-    <string name="sos_permissions_ok">已授予权限</string>
-    <string name="sos_sent_toast">SOS 警报已发送给 %1$d 位联系人</string>
-    <string name="sos_no_contacts_toast">请先添加至少一个紧急联系人</string>
-    <string name="sos_test_alert">发送测试警报</string>
-    <string name="sos_alert_message">紧急情况–我需要帮助。这是来自 Nova Dialer 的自动 SOS 警报。</string>
-    <string name="sos_alert_location_label">我的位置：</string>
-    <string name="sos_no_location">位置不可用–请开启 GPS 以获取地图链接</string>
-    <string name="sos_custom_message_title">Custom alert message</string>
-    <string name="sos_custom_message_hint">Leave blank to use the default message</string>
-    <string name="sos_countdown_title">Emergency SOS</string>
-    <string name="sos_countdown_body">Sending your alert and calling in %1$d seconds.\nTap Cancel to stop.</string>
-    <string name="sos_countdown_now">Send now</string>
-    <string name="sos_countdown_setting">Countdown before sending</string>
-    <string name="sos_countdown_setting_sub">Seconds to cancel an accidental SOS (0 sends immediately)</string>
-    <string name="sos_shake_title">Shake to trigger SOS</string>
-    <string name="sos_shake_sub">Shake the phone firmly to start the SOS countdown. Runs in the background.</string>
-    <string name="sos_watch_notification_title">Shake to SOS is on</string>
-    <string name="sos_watch_notification_text">Shake your phone firmly to start the emergency countdown. Tap Stop watch to turn this off.</string>
-    <string name="sos_countdown_notification_title">SOS in %1$d seconds</string>
-    <string name="sos_countdown_notification_text">Shake to SOS was triggered. Tap Cancel SOS to stop the alert, or Stop watch to turn the watch off.</string>
-    <string name="sos_cancel_countdown_action">Cancel SOS</string>
-    <string name="sos_stop_watch_action">Stop watch</string>
-    <string name="sos_watch_channel_name">Shake to SOS watch</string>
-    <string name="sos_watch_channel_description">Visible notification required while shake detection is active</string>
-    <string name="sos_power_note">Note: Android does not let third-party apps detect a triple-press of the power button. Use the shake gesture or the button above instead.</string>
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">未加密的备份文件</string>
     <string name="backup_plaintext_warning_body">这是旧版备份，未经过加密。其中可能以可读形式包含联系人、电话号码、通话记录、备注、提醒和设置。恢复会将其与当前数据合并，并保留你已有的全部内容。只有在你信任该文件时才继续。</string>

@@ -20,18 +20,10 @@ still needs the declarations and assets below.
       requests Call Log access only after the user grants the Phone role.
 - [ ] **SMS.** Nova Dialer holds no SMS permission and does not send SMS itself. Quick-reply
       declines either use Telecom's decline-with-message or hand a pre-filled draft to the user's
-      SMS app, and SOS opens the user's own messaging app for confirmation. The listing must not
-      claim silent SMS sending.
-- [ ] **Foreground service `specialUse`.** Declare the shake-to-SOS watch and provide the
-      justification. The service shows an ongoing, cancelable notification and stops if the
-      foreground start fails.
+      SMS app. The listing must not claim silent SMS sending.
 - [ ] **Full-screen intents.** Confirm the FSI permission is granted for the default dialer and
       test the fallback notification path on Android 14/15/16.
-- [ ] **Contacts.** Declare why contacts are read and written (dialer, contact editing, duplicate
-      merge).
-- [ ] **Exact alarms.** Declare the reminder scheduling use case if Play Console asks.
-- [ ] **Call recording.** Comply with local consent laws and make the in-app recording disclosure
-      visible. Store listing text must not imply automatic silent recording.
+- [ ] **Contacts.** Declare why contacts are read and written (dialer, contact editing).
 - [ ] **Target audience / content rating.** Complete the questionnaires. The app is not directed
       to children.
 
@@ -51,12 +43,11 @@ still needs the declarations and assets below.
 |---|---|---|---|---|
 | Phone numbers / contacts | No (stored on device) | Only when the user exports/shares | Dialer, contact editing | Contacts permission |
 | Call history | No (stored on device) | Only when the user exports a backup | Dialer, recents | Call Log permission |
-| Call recordings | No (stored on device; encrypted when the Keystore is available, with an explicitly flagged unencrypted fallback) | Only when the user exports/shares | User-initiated recording | Microphone permission |
-| SMS content | No (handled by carrier/SMS app; SOS opens the user's own messaging app with a pre-filled draft) | Carrier only when the user sends | Quick replies, SOS | None — the app holds no SMS permission |
-| Approximate/precise location | No (read at SOS time only) | Included only in the user's SOS SMS if enabled | Emergency SOS | Location permission |
+| SMS content | No (handled by carrier/SMS app; decline replies hand a pre-filled draft to the user's own messaging app) | Carrier only when the user sends | Quick replies | None — the app holds no SMS permission |
 | App settings/notes | No (stored on device) | Only in encrypted backups | App functionality | None |
 
-The app has no `INTERNET` permission, no advertising, no analytics and no crash-reporting SDK.
+The app has no `INTERNET` permission, no microphone, location or overlay permissions, and no
+advertising, analytics or crash-reporting SDK.
 
 ## 4. Store listing and assets
 
@@ -75,18 +66,43 @@ Test on a physical device, not only an emulator:
 - [ ] Fresh install, role request, contact and Call Log permission flow.
 - [ ] Incoming call on lock screen and while the app is backgrounded.
 - [ ] Answer, decline, reject-with-SMS, missed-call notification.
-- [ ] Call recording start/stop, playback, share, export and delete; confirm files are encrypted
-      (or explicitly reported as unencrypted when encryption fails) and no phone number appears in
-      new filenames.
 - [ ] Password-encrypted backup export/import, including contacts and call history.
-- [ ] Shake-to-SOS enable, visible notification, cancel, stop, reboot re-arm and FGS restrictions.
 - [ ] Full-screen intent fallback on Android 14+.
-- [ ] Overlay/Dynamic Island permission and behavior.
+- [ ] Multi-call: active call + waiting call (answer/decline/swap), and notification transition
+      from one ended call to the next live call.
 - [ ] OEM battery optimization/kill behavior (Samsung, Xiaomi, Pixel).
 - [ ] Upgrade from the previous release without losing data.
 - [ ] Recovery behavior when the database key is unavailable: the app must not delete data.
 
-## 6. Residual blockers
+## 6. Release-gate audit follow-up (completed 21 October 2026)
+
+The blockers from the 21 October 2026 release-gate audit have been resolved:
+
+- **Privacy strings.** The in-app privacy dialog copy (`privacy_section_1_desc`, `privacy_section_2_desc`,
+  `privacy_section_3_desc`) was rewritten in all 10 locales (`values` + ar, de, es, fr, hi, ja, pl,
+  pt, zh) so it no longer mentions call recording, the microphone or SOS location. The 42 orphaned
+  `sos_*` strings, the Dynamic Island strings, the overlay-permission warning and the orphaned
+  category headers were removed from every locale (key order parity is covered by
+  `LocalizationIntegrityTest`, and a new `DeprecatedNavigationGuardTest` guards the release scope).
+- **Obsolete overlay / Dynamic Island UI.** The Dynamic Island card in Appearance settings, the
+  `CallSystemPermissionsCard` overlay branch, the startup job in `DialerApplication`, the
+  overlay-permission helpers and the `DynamicIslandOverlayManager`/`DynamicIslandPill` classes were
+  removed. No reachable UI requests `SYSTEM_ALERT_WINDOW` anymore (the permission was already
+  undeclared).
+- **SOS crash risk.** `MainActivity` no longer re-arms the shake-to-SOS watch on start (this would
+  have crashed on upgrades where the service is no longer declared), the reachable "Set Emergency
+  SOS Contacts" card in Contacts is gone, and the five deferred `EmergencySos*` classes were
+  deleted.
+- **Duplicate Finder dead navigation.** The entry card that navigated to removed settings tab 11
+  was removed; the deferred `DuplicateFinder` logic keeps its unit tests.
+- **Lint is now clean of errors.** `lintDebug` and `lintRelease` report **0 errors, 37 warnings**
+  (deferred-feature code such as `ReminderScheduler`, Gradle/dependency version housekeeping and
+  style suggestions). The 5 previous errors (3× `MissingPermission` USE_BIOMETRIC in the deleted
+  `VaultBiometricAuthHelper`, 2× `ForegroundServiceType` for the deleted `EmergencySosService`) are
+  gone with the deferred code; the biometric app lock that ships in this build is enforced through
+  the device screen-lock credential and needs no extra permission.
+
+## 7. Residual blockers
 
 Until the boxes above are complete, the source tree is **not** a publishable release. In
 particular, the signed AAB, public privacy URL, Play Console declarations and store assets cannot

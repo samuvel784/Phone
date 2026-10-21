@@ -216,11 +216,9 @@ fun ContactsTabContent(
 
                 if (startWithFavoritesOnly) {
                     val isDefaultDialer by viewModel.isDefaultDialer
-                    val androidCtx = LocalContext.current
-                    val sosContacts = remember(androidCtx) { com.example.telecom.EmergencySosPrefs.getContacts(androidCtx) }
                     var dismissedSafetyItems by remember { mutableStateOf(emptySet<String>()) }
 
-                    val safetyActions = remember(isDefaultDialer, hasPermission, sosContacts, dismissedSafetyItems) {
+                    val safetyActions = remember(isDefaultDialer, hasPermission, dismissedSafetyItems) {
                         val list = mutableListOf<SafetyActionItem>()
                         if (!isDefaultDialer && "default_dialer" !in dismissedSafetyItems) {
                             list.add(
@@ -231,18 +229,6 @@ fun ContactsTabContent(
                                     actionText = "Set Up",
                                     icon = Icons.Default.Call,
                                     onAction = onRequestPermission
-                                )
-                            )
-                        }
-                        if (sosContacts.isEmpty() && "sos_contacts" !in dismissedSafetyItems) {
-                            list.add(
-                                SafetyActionItem(
-                                    id = "sos_contacts",
-                                    title = "Set Emergency SOS Contacts",
-                                    reason = "Configure contacts to alert during emergencies",
-                                    actionText = "Set Up",
-                                    icon = Icons.Default.Star,
-                                    onAction = { viewModel.selectTabBySlotKey("SETTINGS") }
                                 )
                             )
                         }
