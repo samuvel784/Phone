@@ -83,6 +83,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
      * Pass [force] = true for a button the user pressed on purpose.
      */
     fun checkDuplicates(context: Context, force: Boolean = false) {
+        if (!ReleaseScope.DUPLICATE_FINDER_ENABLED) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (!force) kotlinx.coroutines.delay(3.seconds)
@@ -1126,6 +1127,11 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addReminder(number: String, name: String, triggerTime: Long, note: String = "", onResult: (Long) -> Unit = {}) {
         viewModelScope.launch {
+            // Callback reminders are deferred; the rest of the record is kept for restore compatibility.
+            if (!ReleaseScope.CALLBACK_REMINDERS_ENABLED) {
+                onResult(-1L)
+                return@launch
+            }
             val reminder = CallReminder(
                 number = number,
                 name = name,

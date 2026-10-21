@@ -54,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.CallManager
 import com.example.ContactCache
@@ -71,6 +72,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 const val MAX_WIDGET_FAVORITES = 6
+private const val PHONE_STATE_PROMPT_PREF = "phone_state_prompted"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -85,8 +87,23 @@ fun MainScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val preferredSim by viewModel.preferredSim
+    val permissionPromptPrefs = remember(context) {
+        context.getSharedPreferences("nova_permission_prompts", android.content.Context.MODE_PRIVATE)
+    }
+    // READ_PHONE_STATE is requested only when the device reports more than one modem. Keep the
+    // permission state as a remember key so the callable-SIM list refreshes after the grant.
+    var hasPhoneStatePermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_PHONE_STATE
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
     // Real, callable SIMs only — never placeholder slots. Size drives the "ask which SIM?" logic.
-    val callableSims = remember(context) { MultiSimManager.getCallableSims(context) }
+    val callableSims = remember(context, hasPhoneStatePermission) {
+        MultiSimManager.getCallableSims(context)
+    }
     val blockedNumbersEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
     val blockedNumbers = remember(blockedNumbersEntities) { blockedNumbersEntities.map { it.number } }
 
@@ -203,6 +220,12 @@ fun MainScreen(
             perms.add(Manifest.permission.READ_CALL_LOG)
             perms.add(Manifest.permission.WRITE_CALL_LOG)
         }
+        // Phone state is needed to enumerate call-capable SIM accounts. Ask only on multi-SIM
+        // hardware; single-SIM devices can let the platform select their only SIM.
+        if (!hasPhoneStatePermission && MultiSimManager.getPhysicalSimCount(context) >= 2) {
+            perms.add(Manifest.permission.READ_PHONE_STATE)
+            permissionPromptPrefs.edit { putBoolean(PHONE_STATE_PROMPT_PREF, true) }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             perms.add(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -216,6 +239,9 @@ fun MainScreen(
         val callLogGranted = permissions[Manifest.permission.READ_CALL_LOG] ?: false
         hasContactsPermission = contactsGranted
         hasCallLogPermission = callLogGranted
+        // Only update when the permission was actually part of this request; otherwise a
+        // single-SIM request would overwrite an existing grant with false.
+        permissions[Manifest.permission.READ_PHONE_STATE]?.let { hasPhoneStatePermission = it }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: false
         }
@@ -242,6 +268,10 @@ fun MainScreen(
 
         hasContactsPermission = contactsGranted
         hasCallLogPermission = callLogGranted
+        val phoneStateGranted =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) ==
+                PackageManager.PERMISSION_GRANTED
+        hasPhoneStatePermission = phoneStateGranted
         hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         } else {
@@ -253,10 +283,18 @@ fun MainScreen(
             viewModel.startDataSyncAndObservation()
         }
 
+        val needsPhoneStatePrompt = !phoneStateGranted &&
+            MultiSimManager.getPhysicalSimCount(context) >= 2 &&
+            !permissionPromptPrefs.getBoolean(PHONE_STATE_PROMPT_PREF, false)
         if (!contactsGranted) {
             showProminentDisclosure = true
         } else if (isDefaultDialer && !callLogGranted) {
             showCallLogDisclosure = true
+        } else if (needsPhoneStatePrompt) {
+            // Upgrade path: contacts/call log may already be granted, but this build now needs
+            // phone state for the dual-SIM chooser. Offer the disclosure once.
+            permissionPromptPrefs.edit { putBoolean(PHONE_STATE_PROMPT_PREF, true) }
+            showProminentDisclosure = true
         }
     }
 
@@ -402,7 +440,7 @@ fun MainScreen(
                     title = { Text("Permissions & Local Data Privacy", fontWeight = FontWeight.Bold) },
                     text = {
                         Text(
-                            "Nova Dialer needs Contacts access to identify callers and let you dial. To show and manage call history, Android requires Nova Dialer to be your default Phone app and to grant Call Log access. All data is processed locally on your device and is never uploaded or shared.",
+                            "Nova Dialer needs Contacts access to identify callers and let you dial. To show and manage call history, Android requires Nova Dialer to be your default Phone app and to grant Call Log access. On a device with more than one SIM, Nova Dialer also requests phone-state access so it can identify your SIMs and route a call to the SIM you choose. All data is processed locally on your device and is never uploaded or shared.",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },

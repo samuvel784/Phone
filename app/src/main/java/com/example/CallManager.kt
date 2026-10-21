@@ -661,6 +661,8 @@ object CallManager {
 
     /** Starts the call-owned recording session. UI, notification and auto-record all use this. */
     fun startCallRecording(context: Context): Boolean {
+        // Recording is deferred in simplified v1 and RECORD_AUDIO is not declared.
+        if (!ReleaseScope.CALL_RECORDING_ENABLED) return false
         if (CallAudioRecorder.isRecording.value) return false
         val ctx = context.applicationContext
         val prefs = ctx.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
@@ -683,6 +685,8 @@ object CallManager {
     }
 
     fun autoStartRecordingIfNeeded() {
+        // A restored backup or an older install may still carry the auto-record preference.
+        if (!ReleaseScope.CALL_RECORDING_ENABLED) return
         if (CallAudioRecorder.isRecording.value) return
         val ctx = appContext ?: inCallService?.applicationContext ?: return
         val prefs = ctx.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)

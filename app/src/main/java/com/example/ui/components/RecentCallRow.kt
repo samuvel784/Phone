@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.R
+import com.example.ReleaseScope
 import com.example.model.CallRecord
 import com.example.model.CallRecording
 import com.example.model.CallType
@@ -98,7 +99,11 @@ fun RecentCallRow(
     // Prepared once for the whole list (see RecentsLookup): a row only does cheap map lookups.
     val lookup = LocalRecentsLookup.current
     val matchingRecordings = remember(lookup, record.number, record.name) {
-        lookup.recordingsFor(record.number, record.name)
+        if (ReleaseScope.CALL_RECORDING_ENABLED) {
+            lookup.recordingsFor(record.number, record.name)
+        } else {
+            emptyList()
+        }
     }
     var showPlaybackDialog by remember { mutableStateOf(false) }
 
@@ -241,7 +246,7 @@ fun RecentCallRow(
                                     }
                                 }
 
-                                if (matchingRecordings.isNotEmpty()) {
+                                if (ReleaseScope.CALL_RECORDING_ENABLED && matchingRecordings.isNotEmpty()) {
                                     Surface(
                                         shape = AppShapes.Chip,
                                         color = MaterialTheme.colorScheme.tertiaryContainer,
@@ -411,22 +416,24 @@ fun RecentCallRow(
                                 }
                             )
 
-                            DetailActionItem(
-                                icon = if (isSpam) Icons.Default.ReportOff else Icons.Default.Report,
-                                label = if (isSpam) stringResource(R.string.remove_spam) else stringResource(R.string.mark_spam),
-                                containerColor = if (isSpam) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                contentColor = if (isSpam) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.error,
-                                onClick = {
-                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                    if (spamEntity != null) {
-                                        viewModel.deleteSpamNumber(spamEntity)
-                                        Toast.makeText(context, context.getString(R.string.spam_unmarked), Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        viewModel.addSpamNumber(record.number, context.getString(R.string.spam_label))
-                                        Toast.makeText(context, context.getString(R.string.spam_marked), Toast.LENGTH_SHORT).show()
+                            if (ReleaseScope.SPAM_LABELS_ENABLED) {
+                                DetailActionItem(
+                                    icon = if (isSpam) Icons.Default.ReportOff else Icons.Default.Report,
+                                    label = if (isSpam) stringResource(R.string.remove_spam) else stringResource(R.string.mark_spam),
+                                    containerColor = if (isSpam) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    contentColor = if (isSpam) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.error,
+                                    onClick = {
+                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                        if (spamEntity != null) {
+                                            viewModel.deleteSpamNumber(spamEntity)
+                                            Toast.makeText(context, context.getString(R.string.spam_unmarked), Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            viewModel.addSpamNumber(record.number, context.getString(R.string.spam_label))
+                                            Toast.makeText(context, context.getString(R.string.spam_marked), Toast.LENGTH_SHORT).show()
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
 
                             DetailActionItem(
                                 icon = Icons.Default.History,
@@ -470,7 +477,7 @@ fun RecentCallRow(
                                 }
                             )
 
-                            if (matchingRecordings.isNotEmpty()) {
+                            if (ReleaseScope.CALL_RECORDING_ENABLED && matchingRecordings.isNotEmpty()) {
                                 DetailActionItem(
                                     icon = Icons.Default.Mic,
                                     label = stringResource(R.string.recording),
@@ -555,7 +562,7 @@ fun RecentCallRow(
         rowCardContent()
     }
 
-    if (showPlaybackDialog && matchingRecordings.isNotEmpty()) {
+    if (ReleaseScope.CALL_RECORDING_ENABLED && showPlaybackDialog && matchingRecordings.isNotEmpty()) {
         DirectRecordingPlayerDialog(
             recordings = matchingRecordings,
             onDismiss = { showPlaybackDialog = false },

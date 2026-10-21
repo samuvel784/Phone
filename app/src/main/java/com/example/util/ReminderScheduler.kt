@@ -22,10 +22,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.example.ReleaseScope
 
 object ReminderScheduler {
 
     fun schedule(context: Context, reminderId: Int, triggerTimeMillis: Long) {
+        // Callback reminders are deferred in simplified v1; never post a lingering alarm.
+        if (!ReleaseScope.CALLBACK_REMINDERS_ENABLED) return
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         if (triggerTimeMillis <= System.currentTimeMillis()) return
 

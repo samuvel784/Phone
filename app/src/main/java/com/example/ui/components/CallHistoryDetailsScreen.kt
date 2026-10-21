@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.R
+import com.example.ReleaseScope
 import com.example.model.CallRecord
 import com.example.model.Contact
 import com.example.model.getAvatarShape
@@ -536,7 +537,7 @@ fun CallHistoryDetailsScreen(
                 }
             }
 
-            if (viewModel.isCallbackRemindersEnabled.value) {
+            if (ReleaseScope.CALLBACK_REMINDERS_ENABLED && viewModel.isCallbackRemindersEnabled.value) {
                 item {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),

@@ -7,17 +7,21 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 
 > **Rebuilt, not patched.** Nova Dialer 2.0 uses the mature **Secure Dialer** codebase
 > (`com.example`, GPL-3.0-or-later) as its foundation, rebranded to Nova Dialer, with Nova Dialer's
-> unique features re-added on top. See **[docs/PORTING_PLAN.md](docs/PORTING_PLAN.md)** for the full audit of
-> the original issues and how each one is resolved, plus the status of the deferred features
-> (Emergency SOS, Analytics).
+> unique features re-added on top. See **[docs/PORTING_PLAN.md](docs/PORTING_PLAN.md)** for the release
+> scope: what ships, what is deferred or removed, and the historical 2.0 porting decisions.
 
 ## Build
 1. Open the folder in **Android Studio** and let Gradle sync.
 2. Build Variants -> `debug` -> Build > Build APK(s). Install it on a real phone.
-3. On the phone: Settings > Apps > Default apps > Phone app > Nova Dialer. Accept every permission prompt.
+3. On the phone: Settings > Apps > Default apps > Phone app > Nova Dialer. Grant the
+   permissions the app asks for only as you use the related feature (contacts, phone, call log,
+   notifications, and phone state only on multi-SIM devices). Call-log access is requested after
+   Nova Dialer holds the default Phone
+   role; grant it then if you want Recents to show calls.
 4. Release build: set `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (or put
-   `my-upload-key.jks` in the project folder). The release build deliberately fails fast without
-   these credentials; it never falls back to the debug key.
+   `my-upload-key.jks` in the project folder), then run `.\gradlew.bat assembleRelease` for the
+   APKs or `.\gradlew.bat bundleRelease` for the Play upload bundle. The release build
+   deliberately fails fast without these credentials; it never falls back to the debug key.
 5. Unit tests: `./gradlew testDebugUnitTest`; lint: `./gradlew lintDebug`.
 
 > The debug build and JVM unit tests are verified locally. Telecom, full-screen intents,
@@ -41,6 +45,7 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 
 ### Everything else
 - Contacts, recents, dialpad, favorites, voicemail, speed dial, quick replies.
+- Block and unblock numbers through Android's system blocklist (and a local fallback list).
 - Call notes attached to a number.
 - App lock backed by the device's screen-lock credential (enable it in Privacy settings; unlocking
   Nova Dialer after it leaves the foreground then requires your device PIN/pattern/biometric).
@@ -50,12 +55,18 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
 ### Deferred in this build (not implemented in the current simplified v1)
 - Focus mode / call protection (no call-screening service is registered).
 - Caller announcer.
-- Offline spam block / blocklists.
-- Call recording (no microphone permission; no recording UI).
-- Callback reminders.
-- Duplicate-contact finder (no settings entry point ships in this build).
+- Offline spam block / blocklists (no screening service is registered; the spam-labelling
+  action and spam settings screen are hidden).
+- Call recording (no microphone permission and no reachable recording UI, including playback of
+  legacy recordings; automatic recording is disabled even if an older install or restored backup
+  carries the preference; existing recording files and rows are left untouched).
+- Callback reminders (no reachable reminder entry point; the alarm receiver is not registered;
+  existing reminder rows are only preserved for backup compatibility).
+- Duplicate-contact finder (no settings entry point and no startup scan in this build).
 - Dynamic Island floating capsule (the overlay permission and all overlay UI were removed).
 - Emergency SOS (deferred code and its settings/triggers were removed in this build).
+- Home-screen widget (the provider and widget-only activity are not declared in this build).
+- Biometric app-lock pre-prompt (app lock uses the device screen-lock credential instead).
 
 ## Privacy
 - `INTERNET` permission is explicitly **removed** from the manifest — the app cannot use the network.
@@ -67,6 +78,11 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
   Android's decline-with-message, or hands a pre-filled draft to your own messaging app once the
   call is no longer ringing. Call Log access is requested only after Nova Dialer holds the default
   Phone role.
+- The packaged runtime libraries are open-source: AndroidX/Jetpack, Kotlin/Coroutines, Room,
+  SQLCipher and Coil (which brings its OkHttp/Okio transport), plus the bundled Inter font. There
+  are no analytics, advertising or crash-reporting SDKs, no remote endpoint, and no code that loads
+  a remote image. The missing `INTERNET` permission also makes network access impossible at the
+  Android level.
 - Full policy text: [`PRIVACY.md`](PRIVACY.md). A public HTTPS URL is still required for the Play
   Console listing.
 - Remaining publishing tasks and Data safety draft:
@@ -89,9 +105,11 @@ or MIT). There are no ads, no analytics, no server and no `INTERNET` permission.
 ### The name "Nova Dialer"
 
 This app was previously branded "NovaDial" and is now named **"Nova Dialer"** everywhere it is
-shown to users. The former name is retained only in non-user-facing machine identifiers that must
-not change (the Kotlin class `NovaDialCallScreeningService` and the Android Keystore alias
-`NovaDialRecordingKey`), plus the `applicationId`.
+shown to users. The former name remains only in non-user-facing machine identifiers that must
+not change without a migration: the Kotlin class `NovaDialCallScreeningService`, the Android
+Keystore alias `NovaDialRecordingKey`, the backup envelope identifier `novadial.backup`, the
+`novadial_call_protection` / `novadial_intent_guard` preference files, the widget action strings
+`com.aistudio.novadial.widget.*`, and the `applicationId`.
 
 An unrelated open-source project also uses the older name "NovaDial". This app is **not**
 affiliated with it. If you distribute builds, keep the `applicationId` distinct (see
@@ -136,24 +154,32 @@ A new design system, applied to every page, plus a round of performance work.
 - Colour schemes are built once per setting change, not on every recomposition.
 - A handwritten **baseline profile** (`app/src/main/baseline-prof.txt`) with the profile installer: faster first launch and
   first scroll.
-- The duplicate-contacts scan waits until the first screen is drawn, and asks at most once a week (it used to prompt on
-  every launch).
+- The deferred duplicate-contact scan is disabled at startup in this build; the legacy scanner is
+  retained behind `ReleaseScope.DUPLICATE_FINDER_ENABLED`. This removes the old once-a-week prompt
+  and its contact scan from the shipped flow.
 - No more white/grey flash at start: the window background matches the theme.
 
 **Removed**
 - Unused libraries (Navigation, Compose preview tooling, duplicate icon core) and unused code
   (`GeneralSettingsSupportCard`, three unused view-model functions, the old unreachable palettes).
-- The `reference/` archive, the `.idea/` folder and the design-files copy. `PORTING_PLAN.md` moved to `docs/`.
+- The `reference/` archive and the separate design-files copy. `PORTING_PLAN.md` moved to `docs/`.
+  Local IDE metadata under `.idea/` is git-ignored and is not part of the repository.
 
-> The debug build, 284 JVM unit tests and lint pass locally: `lintDebug`/`lintRelease` now report
-> **0 errors** (37 warnings remain, in deferred-feature code, Gradle/dependency housekeeping and
-> style suggestions — see `docs/PLAY_RELEASE_CHECKLIST.md`).
+> Automated verification on 21 October 2026: **286 JVM unit tests** (0 failures, 0 errors,
+> 0 skipped), `lintDebug`/`lintRelease` with **0 errors and 37 warnings**, and successful
+> `assembleRelease` and `bundleRelease` runs. The signed local candidate is
+> `app/build/outputs/bundle/release/app-release.aab` (10,570,437 bytes, SHA-256
+> `676F996047A82F80C9E7E059ED1D8FEAF7C96C423FAE4E27BBA017D4A01F28F8`) with per-ABI APKs under
+> `app/build/outputs/apk/release/`; `jarsigner -verify` and `bundletool validate` passed for the
+> AAB. Nothing has been uploaded to Play.
 > The app has not been tested on a physical phone in this environment, so Telecom,
 > full-screen intent handling, multi-call transitions and OEM background restrictions still need
-> the checklist below.
+> the checklist below and the full matrix in `docs/DEVICE_TEST_MATRIX.md`.
 
 ## Phone test checklist
-1. Install, set as default phone app, accept permissions.
+1. Install, set Nova Dialer as the default Phone app, and grant the permissions required for
+   the feature you are testing (contacts for contacts, phone/call log after the role is granted,
+   notifications for incoming-call alerts). Do not grant permissions you do not intend to use.
 2. Close Nova Dialer. Have someone call you: the call screen opens with the caller's name (or the
    notification, if the phone is locked).
 3. Answer, then ask the caller to hang up: the call screen must close by itself.
@@ -164,6 +190,18 @@ A new design system, applied to every page, plus a round of performance work.
 7. While the phone is locked, receive a call: the full-screen call screen (or heads-up fallback)
    must appear over the keyguard.
 8. Recents > Voicemail (only if your carrier supports visual voicemail): play a message.
+
+## Release preparation
+
+- [Physical-device test matrix](docs/DEVICE_TEST_MATRIX.md) — per-test purpose, prerequisites,
+  steps, expected result, actual-result field, status, evidence and recovery guidance. All
+  device results are currently **NOT RUN**.
+- [Play store listing draft](docs/PLAY_STORE_LISTING_DRAFT.md) — proposed copy, permission
+  explanations, missing contact fields and asset inventory.
+- [Play Console declaration worksheet](docs/PLAY_CONSOLE_DECLARATIONS.md) — default Phone role,
+  Call Log, full-screen intent, Data safety, content rating and privacy-policy questions.
+- [Privacy-policy hosting](docs/PRIVACY_HOSTING.md) — GitHub Pages instructions and the current
+  publication blocker (the public URL is still 404).
 
 ## License
 GPL-3.0-or-later — see [`LICENSE`](LICENSE) and the **License and credits** section above

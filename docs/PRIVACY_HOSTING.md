@@ -2,15 +2,28 @@
 
 Status: **prepared, not published.**
 
-Verified from this working tree on 20 October 2026:
+## Current verified status (21 October 2026)
+
+Re-checked from this working tree and the public GitHub API:
 
 - Remote: `https://github.com/samuvel784/NovaDialer.git` (no credentials are recorded here).
-- Branch: `main`.
+- Branch: `main`; local HEAD is `41a98a6`.
 - Repository visibility: **public** (the repository page is reachable without signing in).
-- Remote branches: `main` only. There is no `gh-pages` branch yet.
-- `https://samuvel784.github.io/NovaDialer/` currently returns **404**, so Pages is not enabled.
+- Remote branches: `main` only (`git ls-remote --heads origin`). There is **no `gh-pages`
+  branch**.
+- GitHub Pages API: `https://api.github.com/repos/samuvel784/NovaDialer/pages` returns **404**,
+  so Pages is **not enabled**.
+- Public URL: `https://samuvel784.github.io/NovaDialer/` returns **404 Not Found**. This is not a
+  published policy and must not be entered in Play Console.
+
+**Exact outstanding blocker:** an authorized person must (1) create and push a `gh-pages` branch
+containing the generated policy site and (2) enable **Settings → Pages → Deploy from a branch →
+`gh-pages` / (root)**. Until both are done and the URL returns HTTP 200, the privacy-policy
+requirement is incomplete.
 
 GitHub Pages is free for public repositories, so no paid plan or separate account is needed.
+Enabling Pages and pushing a public branch are publication actions; this repository's automation
+does not perform them.
 
 ## Recommended route: a `gh-pages` branch containing only the policy
 
@@ -19,8 +32,9 @@ the published site contains **only** the privacy policy:
 
 - no Kotlin/Java source, Gradle files, signing configuration, or internal notes are served;
 - no internal documents (for example `docs/PLAY_RELEASE_CHECKLIST.md`) become web pages;
-- `main` stays the development branch and is unaffected;
-- the site keeps working even if the main repository is later made private and upgraded.
+- `main` stays the development branch and is not itself published as the site;
+- the published surface stays separate from the source tree. If the repository's visibility
+  changes, re-check Pages availability and use the fallback described below.
 
 Trade-offs:
 
@@ -99,8 +113,8 @@ passes.
 
 - The page opens over **HTTPS** without signing in and without a certificate warning.
 - The heading reads **Nova Dialer Privacy Policy** and the date matches `PRIVACY.md`.
-- All sections (1–11) are present, including call recordings, backups, SOS, permissions and
-  deletion.
+- All sections (1–11) are present, including contacts, call history, backups, permissions and
+  deletion. The page must not claim recording, SOS-location or other deferred functionality.
 - The page source contains only the policy and theme assets — no application source, no
   `local.properties`, no keystore references.
 - `curl.exe -I https://samuvel784.github.io/NovaDialer/` returns `HTTP/2 200` (or `HTTP/1.1 200`).

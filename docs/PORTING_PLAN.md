@@ -1,196 +1,209 @@
-# Nova Dialer 2.0 — Porting Plan & Change Log
+# Nova Dialer 2.1 — Porting Plan, Release Scope & Change Log
 
-Nova Dialer 2.0 is a **rebuild**: instead of patching the original Nova Dialer code (which contained
-compile errors, dead features and fake functionality), the mature **Secure Dialer** codebase was
-used as the foundation, rebranded to Nova Dialer, and Nova Dialer's genuinely useful features were added
-back on top.
+**Current status (21 October 2026):** release candidate for the simplified v1 build,
+`2.1.0` (versionCode 4). The automated build, unit-test and lint results are recorded in
+§5. No physical-device test has been performed in this environment.
+
+This document started as the porting log for Nova Dialer 2.0. It now also records what the
+2.1 release actually ships and which older, deferred features remain in the source tree but
+are deliberately unreachable. Historical 2.0 material is kept in §5 so the derivation and the
+decisions behind it remain auditable.
 
 - **Foundation / upstream:** Secure Dialer (`com.example`, GPL-3.0-or-later)
 - **Target:** Nova Dialer (`com.aistudio.novadial.kpxm`), GPL-3.0-or-later
-- **Version:** 2.0.0 (versionCode 3), minSdk 24, targetSdk 36
+- **Release:** 2.1.0 (versionCode 4), minSdk 24, targetSdk 36
+- **Repository:** <https://github.com/samuvel784/NovaDialer>
 
-> Both projects used the same `com.example` namespace, so the upstream source tree dropped into
-> place path-for-path. Copyright headers are preserved; every new file added by this port carries
-> the same `Copyright (C) 2026 MovStore / SPDX-License-Identifier: GPL-3.0-or-later` header so the
-> derivation stays license-clean.
+> Both projects use the `com.example` namespace, so the upstream source tree dropped into
+> place path-for-path. Copyright headers are preserved; new Nova Dialer files carry the
+> `Copyright (C) 2026 Nova Dialer contributors` / GPL-3.0-or-later header. See
+> [`NOTICE.md`](../NOTICE.md).
 
 ---
 
 ## 1. Why a port instead of a patch
 
-An audit of the original Nova Dialer found defects that would prevent it from building or from working
-on a device. Rebuilding on Secure Dialer eliminates them by construction and keeps the parts of
-Nova Dialer users actually value.
+The original Nova Dialer had defects that prevented it from building or from working reliably
+on a device. Nova Dialer 2.0 was rebuilt on the mature Secure Dialer codebase, then Nova
+Dialer-specific features were added or deferred deliberately. The original audit is retained
+below; the "current status" column reflects the simplified 2.1 release, not the 2.0 plan.
 
-| # | Original Nova Dialer defect | Status after port | How the port resolves it |
-|---|--------------------------|-------------------|--------------------------|
-| 1 | `BorderStroke.copy(...)` compile errors in `EmergencyAlertActivity.kt` (lines ~209/320) | **Fixed** | File removed; the broken Emergency SOS screen is not compiled (see §5). |
-| 2 | Invalid manifest attribute `android:showOnLockScreen` | **Fixed** | Manifest rebuilt from upstream; only valid attributes (`showWhenLocked`, `turnScreenOn`) are used. |
-| 3 | `FloatingCallWidgetService` called `startForegroundService()` without a matching `startForeground()` → crash on Android 8+ | **Fixed** | Upstream `DynamicIslandOverlayManager` provides the floating call surface correctly. |
-| 4 | Dead code: `GestureControlManager`, `FlashAlertManager` partially wired | **Fixed** | Upstream `CallGestureSensorManager` / `FlashLightManager` are the real implementations. |
-| 5 | `verifyPin` / `verifyPattern` always returned `false` (app lock could never succeed) | **Fixed** | Upstream uses `VaultBiometricAuthHelper` + device credential (`BiometricPrompt`). |
-| 6 | Fake "Google Sync" that did nothing | **Fixed** | Removed; contacts come from the real system provider. |
-| 7 | Invented spam database with made-up numbers + fake "threat feed" refresh | **Fixed** | Upstream `SpamDatabaseSettings` only stores rules the user adds; CSV import is local. |
-| 8 | Destructive / data-losing Room migrations | **Fixed** | Upstream Room + SQLCipher schema with non-destructive migrations. |
-| 9 | Unused dependencies (Firebase, OkHttp, Retrofit) | **Fixed** | `app/build.gradle.kts` only keeps what is used; commented placeholders remain. |
-| 10 | Call blocking / Focus mode / protection rules did nothing | **Fixed** | Real `CallScreeningService` now rejects blocked/spam numbers and silences by policy (see §3). |
-| 11 | Caller announcer not present in a working form | **Fixed** | Real TTS `CallerAnnouncerManager` + settings screen (see §4). |
-| 12 | Emergency SOS feature (Nova Dialer-unique) | **Deferred** | Reference sources archived under `reference/novadial-original/` (see §5). |
-| 13 | Analytics / call-stats dashboard (Nova Dialer-unique) | **Deferred** | Reference source archived; upstream `CallLogSummaryDashboard` already covers most of it (see §5). |
+| # | Original Nova Dialer defect | Current status in 2.1 | Resolution / note |
+|---|-----------------------------|-----------------------|-------------------|
+| 1 | `BorderStroke.copy(...)` compile errors in `EmergencyAlertActivity.kt` | **Removed** | The broken SOS screen is not compiled; the remaining SOS-era classes were deleted in the 2.1 scope cleanup. |
+| 2 | Invalid manifest attribute `android:showOnLockScreen` | **Fixed** | The invalid attribute was removed. The incoming-call activity uses the valid `showWhenLocked` / `turnScreenOn` attributes. |
+| 3 | `FloatingCallWidgetService` started a foreground service without `startForeground()` | **Removed** | The Dynamic Island/overlay implementation was deleted in 2.1; no overlay permission or overlay UI remains. |
+| 4 | Dead `GestureControlManager` / partially wired `FlashAlertManager` | **Not in the release path** | The in-call gesture helper used by `ActiveCall` is the upstream implementation. The standalone flashlight helper is retained but not referenced. Neither is a deferred feature with a hidden trigger. |
+| 5 | `verifyPin` / `verifyPattern` always returned `false` | **Replaced** | App lock is enforced with the device screen-lock credential (`KeyguardManager`). The biometric-only pre-prompt helper was removed; this build does not declare `USE_BIOMETRIC`. |
+| 6 | Fake "Google Sync" | **Removed** | Contacts come from Android's Contacts Provider. |
+| 7 | Invented spam database with made-up numbers | **Removed** | No seed data or fake threat feed. The local spam table remains only for legacy backup compatibility; spam labelling is hidden and no screening service is registered. |
+| 8 | Destructive / data-losing Room migrations | **Fixed** | SQLCipher Room database, non-destructive migrations, fail-closed key handling. |
+| 9 | Unused Firebase / OkHttp / Retrofit dependencies | **Fixed** | No Firebase or Retrofit dependency is packaged. Coil contributes its own OkHttp/Okio transport as a transitive library; the app has no `INTERNET` permission and defines no remote endpoint. |
+| 10 | Call blocking / Focus mode / protection rules did nothing | **Blocking: implemented; Focus/protection: deferred** | Android system blocking plus a local blocked-number list are reachable. Focus Mode, call protection and the screening service are retained as deferred code and are **not** registered in the manifest. |
+| 11 | Caller announcer was not present in a working form | **Deferred** | `CallerAnnouncerManager` and `AnnouncerScript` remain in the tree, but nothing instantiates the announcer in the 2.1 `MyInCallService`. |
+| 12 | Emergency SOS (Nova Dialer-only) | **Removed** | The five `EmergencySos*` classes, settings card and triggers were deleted in the 2.1 scope cleanup. |
+| 13 | Analytics / call-stats dashboard | **Deferred** | The upstream `CallLogSummaryDashboard` remains. A separate analytics settings screen exists only as unreachable code. |
 
 ---
 
-## 2. Rebrand
+## 2. Release identity and configuration
 
 | Item | Value |
 |------|-------|
-| `applicationId` | `com.aistudio.novadial.kpxm` |
+| `applicationId` | `com.aistudio.novadial.kpxm` (intentionally unchanged for this candidate; review before the first Play upload) |
 | App name (`app_name`) | `Nova Dialer` |
 | `rootProject.name` | `Nova Dialer` |
-| `versionName` / `versionCode` | `2.0.0` / `3` |
-| Launcher icon | Nova Dialer's own adaptive icon (`ic_launcher_background`/`_foreground`, density PNGs) |
-| Namespace | unchanged (`com.example`) |
+| `versionName` / `versionCode` | `2.1.0` / `4` |
+| `minSdk` / `targetSdk` | 24 / 36 |
+| Namespace | `com.example` |
+| UI | Compose, Day / Default / Night themes with the accent picker |
+| Signing | Local upload signing via `key.properties`; the release task fails fast if credentials are absent |
 
-All strings/URLs referencing "Secure Dialer" were replaced with "Nova Dialer" across the resources.
-
----
-
-## 2.1 Aurora design language (2026 redesign)
-
-Nova Dialer no longer ships the upstream Secure Dialer look. It has its own **"Aurora"** design
-language — a luminous **indigo → violet → orchid** identity on deep indigo-black glass surfaces,
-soft (26–36 dp) squircle geometry, pill chips/buttons and an expressive modern type scale.
-
-> **License note:** a visual redesign does **not** remove the GPL. The source remains a derivative
-> of Secure Dialer and stays **GPL-3.0-or-later** with attribution intact. The redesign gives
-> Nova Dialer a distinct brand identity (avoiding trade-dress/brand confusion); it is not a way to
-> relicense the code.
-
-Changed by the redesign:
-
-| Area | File | What changed |
-|------|------|--------------|
-| Color tokens | `ui/theme/Color.kt` | New Aurora palette + material tokens; avatar pairs kept |
-| Playlists | `ui/theme/Theme.kt` | Replaced the 12 upstream palettes with 6 Nova Dialer themes (`nova_aurora` default, `nova_nebula`, `nova_glacier`, `nova_ember`, `nova_forest`, `nova_mono`); any legacy stored key falls back to Aurora; added glassy `surfaceTint`/`outlineVariant`/`scrim` treatment |
-| Typography | `ui/theme/Type.kt` | New Aurora scale (bolder, tighter tracking, tabular digits) |
-| Shapes | `ui/theme/AppShapes.kt` | Softer/rounder geometry; pill chips |
-| Theme picker | `ui/components/ThemeColorPicker.kt` | New palette swatches + default seed `#5A4BE0` |
-| Defaults | `ui/viewmodel/DialerViewModel.kt` | `theme_color` → `nova_aurora`, custom hex → `#5A4BE0` |
-| Search bar | `ui/components/CommonComponents.kt` | Pill shape, glassy container, soft outline border |
-| Settings cards/rows | `ui/components/Settings.kt`, `CommonComponents.kt` | Aurora card shape + pill icon chips |
-| Nav bar | `ui/components/CommonComponents.kt` | Stronger active indicator |
-| Recording folder | `CallAudioRecorder.kt`, all `strings.xml` | `Downloads/SecureDialer` → `Downloads/Nova Dialer` |
-| Wake-lock tags | `MyInCallService.kt`, `ui/components/ActiveCall.kt`, test | `SecureDialer:*` → `Nova Dialer:*` |
-
-The old settings/preferences file name `secure_dialer_prefs` is still *read* as an upgrade fallback
-only (writes always target `dialer_prefs`); this keeps existing users' settings from resetting.
+The old 2.0 values (`2.0.0` / versionCode 3) are historical and no longer describe the
+release candidate.
 
 ---
 
-## 3. Focus Mode + Call Protection (ported — complete)
+## 3. Current release scope
 
-New package `com.example.telecom`:
+Status vocabulary: **Implemented** means present and wired into the shipped UI.
+**Deferred** means code/data may remain for compatibility, but the feature has no ordinary
+user entry point in this build. **Removed** means the implementation was deleted.
 
-| File | Purpose |
-|------|---------|
-| `CallProtectionPolicy.kt` | Pure rule engine. Given saved/VIP/favorite/repeat flags, focus mode and protection level, returns whether a call is silenced. Emergency numbers are never silenced. |
-| `CallProtectionPrefs.kt` | `SharedPreferences` (`novadial_call_protection`) for focus mode, protection level, repeat-caller policy, VIP numbers and announcer options. VIP matching uses `PhoneNumberUtils.compare`. |
-| `CallDecisionStore.kt` | In-memory (2-minute) record, keyed by last 8 digits, of numbers the screening service silenced so the announcer stays quiet for them. |
-| `NovaDialCallScreeningService.kt` | `CallScreeningService`. Rejects blocked numbers (`BlockedNumberContractManager` + Room blocklist) and numbers in the offline spam DB; otherwise applies Focus Mode / protection and silences the ring (Android 10+). Declared in the manifest with `BIND_SCREENING_SERVICE`. |
+### 3.1 Dialer and Telecom features — implemented
 
-> **Adaptation note:** the screening service was rewritten to use Secure Dialer's
-> `DialerDao` (`isBlocked*`, `isSpamNumber`) and `BlockedNumberContractManager` instead of the
-> original `RealtimeSpamDetector` / `BlockAction` types, which do not exist in this codebase.
+| Area | Files / evidence | Status |
+|------|------------------|--------|
+| Default-dialer contracts (`DIAL`, `VIEW tel`, `CALL_BUTTON`) | `app/src/main/AndroidManifest.xml` | Implemented — physical verification outstanding |
+| Telecom `InCallService` and lock-screen incoming-call surface | `MyInCallService`, `IncomingCallActivity` | Implemented — physical verification outstanding |
+| Shared call state, answer/decline/hold/mute/speaker/audio routes | `CallManager`, `CallAudioRouteState`, `ActiveCall` | Implemented — physical verification outstanding |
+| Multi-call answer/decline/swap/merge | `CallManager`, `MultiCallStateMachine` | Implemented — physical verification outstanding |
+| SIM selection, call log, contacts, recents, favorites, dialpad, voicemail | `DialerRepository`, `MainScreen`, UI components | Implemented — physical verification outstanding |
+| Speed dial, quick replies, call notes | repository/DAO + settings screens | Implemented — physical verification outstanding |
+| Block / unblock numbers | `RecentCallRow`, `CallHistoryDetailsScreen`, `ContactProfileSheet`, `BlockedNumberContractManager` | Implemented — physical verification outstanding |
+| Encrypted local backup / restore | `BackupRestoreManager`, `AppDatabase`, `DatabaseKeyManager` | Implemented — automated tests pass; physical verification outstanding |
+| vCard import/export | `ContactsAndDataSettings`, `ContactShareUtils` | Implemented — physical verification outstanding |
+| Device-credential app lock | `MainActivity`, `PrivacySecurityAboutSettings` | Implemented — physical verification outstanding |
+| Themes, localization, baseline profile | `ui/theme`, `res/values*`, `baseline-prof.txt` | Implemented — automated build verification only |
 
-### Settings UI
+### 3.2 Deferred features — retained code, no ordinary user flow
 
-`com.example.ui.components.FocusAndProtectionSettings` is a self-contained Compose screen (tab 9 of
-Settings), reachable from a new "Focus & Protection" card and from the settings search index. It
-covers: Focus mode, protection level, repeat-caller toggle, VIP number add/remove, and the full
-announcer configuration with a live preview button.
+| Feature | Retained implementation | Why it cannot be reached in 2.1 |
+|---------|-------------------------|----------------------------------|
+| Call recording | `CallAudioRecorder`, `RecordingCrypto`, `RecordingDisclosureActivity`, `CallRecordingsSettings`, record controls in `ActiveCall`/`InCallControlGrid` | No `RECORD_AUDIO` permission is declared. The only `ActiveCallScreen` call sites pass `recordingEnabled = false`; the advanced settings screen that contains the recording card is not referenced by `SettingsPanel`. `ReleaseScope.CALL_RECORDING_ENABLED` is `false`, so manual and automatic start paths return early. |
+| Callback reminders | `ReminderScheduler`, `ReminderAlarmReceiver`, `CallbackReminderDialog`, `ScheduledRemindersSettings` | The call-detail reminder card is gated by `ReleaseScope.CALLBACK_REMINDERS_ENABLED` (`false`). `ReminderAlarmReceiver` is not declared in the manifest and scheduling is disabled, so no alarm can fire. Existing reminder rows are still preserved/merged by backup restore. |
+| Focus Mode / call protection | `CallProtectionPolicy`, `CallProtectionPrefs`, `CallDecisionStore`, `NovaDialCallScreeningService`, `FocusAndProtectionSettings` | The screening service has no manifest declaration. The settings composable has no navigation entry point. `MyInCallService` only consults the generic silent-ringing flag/decision store; it does not register a screening service. |
+| Caller announcer | `CallerAnnouncerManager`, `AnnouncerScript` | Nothing in `MyInCallService` creates or calls the announcer. The only UI reference is inside the unreachable Focus/Protection settings screen. |
+| Offline spam database / spam labelling | `spam_numbers` table, `SpamDatabaseSettings`, `CallBlockingSettings`, spam action in `RecentCallRow` | No screening service is registered. The spam action is gated by `ReleaseScope.SPAM_LABELS_ENABLED` (`false`); the spam settings screen is unreachable. Existing rows are retained and restored with backups, but there is no management or screening flow in this build. |
+| Duplicate-contact finder | `DuplicateFinder`, `DuplicateFinderSettings` | No navigation entry point. The startup scan is gated by `ReleaseScope.DUPLICATE_FINDER_ENABLED` (`false`), so it no longer runs invisibly. |
+| Home-screen widget | `FavoritesWidgetProvider`, `WidgetCallActivity` | Neither component is declared in the manifest. Favourites updates call a refresh helper, but Android has no registered provider to update. |
+| Analytics settings screen | `CallAnalyticsSettings` | No navigation entry point; the supported Recents dashboard remains. |
+| Biometric-only recording vault / app-lock pre-prompt | Former `VaultBiometricAuthHelper` and related UI | Removed. App lock uses the device screen-lock credential and declares no biometric permission. |
+
+### 3.3 Removed features / code
+
+- Emergency SOS: `EmergencySosService`, `EmergencySosBootReceiver`, `EmergencySosManager`,
+  `EmergencySosPrefs`, `EmergencySosSettings` and all live triggers.
+- Dynamic Island / overlay: `DynamicIslandOverlayManager`, `DynamicIslandPill`, overlay
+  permission helpers and the Appearance settings card.
+- Duplicate Finder settings card and the removed settings tab it targeted.
+- Overlay/recording/SOS permission requests that previously appeared at startup.
+- The `reference/novadial-original/` archive and the separate design-files copy. The historical
+  notes remain in this document; the archive itself is no longer part of the repository.
+
+### 3.4 Unresolved / requires device investigation
+
+These are not code-scope defects, but they remain unverified until a physical device is used:
+
+- Telecom role transitions, full-screen-intent grant/deny behaviour and lock-screen launch on
+  Android 14/15/16.
+- Multi-call transitions on a real carrier.
+- Bluetooth/wired audio routing and OEM background restrictions.
+- Encrypted database opening after key invalidation and backup/restore across a real upgrade.
+- Play Console policy declarations and the final application ID decision.
+
+The device matrix is in [`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
 
 ---
 
-## 4. Caller Announcer (ported — complete)
+## 4. Historical 2.0 porting work
 
-| File | Purpose |
-|------|---------|
-| `AnnouncerScript.kt` | Pure, unit-testable template renderer + script builder (`{name}`, `{user}`, `{type}`), capped at 15 s / 3 repeats every 5 s. |
-| `CallerAnnouncerManager.kt` | TextToSpeech engine. Speaks on the ringtone stream while `STATE_RINGING`, stops on answer/reject/end, stays silent in silent/vibrate/DND, honours "headphones only", and skips calls that were silenced by policy. |
+The 2.0 rebuild resolved the original compile/runtime defects by replacing the broken code
+with the upstream Secure Dialer implementation. Some of that work is still shipped; some was
+later deferred to keep the 2.1 release small.
 
-Hooked into `MyInCallService`: created in `onCreate`, announced from the `STATE_RINGING` branch of
-`handleCallState`, stopped on `STATE_ACTIVE`/`STATE_DISCONNECTED`, and shut down in `onDestroy`.
+### 4.1 Rebrand and Aurora (2.0 history)
 
-> **Adaptation note:** caller lookup uses Nova Dialer's `getContactNameFromNumber(context, number)`
-> instead of the original `DeviceContactsHelper.lookupCallerInfo`.
+- `applicationId` changed to `com.aistudio.novadial.kpxm`; app name, launcher icon and user
+  strings rebranded to Nova Dialer.
+- A 2.0 "Aurora" visual language (indigo → violet → orchid, glassy surfaces, pill controls)
+  replaced the upstream look. The 2.1 redesign supersedes it with the Day / Default / Night
+  themes and the measured-contrast accent palette described in `README.md`.
+- The legacy preferences file `secure_dialer_prefs` is referenced only by the deferred recording
+  implementation; the shipped settings use `dialer_prefs`. This is not a general settings migration.
 
-### Tests
+### 4.2 Focus/protection/announcer work (2.0 history, now deferred)
 
-- `app/src/test/java/com/example/telecom/AnnouncerScriptTest.kt`
-- `app/src/test/java/com/example/telecom/CallProtectionPolicyTest.kt`
+The 2.0 port added a pure `CallProtectionPolicy` rule engine, `CallProtectionPrefs`,
+`CallDecisionStore`, a `NovaDialCallScreeningService`, `AnnouncerScript` and
+`CallerAnnouncerManager`, plus the `FocusAndProtectionSettings` screen. Those files still
+exist and have unit coverage for the pure logic, but the screening service is no longer
+registered and the settings screen is not reachable in 2.1. Their presence is **not** evidence
+that Focus Mode or caller announcements work in the release candidate.
 
-Both exercise pure logic only (no Android framework), so they run on the JVM.
+### 4.3 Recording work (2.0 history, now deferred)
+
+The upstream recording pipeline was adapted for Nova Dialer (voice-communication source,
+encrypted-at-rest recordings, disclosure notice). It is retained so existing recording files and
+database rows from earlier builds are not deleted, but the simplified 2.1 release neither creates
+nor surfaces them: no microphone permission is declared, the reachable UI never enables the
+record button, and the Recents playback/management actions are gated by
+`ReleaseScope.CALL_RECORDING_ENABLED` (`false`).
+
+### 4.4 Deferred SOS and analytics (2.0 history)
+
+The original SOS and analytics sources were previously kept under
+`reference/novadial-original/`. That archive is no longer shipped. SOS was removed completely
+in the 2.1 cleanup. The analytics idea was not merged; the Recents dashboard remains the
+supported summary.
+
+### 4.5 Spam handling (2.0 history)
+
+The genuine local parts of the old spam feature (CSV import, manual entries, offline matching)
+were carried over with the upstream spam table. The invented seed data, community feed and
+`RealtimeSpamDetector` were deliberately not ported. In 2.1 the screening service and spam
+management UI are deferred, and the spam-labelling action is hidden.
 
 ---
 
-## 5. Deferred features (Emergency SOS & Analytics)
+## 5. Verification status
 
-These two Nova Dialer-only features were **not** merged in this pass. Their original sources are kept
-for reference (not compiled) under `reference/novadial-original/`:
+Automated verification is recorded in `README.md` and `docs/PLAY_RELEASE_CHECKLIST.md`.
+The commands are:
 
+```powershell
+.\gradlew.bat testDebugUnitTest
+.\gradlew.bat lintDebug
+.\gradlew.bat lintRelease
+.\gradlew.bat assembleDebug
+.\gradlew.bat assembleRelease
+.\gradlew.bat bundleRelease
+git diff --check
 ```
-reference/novadial-original/
-  telecom/       EmergencyAlertActivity.kt, EmergencySettings.kt,
-                 EmergencyTriggerManager.kt, EmergencyTriggerService.kt,
-                 RealtimeSpamDetector.kt, FloatingCallWidgetService.kt,
-                 GestureControlManager.kt, FlashAlertManager.kt
-  ui-screens/    EmergencyScreen.kt, AnalyticsScreen.kt, CallProtectionSection.kt
-  data-model/    SpamBlocklistModels.kt, BlockedNumber.kt, DeviceContactsHelper.kt
-  README.novadial-original.md, metadata.novadial-original.json
-```
 
-### 5.1 Emergency SOS — deferred
-
-- **Why deferred:** the original contained a compile error (`BorderStroke.copy`), and the trigger
-  service / floating widget were unreliable. It needs careful re-implementation on top of the
-  upstream `CallManager` and a foreground service with a proper `startForeground`.
-- **To finish:** port `EmergencyTriggerManager` to drive the upstream `CallManager`, build the alert
-  activity fresh (do **not** copy the broken `EmergencyAlertActivity`), and route the SOS call
-  through the same `ACTION_CALL` / telecom path the rest of the app uses. Follow the upstream
-  foreground-service patterns used by `DynamicIslandOverlayManager`.
-
-### 5.2 Analytics — deferred
-
-- **Why deferred:** the upstream `CallLogSummaryDashboard` already provides call counts, talk time
-  and quick filters, so a separate analytics screen is largely redundant.
-- **To finish:** either delete `AnalyticsScreen.kt` as duplicate, or re-add any Nova Dialer-only metrics
-  (e.g. per-contact trends) as an extra section inside `CallLogSummaryDashboard`.
-
-### 5.3 Offline spam DB / community reports
-
-The genuine, local parts of Nova Dialer's spam handling (CSV blocklist import, manual entries, offline
-matching) are already covered by upstream `SpamDatabaseSettings` + `NovaDialCallScreeningService`.
-The original `RealtimeSpamDetector`, `CommunitySpamManager` and the made-up seed data were
-deliberately **not** ported.
+Results from the 21 October 2026 audit: **286 JVM unit tests** (0 failures, 0 errors,
+0 skipped); `lintDebug` and `lintRelease` **0 errors / 37 warnings**; successful
+`assembleDebug`, `assembleRelease` and `bundleRelease`; `jarsigner -verify` reported
+`jar verified` for the AAB and `bundletool validate` returned 0. The signed local AAB is
+`app/build/outputs/bundle/release/app-release.aab`; it has not been uploaded. This porting plan
+does not claim a physical-device pass: Telecom, full-screen intents, multi-call transitions, OEM
+background restrictions and upgrade/backup behaviour still need the matrix in
+[`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
 
 ---
 
-## 6. Verification status
+## 6. License
 
-This port was authored **without a JDK or Android Studio** on the build machine, so it has **not
-been compiled**. What was done instead:
-
-- Every new/changed reference was cross-checked against the real upstream API surface
-  (`DialerDao`, `AppDatabase.getDatabase`, `BlockedNumberContractManager`, the Compose helper
-  components, and the `stringResource`/icon imports).
-- The pure logic is covered by the two JVM unit tests above.
-
-**Before shipping:** open the project in Android Studio, `./gradlew testDebugUnitTest`, then
-`./gradlew assembleDebug`, and install on a real phone. Use the checklist in `README.md`.
-
----
-
-## 7. License
-
-Secure Dialer is licensed **GPL-3.0-or-later**; Nova Dialer 2.0 is a derivative work and stays
-GPL-3.0-or-later. Existing copyright headers are preserved and new files carry the same header.
+Secure Dialer is licensed **GPL-3.0-or-later**. Nova Dialer 2.0 and 2.1 are derivative works
+and remain **GPL-3.0-or-later**. Existing copyright headers are preserved; new files carry the
+same GPL-3.0-or-later header. See [`LICENSE`](../LICENSE) and [`NOTICE.md`](../NOTICE.md).

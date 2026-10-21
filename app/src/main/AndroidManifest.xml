@@ -18,8 +18,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- Foreground Service & Notifications -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Notifications & Full-Screen Intent -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
@@ -99,7 +98,6 @@
             android:launchMode="singleTop"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:showOnLockScreen="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"

@@ -39,6 +39,7 @@ None of them is copied from Secure Dialer.
 - `app/src/main/java/com/example/telecom/RingingPolicy.kt`
 
 ### Utilities
+- `app/src/main/java/com/example/ReleaseScope.kt`
 - `app/src/main/java/com/example/util/ContactRingtonePrefs.kt`
 - `app/src/main/java/com/example/util/CallLogExport.kt`
 - `app/src/main/java/com/example/util/DuplicateFinder.kt`
@@ -66,13 +67,19 @@ None of them is copied from Secure Dialer.
 > `Copyright (C) 2026 Nova Dialer contributors` header. If any file listed above is found
 > to contain code copied from Secure Dialer, restore the `Copyright (C) 2026 MovStore`
 > line in that file.
+>
+> Some listed files implement features that are deferred or unreachable in the simplified
+> 2.1 release (for example Focus/Protection, the announcer, Duplicate Finder and the widget).
+> They remain in the source tree for compatibility and attribution; their presence is not a
+> claim that the feature ships.
 
 ## No third-party binaries or services
 
-Nova Dialer uses only Android platform APIs and the open-source libraries declared in
-`gradle/libs.versions.toml` (AndroidX, Room, SQLCipher, Coil, Robolectric/Roborazzi —
-all Apache-2.0 or MIT). There are no ads, no analytics, no proprietary SDKs, no API keys
-and **no `INTERNET` permission**.
+Nova Dialer uses Android platform APIs and open-source components (AndroidX/Jetpack,
+Kotlin/Coroutines, Room, SQLCipher, Coil — which brings its OkHttp/Okio transport — and the
+test-only Robolectric/Roborazzi stack) under their respective open-source licences, including
+Apache-2.0, MIT and BSD; the bundled Inter font is under the SIL Open Font License 1.1. There are
+no ads, no analytics, no proprietary SDKs, no API keys and **no `INTERNET` permission**.
 
 ## Fonts
 

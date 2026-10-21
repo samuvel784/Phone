@@ -5,6 +5,7 @@
 
 package com.example
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -115,7 +116,8 @@ class DeprecatedNavigationGuardTest {
             "INTERNET",
             "SCHEDULE_EXACT_ALARM",
             "RECEIVE_BOOT_COMPLETED",
-            "USE_BIOMETRIC"
+            "USE_BIOMETRIC",
+            "FOREGROUND_SERVICE"
         )
         for (permission in declaredPermissions) {
             for (removed in removedOrDeferred) {
@@ -129,5 +131,30 @@ class DeprecatedNavigationGuardTest {
         assertTrue("Manifest must declare IncomingCallActivity", text.contains("IncomingCallActivity"))
         assertTrue("Manifest must declare MainActivity with launcher intent", text.contains("MainActivity"))
         assertTrue("Manifest must declare FileProvider for exports", text.contains("FileProvider"))
+    }
+
+    @Test
+    fun `deferred feature switches are off in the release scope`() {
+        assertFalse("Call recording must stay deferred", ReleaseScope.CALL_RECORDING_ENABLED)
+        assertFalse("Callback reminders must stay deferred", ReleaseScope.CALLBACK_REMINDERS_ENABLED)
+        assertFalse("Duplicate Finder must stay deferred", ReleaseScope.DUPLICATE_FINDER_ENABLED)
+        assertFalse("Spam labelling must stay deferred", ReleaseScope.SPAM_LABELS_ENABLED)
+    }
+
+    @Test
+    fun `manifest does not register deferred feature components`() {
+        val manifest = File("src/main/AndroidManifest.xml")
+        assertTrue("Manifest not found relative to test working directory", manifest.isFile)
+        val text = manifest.readText()
+        val deferredComponents = listOf(
+            "ReminderAlarmReceiver",
+            "NovaDialCallScreeningService",
+            "FavoritesWidgetProvider",
+            "WidgetCallActivity",
+            "RecordingDisclosureActivity"
+        )
+        for (component in deferredComponents) {
+            assertFalse("Manifest must not register deferred component $component", text.contains(component))
+        }
     }
 }

@@ -339,8 +339,8 @@ suspend fun DialerRepository.fetchAvailableAccounts(): List<ContactAccount> = wi
     list
 }
 
-// getActiveSubscriptionInfoList() is annotated as requiring READ_PHONE_STATE. This runs only for
-// the dialer (which holds telephony permissions); we fail soft if the permission is missing.
+// getActiveSubscriptionInfoList() is annotated as requiring READ_PHONE_STATE. The dialer asks for
+// that permission on multi-SIM hardware; this path still fails soft if it is denied or unavailable.
 @SuppressLint("MissingPermission")
 suspend fun DialerRepository.fetchSystemCallLogs(): List<CallRecord> = withContext(Dispatchers.IO) {
     val logs = mutableListOf<CallRecord>()
