@@ -33,7 +33,6 @@
     <string name="filter_missed">着信履歴のみ</string>
     <string name="filter_dialed">発信</string>
     <string name="filter_received">着信</string>
-    <string name="default_dialer_warning">すべての機能を使用するにはデフォルトの通話アプリに設定してください。</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">連絡先の権限を許可</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">許可</string>
     <string name="btn_configure">設定</string>
     <string name="btn_set_default">デフォルトに設定</string>
-    <string name="settings_lockscreen_calling_title">ロック画面での全画面着信</string>
-    <string name="settings_lockscreen_calling_sub">端末がロック中や画面オフでも即座に全画面着信画面を表示</string>
-    <string name="settings_full_screen_intent_warning">全画面着信通知がシステムによって制限されています</string>
-    <string name="incoming_call_alerts_limited">着信アラートは通知設定により制限されています</string>
-    <string name="incoming_call_notification_settings_help">通知を許可し、「着信」チャンネルを重要度「高」に設定すると、着信がすぐに表示されます。</string>
     <string name="feature_enable_prompt">上のスイッチを切り替えて有効化してください</string>
     <string name="feature_disabled_hint">機能は無効です</string>
     <string name="btn_enable_feature">機能を有効化</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">すべての録音をエクスポート</string>
     <string name="default_dialer_card_title">デフォルトの電話アプリに設定</string>
     <string name="default_dialer_card_reason">通話の完全な処理と通話画面に必要です。</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">キーパッド</string>
+    <string name="in_call_keypad_mode_add_call">通話を追加 / 検索</string>
+    <string name="in_call_add_call_search_hint">名前または番号を入力</string>
+    <string name="in_call_add_call_search_note">連絡先の検索ではトーンは送信されません</string>
+    <string name="in_call_add_call_no_matches">一致する連絡先がありません。電話番号を入力して発信してください。</string>
+    <string name="in_call_add_call_selected">%1$s に発信</string>
+    <string name="in_call_add_call_dtmf_note">キーは現在の通話にトーンを送信します</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">全画面通話機能</string>
+    <string name="full_screen_features_subtitle">着信のロック画面表示とバックグラウンドのポップアップ権限</string>
+    <string name="full_screen_features_ready">ロック画面を妨げる設定は見つかりませんでした</string>
+    <string name="full_screen_features_attention">着信表示を改善するため、以下の設定を確認してください</string>
+    <string name="permission_setup_title">着信のセットアップ</string>
+    <string name="permission_sheet_done">完了</string>
+    <string name="permission_ignore">無視</string>
+    <string name="permission_status_label">状態: %1$s</string>
+    <string name="permission_status_enabled">有効</string>
+    <string name="permission_status_disabled">無効</string>
+    <string name="permission_status_unable">確認できません</string>
+    <string name="lock_screen_display_title">ロック画面に表示</string>
+    <string name="lock_screen_display_desc">端末がロックされているときに着信画面を表示するのに役立ちます。実際の動作は Android、通知設定、端末メーカーによっても異なります。</string>
+    <string name="lock_screen_display_short">端末がロックされているときに着信画面を表示するのに役立ちます。</string>
+    <string name="lock_screen_display_enable">有効にする</string>
+    <string name="lock_screen_display_fallback">専用の全画面設定ページは利用できません。Nova Dialer は関連するシステムページを開きました。必要に応じて以下の手動手順を使用してください。</string>
+    <string name="background_popup_title">バックグラウンドでポップアップ ウィンドウを表示</string>
+    <string name="background_popup_desc">バックグラウンドのポップアップ ウィンドウに必要となる場合があるメーカー固有の権限です。Android にはこれを読み取ったり有効にしたりする公開 API はありません。</string>
+    <string name="background_popup_short">一部の端末ではバックグラウンドのポップアップ ウィンドウに必要となる場合があります。</string>
+    <string name="background_popup_fallback">この端末はバックグラウンド ポップアップのページを公開していません。アプリ情報を開きました。「その他の権限」または同様の名前のメーカー設定を確認してください。</string>
+    <string name="permission_settings_unavailable">システム設定ページを開けませんでした。Android の設定、アプリ、Nova Dialer の順に手動で開いてください。</string>
+    <string name="permission_manual_guide">手動の手順: Android の設定、アプリ、Nova Dialer の順に開きます。全画面アクセスは「特別なアプリ アクセス」→「全画面通知」を開きます。バックグラウンド ポップアップは「その他の権限」または同等のメーカー設定を開きます。</string>
+    <string name="diagnostics_lock_screen">ロック画面の表示: %1$s</string>
+    <string name="diagnostics_background_popup">バックグラウンド ポップアップ: %1$s</string>
+    <string name="diagnostics_notifications">通知が有効: %1$s</string>
+    <string name="diagnostics_channel">着信チャネルの重要度: %1$d</string>
+    <string name="diagnostics_default_dialer">既定の電話アプリ: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">ロック画面を設定</string>
+    <string name="diagnostics_configure_background_popup">バックグラウンド ポップアップを設定</string>
 </resources>

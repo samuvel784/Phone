@@ -65,7 +65,9 @@ fun InCallControlGrid(
     onSwap: () -> Unit = {},
     /** Merge is shown only when Telecom reports the calls as conferenceable. */
     isMergeVisible: Boolean = false,
-    onMerge: () -> Unit = {}
+    onMerge: () -> Unit = {},
+    /** Controls requiring an established conversation (Mute, Speaker, Hold, Bluetooth, Add Call) are disabled until the call is active. */
+    isCallActive: Boolean = true
 ) {
     val btnShape = AppShapes.Keypad
     val buttonHeight = 68.dp
@@ -88,7 +90,8 @@ fun InCallControlGrid(
                 isActive = isInCallDialpadOpen,
                 onClick = onToggleDialpad,
                 shape = btnShape,
-                modifier = Modifier.weight(1f).height(buttonHeight)
+                modifier = Modifier.weight(1f).height(buttonHeight),
+                enabled = true // Keypad remains enabled and accessible while dialing
             )
             InCallButton(
                 icon = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
@@ -96,7 +99,8 @@ fun InCallControlGrid(
                 isActive = isMuted,
                 onClick = onToggleMute,
                 shape = btnShape,
-                modifier = Modifier.weight(1f).height(buttonHeight)
+                modifier = Modifier.weight(1f).height(buttonHeight),
+                enabled = isCallActive
             )
             InCallButton(
                 icon = Icons.AutoMirrored.Filled.VolumeUp,
@@ -104,7 +108,8 @@ fun InCallControlGrid(
                 isActive = isSpeakerOn,
                 onClick = onToggleSpeaker,
                 shape = btnShape,
-                modifier = Modifier.weight(1f).height(buttonHeight)
+                modifier = Modifier.weight(1f).height(buttonHeight),
+                enabled = isCallActive
             )
         }
 
@@ -121,7 +126,7 @@ fun InCallControlGrid(
                 onClick = onToggleHold,
                 shape = btnShape,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                enabled = isHoldEnabled
+                enabled = isHoldEnabled && isCallActive
             )
             InCallButton(
                 icon = Icons.Default.Bluetooth,
@@ -130,9 +135,7 @@ fun InCallControlGrid(
                 onClick = onToggleBluetooth,
                 shape = btnShape,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                // Bluetooth can only carry call audio when Telecom reports a Bluetooth endpoint
-                // for this call; a merely paired device is not enough.
-                enabled = isBluetoothAvailable
+                enabled = isBluetoothAvailable && isCallActive
             )
             if (showAddCall) {
                 InCallButton(
@@ -142,7 +145,7 @@ fun InCallControlGrid(
                     onClick = onOpenAddCallDialog,
                     shape = btnShape,
                     modifier = Modifier.weight(1f).height(buttonHeight),
-                    enabled = isAddCallEnabled
+                    enabled = isAddCallEnabled && isCallActive
                 )
             } else {
                 Spacer(modifier = Modifier.weight(1f))
@@ -151,7 +154,7 @@ fun InCallControlGrid(
 
         // Row 3: multi-call actions. Only rendered when Telecom reports the operation as possible,
         // so Swap/Merge never appear because a contact was merely selected.
-        if (isSwapVisible || isMergeVisible) {
+        if ((isSwapVisible || isMergeVisible) && isCallActive) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -203,7 +206,8 @@ fun InCallControlGrid(
                         onClick = onToggleRecording,
                         shape = btnShape,
                         isPulsingRecording = isRecording,
-                        modifier = Modifier.weight(1f).height(buttonHeight)
+                        modifier = Modifier.weight(1f).height(buttonHeight),
+                        enabled = isCallActive
                     )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
@@ -216,7 +220,8 @@ fun InCallControlGrid(
                         isActive = isQuickNotesOpen,
                         onClick = onOpenQuickNotes,
                         shape = btnShape,
-                        modifier = Modifier.weight(1f).height(buttonHeight)
+                        modifier = Modifier.weight(1f).height(buttonHeight),
+                        enabled = isCallActive
                     )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))

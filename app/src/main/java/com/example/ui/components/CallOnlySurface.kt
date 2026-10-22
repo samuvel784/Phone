@@ -6,40 +6,16 @@
 package com.example.ui.components
 
 import android.telecom.Call
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.CallManager
 import com.example.ContactCache
-import com.example.R
 import com.example.safeState
-import com.example.util.IncomingCallAccess
 
 /**
  * The single call-only surface used by [com.example.IncomingCallActivity].
@@ -59,6 +35,7 @@ fun CallOnlyCallSurface(
 ) {
     val calls by CallManager.calls.collectAsStateWithLifecycle()
     val simSlot by CallManager.currentSimSlot.collectAsStateWithLifecycle()
+    val pendingAnswerCallId by CallManager.pendingAnswerCallId.collectAsStateWithLifecycle()
 
     val call = remember(calls, callId) {
         calls.firstOrNull {
@@ -85,100 +62,32 @@ fun CallOnlyCallSurface(
         ?: number
 
     val state = call.safeState
-    val isIncoming = state == Call.STATE_RINGING
-
-    ActiveCallScreen(
-        contactName = displayName,
-        contactNumber = number,
-        preferredSim = "SIM $simSlot",
-        quickResponses = emptyList(),
-        onHangUp = { CallManager.disconnectById(callId) },
-        onQuickDecline = { CallManager.rejectCallById(callId) },
-        isIncoming = isIncoming,
-        onAnswer = { CallManager.answerCallById(callId) },
-        callState = state,
-        recordingEnabled = false,
-        autoTuneVolume = false,
-        recordingChimeEnabled = false,
-        alwaysRecordEnabled = false,
-        callNotesEnabled = false,
-        onMinimize = onBack,
-        isPocketProtectionEnabled = true,
-        callOnlyMode = true
-    )
-}
-
-/**
- * A compact, dismissible explanation for an OS/notification setting that prevents the call UI
- * from appearing immediately. It never opens Settings by itself; the user must tap the button.
- */
-@Composable
-fun IncomingCallAccessNotice(
-    access: IncomingCallAccess,
-    onOpenFullScreenSettings: () -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (!access.hasActionableIssue) return
-
-    val fullScreenIssue = access.needsFullScreenSettings
-    val title = if (fullScreenIssue) {
-        stringResource(R.string.settings_full_screen_intent_warning)
-    } else {
-        stringResource(R.string.incoming_call_alerts_limited)
-    }
-    val body = if (fullScreenIssue) {
-        stringResource(R.string.settings_lockscreen_calling_sub)
-    } else {
-        stringResource(R.string.incoming_call_notification_settings_help)
+    val presentation = remember(state, pendingAnswerCallId, callId) {
+        com.example.telecom.CallOnlyCallState.from(
+            telecomState = state,
+            answerPending = pendingAnswerCallId == callId
+        )
     }
 
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("incoming_call_access_notice"),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        shape = MaterialTheme.shapes.large,
-        tonalElevation = 4.dp,
-        shadowElevation = 6.dp
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.close),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            TextButton(
-                onClick = if (fullScreenIssue) onOpenFullScreenSettings else onOpenNotificationSettings
-            ) {
-                Text(stringResource(R.string.btn_configure), fontWeight = FontWeight.SemiBold)
-            }
-        }
+    Box(modifier = modifier.fillMaxSize()) {
+        ActiveCallScreen(
+            contactName = displayName,
+            contactNumber = number,
+            preferredSim = "SIM $simSlot",
+            quickResponses = emptyList(),
+            onHangUp = { CallManager.disconnectById(callId) },
+            onQuickDecline = { CallManager.rejectCallById(callId) },
+            isIncoming = presentation.isIncoming,
+            onAnswer = { CallManager.answerCallById(callId) },
+            callState = presentation.telecomState,
+            recordingEnabled = false,
+            autoTuneVolume = false,
+            recordingChimeEnabled = false,
+            alwaysRecordEnabled = false,
+            callNotesEnabled = false,
+            onMinimize = onBack,
+            isPocketProtectionEnabled = true,
+            callOnlyMode = true
+        )
     }
 }

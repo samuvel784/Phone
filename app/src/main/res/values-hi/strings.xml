@@ -33,7 +33,6 @@
     <string name="filter_missed">मिस्ड</string>
     <string name="filter_dialed">डायल किए गए</string>
     <string name="filter_received">प्राप्त</string>
-    <string name="default_dialer_warning">सभी सुविधाओं को सक्षम करने के लिए डिफ़ॉल्ट डायलर के रूप में सेट करें।</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">संपर्क अनुमति दें</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">अनुमति दें</string>
     <string name="btn_configure">कॉन्फ़िगर करें</string>
     <string name="btn_set_default">डिफ़ॉल्ट सेट करें</string>
-    <string name="settings_lockscreen_calling_title">लॉक स्क्रीन पर फ़ुल-स्क्रीन कॉल</string>
-    <string name="settings_lockscreen_calling_sub">डिवाइस लॉक होने या स्क्रीन बंद होने पर तुरंत इनकमिंग कॉल स्क्रीन दिखाएं</string>
-    <string name="settings_full_screen_intent_warning">फुल-स्क्रीन इनकमिंग कॉल अलर्ट सिस्टम द्वारा प्रतिबंधित हैं</string>
-    <string name="incoming_call_alerts_limited">इनकमिंग कॉल अलर्ट नोटिफ़िकेशन सेटिंग्स द्वारा सीमित हैं</string>
-    <string name="incoming_call_notification_settings_help">नोटिफ़िकेशन की अनुमति दें और इनकमिंग कॉल चैनल को उच्च महत्व पर रखें ताकि इनकमिंग कॉल तुरंत दिखाई दें।</string>
     <string name="feature_enable_prompt">सक्रिय करने के लिए ऊपर स्विच चालू करें</string>
     <string name="feature_disabled_hint">सुविधा अक्षम है</string>
     <string name="btn_enable_feature">सुविधा सक्षम करें</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">सभी रिकॉर्डिंग निर्यात करें</string>
     <string name="default_dialer_card_title">डिफ़ॉल्ट फ़ोन ऐप के रूप में सेट करें</string>
     <string name="default_dialer_card_reason">पूर्ण कॉल प्रबंधन और इन-कॉल स्क्रीन के लिए आवश्यक।</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">कीपैड</string>
+    <string name="in_call_keypad_mode_add_call">कॉल जोड़ें / खोजें</string>
+    <string name="in_call_add_call_search_hint">नाम या नंबर लिखें</string>
+    <string name="in_call_add_call_search_note">संपर्क खोजने पर टोन नहीं भेजे जाते</string>
+    <string name="in_call_add_call_no_matches">कोई मेल खाता संपर्क नहीं। कॉल करने के लिए फ़ोन नंबर दर्ज करें।</string>
+    <string name="in_call_add_call_selected">%1$s को कॉल करें</string>
+    <string name="in_call_add_call_dtmf_note">कीज़ वर्तमान कॉल पर टोन भेजती हैं</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">फ़ुल-स्क्रीन कॉल सुविधाएँ</string>
+    <string name="full_screen_features_subtitle">इनकमिंग कॉल के लिए लॉक-स्क्रीन प्रदर्शन और बैकग्राउंड पॉप-अप अनुमतियाँ</string>
+    <string name="full_screen_features_ready">लॉक-स्क्रीन को रोकने वाली कोई सेटिंग नहीं मिली</string>
+    <string name="full_screen_features_attention">इनकमिंग कॉल प्रदर्शन सुधारने के लिए नीचे दी गई सेटिंग्स की समीक्षा करें</string>
+    <string name="permission_setup_title">इनकमिंग कॉल सेटअप</string>
+    <string name="permission_sheet_done">हो गया</string>
+    <string name="permission_ignore">अनदेखा करें</string>
+    <string name="permission_status_label">स्थिति: %1$s</string>
+    <string name="permission_status_enabled">सक्षम</string>
+    <string name="permission_status_disabled">अक्षम</string>
+    <string name="permission_status_unable">सत्यापित नहीं कर सकते</string>
+    <string name="lock_screen_display_title">लॉक स्क्रीन पर दिखाएँ</string>
+    <string name="lock_screen_display_desc">डिवाइस लॉक होने पर इनकमिंग कॉल स्क्रीन दिखाने में मदद करता है। वास्तविक व्यवहार Android, सूचना सेटिंग्स और डिवाइस निर्माता पर भी निर्भर करता है।</string>
+    <string name="lock_screen_display_short">डिवाइस लॉक होने पर कॉल इंटरफ़ेस दिखाने में मदद करता है।</string>
+    <string name="lock_screen_display_enable">सक्षम करें</string>
+    <string name="lock_screen_display_fallback">समर्पित फ़ुल-स्क्रीन पृष्ठ उपलब्ध नहीं है; Nova Dialer ने संबंधित सिस्टम पृष्ठ खोला है। यदि आवश्यक हो तो नीचे दिया गया मैन्युअल मार्ग अपनाएँ।</string>
+    <string name="background_popup_title">बैकग्राउंड में चलते समय पॉप-अप विंडो दिखाएँ</string>
+    <string name="background_popup_desc">निर्माता-विशिष्ट अनुमति जो बैकग्राउंड पॉप-अप विंडो के लिए आवश्यक हो सकती है। Android इसे पढ़ने या सक्षम करने के लिए कोई सार्वजनिक API नहीं देता।</string>
+    <string name="background_popup_short">कुछ डिवाइस पर बैकग्राउंड पॉप-अप विंडो के लिए आवश्यक हो सकता है।</string>
+    <string name="background_popup_fallback">इस डिवाइस ने बैकग्राउंड पॉप-अप पृष्ठ उपलब्ध नहीं कराया। ऐप जानकारी खोली गई; अन्य अनुमतियाँ या इसी नाम की निर्माता सेटिंग जाँचें।</string>
+    <string name="permission_settings_unavailable">सिस्टम सेटिंग्स पृष्ठ नहीं खोला जा सका। Android सेटिंग्स, फिर ऐप्स, फिर Nova Dialer मैन्युअल रूप से खोलें।</string>
+    <string name="permission_manual_guide">मैन्युअल मार्ग: Android सेटिंग्स, फिर ऐप्स, फिर Nova Dialer। फ़ुल-स्क्रीन पहुँच के लिए विशेष ऐप पहुँच, फिर फ़ुल-स्क्रीन सूचनाएँ खोलें। बैकग्राउंड पॉप-अप के लिए अन्य अनुमतियाँ या समतुल्य निर्माता सेटिंग खोलें।</string>
+    <string name="diagnostics_lock_screen">लॉक-स्क्रीन प्रदर्शन: %1$s</string>
+    <string name="diagnostics_background_popup">बैकग्राउंड पॉप-अप: %1$s</string>
+    <string name="diagnostics_notifications">सूचनाएँ सक्षम: %1$s</string>
+    <string name="diagnostics_channel">इनकमिंग चैनल महत्व: %1$d</string>
+    <string name="diagnostics_default_dialer">डिफ़ॉल्ट फ़ोन ऐप: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">लॉक स्क्रीन कॉन्फ़िगर करें</string>
+    <string name="diagnostics_configure_background_popup">बैकग्राउंड पॉप-अप कॉन्फ़िगर करें</string>
 </resources>

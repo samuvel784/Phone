@@ -204,7 +204,13 @@ fun InCallHeader(
             if (participants.size > 2) {
                 participants.joinToString(", ") { it.first.ifEmpty { it.second } }
             } else if (participants.size == 2) {
-                "${participants[0].second} • ${participants[1].second}"
+                // Never render a dangling separator when a conference participant has no number.
+                listOfNotNull(
+                    participants[0].second.takeIf { it.isNotBlank() },
+                    participants[1].second.takeIf { it.isNotBlank() }
+                ).joinToString(" • ").ifBlank {
+                    participants.joinToString(" • ") { it.first }
+                }
             } else if (participants.size == 1 && participants[0].second.isNotEmpty()) {
                 participants[0].second
             } else if (contactNumber.isNotEmpty()) {

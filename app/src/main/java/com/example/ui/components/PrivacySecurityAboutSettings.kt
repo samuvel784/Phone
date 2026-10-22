@@ -17,9 +17,7 @@
 
 package com.example.ui.components
 
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -126,18 +124,17 @@ fun PrivacySecurityAboutSettings(
         }
 
         item {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
-            val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-            val canUseFsi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                notificationManager?.canUseFullScreenIntent() ?: false
-            } else {
-                true
-            }
-            val channel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                notificationManager?.getNotificationChannel("incoming_call_channel")
-            } else null
-            val channelImportance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) channel?.importance ?: -1 else -1
+            val permissions = com.example.util.CallPresentationPermissionsReader.read(
+                context,
+                com.example.MyInCallService.CHANNEL_INCOMING
+            )
             val isDefaultDialer = com.example.util.CallScreenPermissionHelper.isDefaultDialer(context)
+            val fullScreenValue = when {
+                !permissions.fullScreenPermissionSupported -> "Not required on this Android version"
+                permissions.fullScreenPermissionCheckFailed -> "Android could not report access"
+                permissions.fullScreenIntentAllowed -> "Allowed"
+                else -> "Restricted"
+            }
 
             Card(
                 modifier = Modifier
@@ -147,34 +144,64 @@ fun PrivacySecurityAboutSettings(
                 shape = MaterialTheme.shapes.medium
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Full-Screen Intent: ${if (canUseFsi) "Available (Allowed)" else "Unavailable / Restricted"}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                    Text("Notifications Enabled: ${if (areNotificationsEnabled) "Yes" else "No"}", style = MaterialTheme.typography.bodySmall)
-                    Text("Incoming Channel Importance: $channelImportance ${if (channelImportance >= 4) "(High/Urgent)" else "(Standard/Low)"}", style = MaterialTheme.typography.bodySmall)
-                    Text("Default Phone App: ${if (isDefaultDialer) "Yes (Default Dialer)" else "Not Default"}", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = stringResource(R.string.full_screen_features_title),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_lock_screen,
+                            permissionStatusLabel(permissions.lockScreenStatus)
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_background_popup,
+                            permissionStatusLabel(permissions.backgroundPopupStatus)
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text("Full-screen intent: $fullScreenValue", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_notifications,
+                            if (permissions.notificationsEnabled) "Yes" else "No"
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_channel,
+                            permissions.channelImportance
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.diagnostics_default_dialer,
+                            if (isDefaultDialer) "Yes" else "No"
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !canUseFsi) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
-                                try {
-                                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-                                        data = android.net.Uri.fromParts("package", context.packageName, null)
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    try {
-                                        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = android.net.Uri.fromParts("package", context.packageName, null)
-                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (_: Exception) {}
-                                }
+                                com.example.util.CallScreenPermissionHelper.openLockScreenSettings(context)
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("Grant Full-Screen Intent Access")
+                            Text(stringResource(R.string.diagnostics_configure_lock_screen))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                com.example.util.CallScreenPermissionHelper.openBackgroundPopupSettings(context)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.diagnostics_configure_background_popup))
                         }
                     }
                 }

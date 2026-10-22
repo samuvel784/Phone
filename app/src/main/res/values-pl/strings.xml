@@ -33,7 +33,6 @@
     <string name="filter_missed">Nieodebrane</string>
     <string name="filter_dialed">Wychodzące</string>
     <string name="filter_received">Odebrane</string>
-    <string name="default_dialer_warning">Ustaw jako domyślną aplikację do dzwonienia, aby włączyć wszystkie funkcje.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Włącz dostęp do kontaktów</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Przyznaj</string>
     <string name="btn_configure">Konfiguruj</string>
     <string name="btn_set_default">Ustaw jako domyślną</string>
-    <string name="settings_lockscreen_calling_title">Pełnoekranowe połączenia na ekranie blokady</string>
-    <string name="settings_lockscreen_calling_sub">Wyświetlaj interfejs połączenia przychodzącego na pełnym ekranie, gdy urządzenie jest zablokowane lub ekran jest wyłączony</string>
-    <string name="settings_full_screen_intent_warning">Pełnoekranowe powiadomienia o połączeniach są ograniczone przez system</string>
-    <string name="incoming_call_alerts_limited">Alerty o połączeniach przychodzących są ograniczone przez ustawienia powiadomień</string>
-    <string name="incoming_call_notification_settings_help">Zezwól na powiadomienia i ustaw kanał Połączenia przychodzące na wysoki priorytet, aby połączenia przychodzące pojawiały się natychmiast.</string>
     <string name="feature_enable_prompt">Użyj przełącznika powyżej, aby aktywować</string>
     <string name="feature_disabled_hint">Funkcja jest wyłączona</string>
     <string name="btn_enable_feature">Włącz funkcję</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">Eksportuj wszystkie nagrania</string>
     <string name="default_dialer_card_title">Ustaw jako domyślną aplikację telefonu</string>
     <string name="default_dialer_card_reason">Wymagane do pełnej obsługi połączeń i ekranu połączenia.</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Klawiatura</string>
+    <string name="in_call_keypad_mode_add_call">Dodaj połączenie / Szukaj</string>
+    <string name="in_call_add_call_search_hint">Wpisz nazwę lub numer</string>
+    <string name="in_call_add_call_search_note">Wyszukiwanie kontaktów nie wysyła tonów</string>
+    <string name="in_call_add_call_no_matches">Brak pasujących kontaktów. Wpisz numer telefonu, aby zadzwonić.</string>
+    <string name="in_call_add_call_selected">Zadzwoń do %1$s</string>
+    <string name="in_call_add_call_dtmf_note">Klawisze wysyłają tony do bieżącego połączenia</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Funkcje połączeń pełnoekranowych</string>
+    <string name="full_screen_features_subtitle">Uprawnienia wyświetlania na ekranie blokady i okien wyskakujących w tle dla połączeń przychodzących</string>
+    <string name="full_screen_features_ready">Nie wykryto blokującego ustawienia ekranu blokady</string>
+    <string name="full_screen_features_attention">Sprawdź poniższe ustawienia, aby poprawić wyświetlanie połączeń przychodzących</string>
+    <string name="permission_setup_title">Konfiguracja połączeń przychodzących</string>
+    <string name="permission_sheet_done">Gotowe</string>
+    <string name="permission_ignore">Ignoruj</string>
+    <string name="permission_status_label">Stan: %1$s</string>
+    <string name="permission_status_enabled">Włączone</string>
+    <string name="permission_status_disabled">Wyłączone</string>
+    <string name="permission_status_unable">Nie można zweryfikować</string>
+    <string name="lock_screen_display_title">Pokaż na ekranie blokady</string>
+    <string name="lock_screen_display_desc">Pomaga wyświetlić ekran połączenia przychodzącego, gdy urządzenie jest zablokowane. Rzeczywiste zachowanie zależy również od Androida, ustawień powiadomień i producenta.</string>
+    <string name="lock_screen_display_short">Pomaga wyświetlić interfejs połączenia przy zablokowanym urządzeniu.</string>
+    <string name="lock_screen_display_enable">Włącz</string>
+    <string name="lock_screen_display_fallback">Dedykowana strona pełnoekranowa jest niedostępna; Nova Dialer otworzył powiązaną stronę systemową. W razie potrzeby użyj poniższej ścieżki ręcznej.</string>
+    <string name="background_popup_title">Pokaż okna wyskakujące w tle</string>
+    <string name="background_popup_desc">Uprawnienie specyficzne dla producenta, które może być wymagane dla okien wyskakujących w tle. Android nie udostępnia publicznego interfejsu API do jego odczytu ani włączenia.</string>
+    <string name="background_popup_short">Może być wymagane dla okien wyskakujących w tle na niektórych urządzeniach.</string>
+    <string name="background_popup_fallback">To urządzenie nie udostępniło strony okien wyskakujących w tle. Otwarto informacje o aplikacji; sprawdź Inne uprawnienia lub podobnie nazwane ustawienie producenta.</string>
+    <string name="permission_settings_unavailable">Nie udało się otworzyć strony ustawień systemowych. Otwórz ręcznie Android Ustawienia, następnie Aplikacje, a potem Nova Dialer.</string>
+    <string name="permission_manual_guide">Ścieżka ręczna: Android Ustawienia, następnie Aplikacje, a potem Nova Dialer. Dla dostępu pełnoekranowego otwórz Dostęp specjalny aplikacji, a następnie Powiadomienia pełnoekranowe. Dla okien wyskakujących otwórz Inne uprawnienia lub równoważne ustawienie producenta.</string>
+    <string name="diagnostics_lock_screen">Wyświetlanie na ekranie blokady: %1$s</string>
+    <string name="diagnostics_background_popup">Okno wyskakujące w tle: %1$s</string>
+    <string name="diagnostics_notifications">Powiadomienia włączone: %1$s</string>
+    <string name="diagnostics_channel">Ważność kanału połączeń przychodzących: %1$d</string>
+    <string name="diagnostics_default_dialer">Domyślna aplikacja Telefon: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Konfiguruj ekran blokady</string>
+    <string name="diagnostics_configure_background_popup">Konfiguruj okno wyskakujące</string>
 </resources>

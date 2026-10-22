@@ -889,35 +889,40 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     }
 
     private fun initNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try { nm.deleteNotificationChannel("incoming_call_channel_v2") } catch (_: Exception) {}
-            try { nm.deleteNotificationChannel("incoming_call_channel_v3") } catch (_: Exception) {}
-
-            val incomingChannel = NotificationChannel(CHANNEL_INCOMING, "Incoming Calls", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Incoming call alerts and full screen notifications"
-                setSound(null, null)
-                enableVibration(false)
-                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-                setBypassDnd(true)
-            }
-
-            nm.createNotificationChannels(listOf(
-                incomingChannel,
-                NotificationChannel(CHANNEL_ACTIVE, "Active Calls", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Ongoing call controls"
-                    setShowBadge(false)
-                },
-                NotificationChannel(CHANNEL_MISSED, "Missed Calls", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                    description = "Missed call notifications"
-                }
-            ))
-        }
+        ensureNotificationChannels(this)
     }
 
     companion object {
         const val CHANNEL_INCOMING = "incoming_call_channel_v4"
         const val CHANNEL_ACTIVE = "active_call_channel"
         const val CHANNEL_MISSED = "missed_call_channel"
+
+        fun ensureNotificationChannels(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+                try { nm.deleteNotificationChannel("incoming_call_channel_v2") } catch (_: Exception) {}
+                try { nm.deleteNotificationChannel("incoming_call_channel_v3") } catch (_: Exception) {}
+
+                val incomingChannel = NotificationChannel(CHANNEL_INCOMING, "Incoming Calls", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Incoming call alerts and full screen notifications"
+                    setSound(null, null)
+                    enableVibration(false)
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                    setBypassDnd(true)
+                }
+
+                nm.createNotificationChannels(listOf(
+                    incomingChannel,
+                    NotificationChannel(CHANNEL_ACTIVE, "Active Calls", NotificationManager.IMPORTANCE_LOW).apply {
+                        description = "Ongoing call controls"
+                        setShowBadge(false)
+                    },
+                    NotificationChannel(CHANNEL_MISSED, "Missed Calls", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                        description = "Missed call notifications"
+                    }
+                ))
+            }
+        }
 
         const val NOTIFICATION_ID_INCOMING = 1
         const val NOTIFICATION_ID_MISSED = 2

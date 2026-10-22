@@ -19,6 +19,7 @@ package com.example.ui
 
 import kotlin.math.absoluteValue
 import com.example.ui.components.NovaFab
+import com.example.ui.components.LockScreenAndPopupPermissionsBanner
 import com.example.ui.theme.NovaMotion
 import com.example.ui.theme.novaCanvas
 import android.Manifest
@@ -516,8 +517,7 @@ fun MainScreen(
             }
 
             Column(modifier = Modifier.fillMaxSize()) {
-                CallSystemPermissionsCard(viewModel = viewModel)
-
+                LockScreenAndPopupPermissionsBanner()
                 val isRowSwipeEnabled by viewModel.isRowSwipeEnabled
 
                 AnimatedVisibility(

@@ -23,8 +23,12 @@ import java.io.File
  */
 class DeprecatedNavigationGuardTest {
 
-    /** Tabs with a real handler in SettingsPanel: 1 Appearance, 2 Sound, 3 SIM, 4 Speed dial, 6 Contacts, 8 Privacy. */
-    private val supportedTabs = setOf(1, 2, 3, 4, 6, 8)
+    /**
+     * Tabs with a real handler in SettingsPanel: 0 General, 1 Appearance, 2 Sound, 3 SIM,
+     * 4 Speed dial, 6 Contacts, 8 Privacy. General is included because the permanent Incoming
+     * Call Screen entry is searchable and returns to that tab.
+     */
+    private val supportedTabs = setOf(0, 1, 2, 3, 4, 6, 8)
 
     /** Class names of deferred/removed features that must stay out of production sources. */
     private val forbiddenSymbols = listOf(

@@ -17,6 +17,7 @@
 
 package com.example
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -34,17 +35,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import com.example.security.IntentGuard
 import com.example.telecom.CallAction
 import com.example.telecom.CallActionRouter
 import com.example.ui.components.CallOnlyCallSurface
-import com.example.ui.components.IncomingCallAccessNotice
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.ThemeMode
 import com.example.util.CallScreenPermissionHelper
-import com.example.util.IncomingCallAccess
-import com.example.util.IncomingCallAccessReader
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,8 +65,6 @@ class IncomingCallActivity : ComponentActivity() {
     private val callIdState = mutableStateOf(MyInCallService.NO_CALL_ID)
     private val fallbackNameState = mutableStateOf("")
     private val fallbackNumberState = mutableStateOf("")
-    private val accessState = mutableStateOf<IncomingCallAccess?>(null)
-    private val noticeDismissedState = mutableStateOf(false)
 
     /** Guards against a stale launch finishing the screen before the call has been published. */
     private var sawLiveCall = false
@@ -109,31 +106,12 @@ class IncomingCallActivity : ComponentActivity() {
                 isAmoledMode = amoledMode,
                 isM3Expressive = m3Expressive
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CallOnlyCallSurface(
-                        callId = callIdState.value,
-                        fallbackName = fallbackNameState.value,
-                        fallbackNumber = fallbackNumberState.value,
-                        onBack = { moveTaskToBack(true) }
-                    )
-
-                    val access = accessState.value
-                    if (!noticeDismissedState.value && access?.hasActionableIssue == true) {
-                        IncomingCallAccessNotice(
-                            access = access,
-                            onOpenFullScreenSettings = {
-                                CallScreenPermissionHelper.requestFullScreenIntentPermission(this@IncomingCallActivity)
-                            },
-                            onOpenNotificationSettings = {
-                                CallScreenPermissionHelper.openChannelNotificationSettings(this@IncomingCallActivity)
-                            },
-                            onDismiss = { noticeDismissedState.value = true },
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(start = 16.dp, top = 44.dp, end = 16.dp)
-                        )
-                    }
-                }
+                CallOnlyCallSurface(
+                    callId = callIdState.value,
+                    fallbackName = fallbackNameState.value,
+                    fallbackNumber = fallbackNumberState.value,
+                    onBack = { moveTaskToBack(true) }
+                )
             }
         }
 
@@ -142,9 +120,6 @@ class IncomingCallActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Re-read the real OS state after the user returns from Settings. The app never assumes
-        // that opening the settings screen granted anything.
-        refreshAccess()
         refreshCallState()
     }
 
@@ -152,7 +127,6 @@ class IncomingCallActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         readIntent(intent)
-        refreshAccess()
         refreshCallState()
     }
 
@@ -170,7 +144,6 @@ class IncomingCallActivity : ComponentActivity() {
             // A pending answer belongs to the old call id. Never let it fall through to a new
             // incoming call that arrives while the activity is reused.
             pendingAnswer = false
-            noticeDismissedState.value = false
             startStaleLaunchGuard()
         } else if (incomingId == MyInCallService.NO_CALL_ID) {
             // A missing id can never become authoritative; leave a short grace for a process
@@ -254,10 +227,6 @@ class IncomingCallActivity : ComponentActivity() {
         ) ?: return
         pendingAnswer = false
         CallManager.answerCallById(resolvedId)
-    }
-
-    private fun refreshAccess() {
-        accessState.value = IncomingCallAccessReader.read(this, MyInCallService.CHANNEL_INCOMING)
     }
 
     private fun applyLockScreenFlags() {

@@ -33,7 +33,6 @@
     <string name="filter_missed">Perdidas</string>
     <string name="filter_dialed">Realizadas</string>
     <string name="filter_received">Recibidas</string>
-    <string name="default_dialer_warning">Establecer como teléfono predeterminado para habilitar todas las funciones.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Habilitar contactos</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Conceder</string>
     <string name="btn_configure">Configurar</string>
     <string name="btn_set_default">Establecer predeterminado</string>
-    <string name="settings_lockscreen_calling_title">Llamadas a pantalla completa en pantalla de bloqueo</string>
-    <string name="settings_lockscreen_calling_sub">Muestra la interfaz de llamada entrante en pantalla completa cuando el dispositivo esté bloqueado o con pantalla apagada</string>
-    <string name="settings_full_screen_intent_warning">Las alertas de llamada a pantalla completa están restringidas por el sistema</string>
-    <string name="incoming_call_alerts_limited">Las alertas de llamadas entrantes están limitadas por los ajustes de notificaciones</string>
-    <string name="incoming_call_notification_settings_help">Permite las notificaciones y mantén el canal Llamadas entrantes con importancia alta para que las llamadas entrantes aparezcan de inmediato.</string>
     <string name="feature_enable_prompt">Active el interruptor superior para activar</string>
     <string name="feature_disabled_hint">La función está desactivada</string>
     <string name="btn_enable_feature">Activar función</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">Exportar todas las grabaciones</string>
     <string name="default_dialer_card_title">Establecer como aplicación de teléfono predeterminada</string>
     <string name="default_dialer_card_reason">Necesario para la gestión completa de llamadas y la pantalla de llamada.</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Teclado</string>
+    <string name="in_call_keypad_mode_add_call">Añadir llamada / Buscar</string>
+    <string name="in_call_add_call_search_hint">Escriba un nombre o número</string>
+    <string name="in_call_add_call_search_note">Buscar contactos no envía tonos</string>
+    <string name="in_call_add_call_no_matches">No hay contactos coincidentes. Introduzca un número de teléfono para llamar.</string>
+    <string name="in_call_add_call_selected">Llamar a %1$s</string>
+    <string name="in_call_add_call_dtmf_note">Las teclas envían tonos a la llamada actual</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Funciones de llamada en pantalla completa</string>
+    <string name="full_screen_features_subtitle">Permisos de pantalla de bloqueo y ventanas emergentes en segundo plano para llamadas entrantes</string>
+    <string name="full_screen_features_ready">No se detectó ningún ajuste de pantalla de bloqueo que bloquee la función</string>
+    <string name="full_screen_features_attention">Revisa los ajustes siguientes para mejorar la visualización de llamadas entrantes</string>
+    <string name="permission_setup_title">Configuración de llamadas entrantes</string>
+    <string name="permission_sheet_done">Hecho</string>
+    <string name="permission_ignore">Ignorar</string>
+    <string name="permission_status_label">Estado: %1$s</string>
+    <string name="permission_status_enabled">Activado</string>
+    <string name="permission_status_disabled">Desactivado</string>
+    <string name="permission_status_unable">No se puede verificar</string>
+    <string name="lock_screen_display_title">Mostrar en la pantalla de bloqueo</string>
+    <string name="lock_screen_display_desc">Ayuda a que la pantalla de llamada entrante aparezca con el dispositivo bloqueado. El comportamiento real también depende de Android, de los ajustes de notificaciones y del fabricante.</string>
+    <string name="lock_screen_display_short">Ayuda a que la interfaz de llamada aparezca con el dispositivo bloqueado.</string>
+    <string name="lock_screen_display_enable">Activar</string>
+    <string name="lock_screen_display_fallback">La página de pantalla completa no está disponible; Nova Dialer abrió una página del sistema relacionada. Usa la ruta manual de abajo si es necesario.</string>
+    <string name="background_popup_title">Mostrar ventanas emergentes en segundo plano</string>
+    <string name="background_popup_desc">Permiso específico del fabricante que puede ser necesario para las ventanas emergentes en segundo plano. Android no ofrece una API pública para leerlo ni activarlo.</string>
+    <string name="background_popup_short">Puede ser necesario para ventanas emergentes en segundo plano en algunos dispositivos.</string>
+    <string name="background_popup_fallback">Este dispositivo no ofreció una página de ventanas emergentes en segundo plano. Se abrió Información de la app; revisa Otros permisos o un ajuste del fabricante con un nombre similar.</string>
+    <string name="permission_settings_unavailable">No se pudo abrir la página de ajustes del sistema. Abre Android Ajustes, luego Aplicaciones y luego Nova Dialer manualmente.</string>
+    <string name="permission_manual_guide">Ruta manual: Android Ajustes, luego Aplicaciones y luego Nova Dialer. Para acceso a pantalla completa, abre Acceso especial de apps y luego Notificaciones de pantalla completa. Para ventanas emergentes, abre Otros permisos o el ajuste equivalente del fabricante.</string>
+    <string name="diagnostics_lock_screen">Visualización en pantalla de bloqueo: %1$s</string>
+    <string name="diagnostics_background_popup">Ventana emergente en segundo plano: %1$s</string>
+    <string name="diagnostics_notifications">Notificaciones activadas: %1$s</string>
+    <string name="diagnostics_channel">Importancia del canal entrante: %1$d</string>
+    <string name="diagnostics_default_dialer">App Teléfono predeterminada: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Configurar pantalla de bloqueo</string>
+    <string name="diagnostics_configure_background_popup">Configurar ventana emergente</string>
 </resources>

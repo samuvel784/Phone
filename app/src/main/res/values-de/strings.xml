@@ -33,7 +33,6 @@
     <string name="filter_missed">Entgangen</string>
     <string name="filter_dialed">Gewählt</string>
     <string name="filter_received">Empfangen</string>
-    <string name="default_dialer_warning">Als Standard-Telefon-App festlegen, um alle Funktionen zu nutzen.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Kontakte aktivieren</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Gewähren</string>
     <string name="btn_configure">Konfigurieren</string>
     <string name="btn_set_default">Als Standard festlegen</string>
-    <string name="settings_lockscreen_calling_title">Vollbild-Anrufe auf dem Sperrbildschirm</string>
-    <string name="settings_lockscreen_calling_sub">Eingehende Anrufe sofort im Vollbildmodus anzeigen, wenn das Gerät gesperrt oder der Bildschirm aus ist</string>
-    <string name="settings_full_screen_intent_warning">Vollbild-Anrufbenachrichtigungen sind vom System eingeschränkt</string>
-    <string name="incoming_call_alerts_limited">Benachrichtigungen für eingehende Anrufe sind durch die Benachrichtigungseinstellungen eingeschränkt</string>
-    <string name="incoming_call_notification_settings_help">Erlauben Sie Benachrichtigungen und lassen Sie den Kanal Eingehende Anrufe auf hoher Wichtigkeit, damit eingehende Anrufe sofort angezeigt werden.</string>
     <string name="feature_enable_prompt">Schalter oben zum Aktivieren umschalten</string>
     <string name="feature_disabled_hint">Funktion ist deaktiviert</string>
     <string name="btn_enable_feature">Funktion aktivieren</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">Alle Aufnahmen exportieren</string>
     <string name="default_dialer_card_title">Als Standard-Telefon-App festlegen</string>
     <string name="default_dialer_card_reason">Erforderlich für die vollständige Anrufverarbeitung und den Anrufbildschirm.</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Tastatur</string>
+    <string name="in_call_keypad_mode_add_call">Anruf hinzufügen / Suche</string>
+    <string name="in_call_add_call_search_hint">Namen oder Nummer eingeben</string>
+    <string name="in_call_add_call_search_note">Die Kontaktssuche sendet keine Töne</string>
+    <string name="in_call_add_call_no_matches">Keine passenden Kontakte. Geben Sie eine Telefonnummer zum Anrufen ein.</string>
+    <string name="in_call_add_call_selected">Anrufen %1$s</string>
+    <string name="in_call_add_call_dtmf_note">Tasten senden Töne an den aktuellen Anruf</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Vollbild-Anruffunktionen</string>
+    <string name="full_screen_features_subtitle">Sperrbildschirm-Anzeige und Hintergrund-Pop-up-Berechtigungen für eingehende Anrufe</string>
+    <string name="full_screen_features_ready">Keine blockierende Sperrbildschirm-Einstellung erkannt</string>
+    <string name="full_screen_features_attention">Prüfen Sie die Einstellungen unten, um die Anzeige eingehender Anrufe zu verbessern</string>
+    <string name="permission_setup_title">Einrichtung eingehender Anrufe</string>
+    <string name="permission_sheet_done">Fertig</string>
+    <string name="permission_ignore">Ignorieren</string>
+    <string name="permission_status_label">Status: %1$s</string>
+    <string name="permission_status_enabled">Aktiviert</string>
+    <string name="permission_status_disabled">Deaktiviert</string>
+    <string name="permission_status_unable">Nicht überprüfbar</string>
+    <string name="lock_screen_display_title">Auf dem Sperrbildschirm anzeigen</string>
+    <string name="lock_screen_display_desc">Hilft, den eingehenden Anruf bei gesperrtem Gerät anzuzeigen. Das tatsächliche Verhalten hängt auch von Android, den Benachrichtigungseinstellungen und dem Hersteller ab.</string>
+    <string name="lock_screen_display_short">Hilft, die Anrufoberfläche bei gesperrtem Gerät anzuzeigen.</string>
+    <string name="lock_screen_display_enable">Aktivieren</string>
+    <string name="lock_screen_display_fallback">Die spezielle Vollbildseite ist nicht verfügbar; Nova Dialer hat eine verwandte Systemseite geöffnet. Verwenden Sie bei Bedarf den manuellen Pfad unten.</string>
+    <string name="background_popup_title">Pop-up-Fenster im Hintergrund anzeigen</string>
+    <string name="background_popup_desc">Eine herstellerspezifische Berechtigung, die für Pop-up-Fenster im Hintergrund erforderlich sein kann. Android bietet keine öffentliche API zum Auslesen oder Aktivieren.</string>
+    <string name="background_popup_short">Kann auf manchen Geräten für Pop-up-Fenster im Hintergrund erforderlich sein.</string>
+    <string name="background_popup_fallback">Dieses Gerät hat keine Seite für Hintergrund-Pop-ups bereitgestellt. App-Info wurde geöffnet; prüfen Sie Andere Berechtigungen oder eine ähnlich benannte Herstellereinstellung.</string>
+    <string name="permission_settings_unavailable">Die Systemeinstellungsseite konnte nicht geöffnet werden. Öffnen Sie Android Einstellungen, dann Apps, dann Nova Dialer manuell.</string>
+    <string name="permission_manual_guide">Manueller Pfad: Android Einstellungen, dann Apps, dann Nova Dialer. Für Vollbildzugriff: Spezieller App-Zugriff, dann Vollbild-Benachrichtigungen. Für Hintergrund-Pop-ups: Andere Berechtigungen oder die entsprechende Herstellereinstellung.</string>
+    <string name="diagnostics_lock_screen">Sperrbildschirm-Anzeige: %1$s</string>
+    <string name="diagnostics_background_popup">Hintergrund-Pop-up: %1$s</string>
+    <string name="diagnostics_notifications">Benachrichtigungen aktiviert: %1$s</string>
+    <string name="diagnostics_channel">Wichtigkeit des eingehenden Kanals: %1$d</string>
+    <string name="diagnostics_default_dialer">Standard-Telefon-App: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Sperrbildschirm konfigurieren</string>
+    <string name="diagnostics_configure_background_popup">Hintergrund-Pop-up konfigurieren</string>
 </resources>

@@ -33,7 +33,6 @@
     <string name="filter_missed">Manqués</string>
     <string name="filter_dialed">Émis</string>
     <string name="filter_received">Reçus</string>
-    <string name="default_dialer_warning">Définir comme téléphone par défaut pour activer toutes les fonctionnalités.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Autoriser les contacts</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Accorder</string>
     <string name="btn_configure">Configurer</string>
     <string name="btn_set_default">Définir par défaut</string>
-    <string name="settings_lockscreen_calling_title">Appels plein écran sur l\'écran verrouillé</string>
-    <string name="settings_lockscreen_calling_sub">Affiche l\'interface d\'appel entrant en plein écran lorsque l\'appareil est verrouillé ou éteint</string>
-    <string name="settings_full_screen_intent_warning">Les alertes d\'appel plein écran sont restreintes par le système</string>
-    <string name="incoming_call_alerts_limited">Les alertes des appels entrants sont limitées par les paramètres de notification</string>
-    <string name="incoming_call_notification_settings_help">Autorisez les notifications et conservez le canal Appels entrants en importance élevée afin que les appels entrants apparaissent rapidement.</string>
     <string name="feature_enable_prompt">Basculez l\'interrupteur ci-dessus pour activer</string>
     <string name="feature_disabled_hint">La fonctionnalité est désactivée</string>
     <string name="btn_enable_feature">Activer la fonctionnalité</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">Exporter tous les enregistrements</string>
     <string name="default_dialer_card_title">Définir comme application téléphone par défaut</string>
     <string name="default_dialer_card_reason">Nécessaire pour la gestion complète des appels et l’écran d’appel.</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Clavier</string>
+    <string name="in_call_keypad_mode_add_call">Ajouter un appel / Rechercher</string>
+    <string name="in_call_add_call_search_hint">Saisir un nom ou un numéro</string>
+    <string name="in_call_add_call_search_note">La recherche de contacts n\'envoie pas de tonalités</string>
+    <string name="in_call_add_call_no_matches">Aucun contact correspondant. Saisissez un numéro de téléphone à appeler.</string>
+    <string name="in_call_add_call_selected">Appeler %1$s</string>
+    <string name="in_call_add_call_dtmf_note">Les touches envoient des tonalités à l\'appel en cours</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Fonctions d’appel plein écran</string>
+    <string name="full_screen_features_subtitle">Autorisations d’affichage sur écran verrouillé et de fenêtres contextuelles en arrière-plan pour les appels entrants</string>
+    <string name="full_screen_features_ready">Aucun réglage d’écran verrouillé bloquant détecté</string>
+    <string name="full_screen_features_attention">Vérifiez les réglages ci-dessous pour améliorer l’affichage des appels entrants</string>
+    <string name="permission_setup_title">Configuration des appels entrants</string>
+    <string name="permission_sheet_done">Terminé</string>
+    <string name="permission_ignore">Ignorer</string>
+    <string name="permission_status_label">État : %1$s</string>
+    <string name="permission_status_enabled">Activé</string>
+    <string name="permission_status_disabled">Désactivé</string>
+    <string name="permission_status_unable">Impossible à vérifier</string>
+    <string name="lock_screen_display_title">Afficher sur l’écran verrouillé</string>
+    <string name="lock_screen_display_desc">Aide l’écran d’appel entrant à s’afficher lorsque l’appareil est verrouillé. Le comportement réel dépend aussi d’Android, des réglages de notification et du fabricant.</string>
+    <string name="lock_screen_display_short">Aide l’interface d’appel à s’afficher lorsque l’appareil est verrouillé.</string>
+    <string name="lock_screen_display_enable">Activer</string>
+    <string name="lock_screen_display_fallback">La page plein écran dédiée est indisponible ; Nova Dialer a ouvert une page système associée. Utilisez le chemin manuel ci-dessous si nécessaire.</string>
+    <string name="background_popup_title">Afficher des fenêtres contextuelles en arrière-plan</string>
+    <string name="background_popup_desc">Autorisation propre au fabricant qui peut être nécessaire pour les fenêtres contextuelles en arrière-plan. Android ne fournit aucune API publique pour la lire ou l’activer.</string>
+    <string name="background_popup_short">Peut être nécessaire pour les fenêtres contextuelles en arrière-plan sur certains appareils.</string>
+    <string name="background_popup_fallback">Cet appareil n’a pas exposé de page de fenêtres contextuelles en arrière-plan. Les informations de l’application ont été ouvertes ; vérifiez Autres autorisations ou un réglage du fabricant au nom similaire.</string>
+    <string name="permission_settings_unavailable">La page de réglages système n’a pas pu être ouverte. Ouvrez manuellement Android Paramètres, puis Applications, puis Nova Dialer.</string>
+    <string name="permission_manual_guide">Chemin manuel : Android Paramètres, puis Applications, puis Nova Dialer. Pour l’accès plein écran, ouvrez Accès spéciaux des applis, puis Notifications plein écran. Pour les fenêtres contextuelles, ouvrez Autres autorisations ou le réglage équivalent du fabricant.</string>
+    <string name="diagnostics_lock_screen">Affichage sur écran verrouillé : %1$s</string>
+    <string name="diagnostics_background_popup">Fenêtre contextuelle en arrière-plan : %1$s</string>
+    <string name="diagnostics_notifications">Notifications activées : %1$s</string>
+    <string name="diagnostics_channel">Importance du canal entrant : %1$d</string>
+    <string name="diagnostics_default_dialer">Application Téléphone par défaut : %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Configurer l’écran verrouillé</string>
+    <string name="diagnostics_configure_background_popup">Configurer la fenêtre contextuelle</string>
 </resources>

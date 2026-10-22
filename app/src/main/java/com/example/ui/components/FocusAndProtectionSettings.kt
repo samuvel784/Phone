@@ -115,10 +115,8 @@ fun FocusAndProtectionSettings(
     var pickerTarget by remember { mutableStateOf<Int?>(null) }
 
     var hasScreeningRole by remember { mutableStateOf(CallScreenPermissionHelper.hasCallScreeningRole(context)) }
-    var canFullScreen by remember { mutableStateOf(CallScreenPermissionHelper.canUseFullScreenIntent(context)) }
     val screeningLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         hasScreeningRole = CallScreenPermissionHelper.hasCallScreeningRole(context)
-        canFullScreen = CallScreenPermissionHelper.canUseFullScreenIntent(context)
     }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -126,7 +124,6 @@ fun FocusAndProtectionSettings(
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 hasScreeningRole = CallScreenPermissionHelper.hasCallScreeningRole(context)
-                canFullScreen = CallScreenPermissionHelper.canUseFullScreenIntent(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -192,54 +189,6 @@ fun FocusAndProtectionSettings(
                         CallScreenPermissionHelper.requestCallScreeningRole(context, screeningLauncher)
                     }) {
                         Text(stringResource(R.string.btn_grant))
-                    }
-                }
-            }
-        }
-
-        // ------------------------------------------------- FULL SCREEN INTENT PERMISSION (ANDROID 14+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            HighlightableCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                cardBgColor = cardBgColor,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (canFullScreen) Icons.Default.CheckCircle else Icons.Default.LockOpen,
-                        contentDescription = null,
-                        tint = if (canFullScreen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_full_screen_intent_warning),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(if (canFullScreen) R.string.screening_role_granted else R.string.btn_configure),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    if (!canFullScreen) {
-                        Spacer(Modifier.width(12.dp))
-                        Button(onClick = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                            CallScreenPermissionHelper.requestFullScreenIntentPermission(context)
-                        }) {
-                            Text(stringResource(R.string.btn_configure))
-                        }
                     }
                 }
             }

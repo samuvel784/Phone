@@ -166,6 +166,13 @@ fun GeneralSettings(
             SettingsSearchItem("Default Save Account", "Set default account location for saving newly created contacts", "Contacts & Data", 6, Icons.Default.AccountBox),
 
             // 8. PRIVACY & ABOUT
+            SettingsSearchItem(
+                "Full-Screen Call Features",
+                "Lock-screen display, full-screen access and background pop-up permissions for incoming calls",
+                "General",
+                0,
+                Icons.Default.Fullscreen
+            ),
             SettingsSearchItem("Privacy & Security Settings", "App version, pocket protection & app specs", "Privacy & About", 8, Icons.Default.Lock),
             SettingsSearchItem("Pocket Protection Mode", "Prevent accidental pocket touches using proximity sensor", "Privacy & About", 8, Icons.Default.PhonelinkLock),
             SettingsSearchItem("App Version & Device Specifications", "View application version, build numbers, and system permissions", "Privacy & About", 8, Icons.Default.Info),
@@ -201,6 +208,13 @@ fun GeneralSettings(
                 searchQuery = searchQuery,
                 onQueryChange = { searchQuery = it }
             )
+        }
+
+        if (searchQuery.isBlank()) {
+            // Permanent entry point. Dismissing the top banner must never remove this.
+            item {
+                FullScreenCallPermissionCard()
+            }
         }
 
         if (searchQuery.isNotBlank()) {
@@ -292,10 +306,6 @@ fun GeneralSettings(
             }
         } else {
             // Standard category cards
-            // System & Calling permissions
-            item {
-                CallSystemPermissionsCard(viewModel = viewModel)
-            }
 
             // 1. Appearance
             item {

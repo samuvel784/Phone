@@ -33,7 +33,6 @@
     <string name="filter_missed">未接</string>
     <string name="filter_dialed">已拨</string>
     <string name="filter_received">已接</string>
-    <string name="default_dialer_warning">设为默认拨号应用即可启用全部功能。</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">启用手机联系人</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">授予</string>
     <string name="btn_configure">配置</string>
     <string name="btn_set_default">设为默认</string>
-    <string name="settings_lockscreen_calling_title">锁屏全屏来电界面</string>
-    <string name="settings_lockscreen_calling_sub">设备锁屏或息屏时立即显示全屏来电接听界面</string>
-    <string name="settings_full_screen_intent_warning">全屏来电通知受到系统限制</string>
-    <string name="incoming_call_alerts_limited">来电提醒受通知设置限制</string>
-    <string name="incoming_call_notification_settings_help">允许通知并将来电频道保持为高重要性，以便来电及时显示。</string>
     <string name="feature_enable_prompt">开启上方开关即可启用</string>
     <string name="feature_disabled_hint">功能已停用</string>
     <string name="btn_enable_feature">启用功能</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">导出所有录音</string>
     <string name="default_dialer_card_title">设为默认电话应用</string>
     <string name="default_dialer_card_reason">完整通话处理和通话界面需要此项。</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">键盘</string>
+    <string name="in_call_keypad_mode_add_call">添加通话 / 搜索</string>
+    <string name="in_call_add_call_search_hint">输入姓名或号码</string>
+    <string name="in_call_add_call_search_note">搜索联系人不会发送按键音</string>
+    <string name="in_call_add_call_no_matches">没有匹配的联系人。请输入要拨打的电话号码。</string>
+    <string name="in_call_add_call_selected">呼叫 %1$s</string>
+    <string name="in_call_add_call_dtmf_note">按键会向当前通话发送提示音</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">全屏通话功能</string>
+    <string name="full_screen_features_subtitle">来电的锁屏显示和后台弹出界面权限</string>
+    <string name="full_screen_features_ready">未检测到阻止锁屏显示的设置</string>
+    <string name="full_screen_features_attention">请查看以下设置以改善来电显示</string>
+    <string name="permission_setup_title">来电设置</string>
+    <string name="permission_sheet_done">完成</string>
+    <string name="permission_ignore">忽略</string>
+    <string name="permission_status_label">状态：%1$s</string>
+    <string name="permission_status_enabled">已启用</string>
+    <string name="permission_status_disabled">已禁用</string>
+    <string name="permission_status_unable">无法验证</string>
+    <string name="lock_screen_display_title">在锁屏上显示</string>
+    <string name="lock_screen_display_desc">有助于在设备锁定时显示来电界面。实际行为还取决于 Android、通知设置和设备制造商。</string>
+    <string name="lock_screen_display_short">有助于在设备锁定时显示来电界面。</string>
+    <string name="lock_screen_display_enable">启用</string>
+    <string name="lock_screen_display_fallback">专用的全屏页面不可用；Nova Dialer 已打开相关的系统页面。如有需要，请使用下面的手动路径。</string>
+    <string name="background_popup_title">在后台显示弹出窗口</string>
+    <string name="background_popup_desc">制造商特定的权限，后台弹出窗口可能需要此权限。Android 不提供读取或启用该权限的公共 API。</string>
+    <string name="background_popup_short">某些设备上的后台弹出窗口可能需要此权限。</string>
+    <string name="background_popup_fallback">此设备未向 Nova Dialer 提供后台弹出窗口页面。已打开应用信息；请检查其他权限或名称相似的制造商设置。</string>
+    <string name="permission_settings_unavailable">无法打开系统设置页面。请手动打开 Android 设置，然后应用，然后 Nova Dialer。</string>
+    <string name="permission_manual_guide">手动路径：Android 设置，然后应用，然后 Nova Dialer。要使用全屏访问，请打开特殊应用权限，然后全屏通知。要设置后台弹出窗口，请打开其他权限或等效的制造商设置。</string>
+    <string name="diagnostics_lock_screen">锁屏显示：%1$s</string>
+    <string name="diagnostics_background_popup">后台弹出窗口：%1$s</string>
+    <string name="diagnostics_notifications">通知已启用：%1$s</string>
+    <string name="diagnostics_channel">来电渠道重要性：%1$d</string>
+    <string name="diagnostics_default_dialer">默认电话应用：%1$s</string>
+    <string name="diagnostics_configure_lock_screen">配置锁屏</string>
+    <string name="diagnostics_configure_background_popup">配置后台弹出窗口</string>
 </resources>

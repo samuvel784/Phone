@@ -75,6 +75,9 @@ object CallManager {
 
     /** Window in which an identical outgoing number is treated as a duplicate tap. */
     private const val DUPLICATE_CALL_WINDOW_MS = 2000L
+
+    /** How long a dispatched answer may remain pending before the UI falls back to Telecom state. */
+    private const val ANSWER_PENDING_TIMEOUT_MS = 10_000L
     @Volatile
     private var lastPlacedNumber: String = ""
     @Volatile
@@ -116,11 +119,34 @@ object CallManager {
     private val _waitingCall = MutableStateFlow<Call?>(null)
     val waitingCall: StateFlow<Call?> = _waitingCall.asStateFlow()
 
-    private val _calls = MutableStateFlow<List<Call>>(emptyList())
+    /**
+     * [MutableStateFlow] suppresses equal values. Telecom mutates the existing [Call] object on a
+     * state change, so a normal `ArrayList` copy with the same references compares equal and the
+     * collector never sees the update. Publishing an identity-based list makes every callback a
+     * real emission, even when the list contents are unchanged.
+     */
+    private val _calls = MutableStateFlow<List<Call>>(CallList(emptyList()))
     val calls: StateFlow<List<Call>> = _calls.asStateFlow()
 
     private val _callState = MutableStateFlow(Call.STATE_DISCONNECTED)
     val callState: StateFlow<Int> = _callState.asStateFlow()
+
+    /** A call whose answer was dispatched and whose Telecom transition is still pending. */
+    private val _pendingAnswerCallId = MutableStateFlow<Long?>(null)
+    val pendingAnswerCallId: StateFlow<Long?> = _pendingAnswerCallId.asStateFlow()
+
+    /**
+     * Prevents a second `Call.answer()` for the same call while Telecom has not yet published the
+     * state transition. A stale notification tap or a double tap must not answer twice.
+     */
+    private val answerRequestLock = Any()
+    private val answerRequests = mutableSetOf<Long>()
+
+    /** Identity-equality list so StateFlow emits on every Telecom callback. */
+    internal class CallList<T>(private val delegate: List<T>) : List<T> by delegate {
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
+    }
 
     private val _audioState = MutableStateFlow<CallAudioState?>(null)
     val audioState: StateFlow<CallAudioState?> = _audioState.asStateFlow()
@@ -259,6 +285,9 @@ object CallManager {
     private val callCallback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
+            if (state != Call.STATE_RINGING) {
+                clearAnswerRequest(call)
+            }
             notifyCallsChanged()
 
             if (state == Call.STATE_DISCONNECTED) {
@@ -314,8 +343,8 @@ object CallManager {
     }
 
     private fun notifyCallsChanged() {
-        val currentList = ArrayList(_calls.value)
-        _calls.value = currentList
+        val currentList = _calls.value.toList()
+        _calls.value = CallList(currentList)
         _isConferenceActive.value = currentList.any { it.safeState != Call.STATE_DISCONNECTED && isConference(it) } ||
                 isConference(_currentCall.value)
         clearSettledMergeRequest()
@@ -473,18 +502,22 @@ object CallManager {
 
     /** Speaker button behaviour: reflects the real route and requests the correct target. */
     fun toggleSpeaker() {
+        val call = _currentCall.value ?: return
+        if (call.safeState != Call.STATE_ACTIVE && call.safeState != Call.STATE_HOLDING) return
         requestAudioRoute(AudioRoutePolicy.speakerToggleTarget(_routeState.value))
     }
 
     /** Bluetooth button behaviour: only meaningful when a Bluetooth call endpoint exists. */
     fun toggleBluetooth() {
+        val call = _currentCall.value ?: return
+        if (call.safeState != Call.STATE_ACTIVE && call.safeState != Call.STATE_HOLDING) return
         AudioRoutePolicy.bluetoothToggleTarget(_routeState.value)?.let { requestAudioRoute(it) }
     }
 
     fun addCall(call: Call) {
         callId(call) // register a stable id before anything can reference the call
         if (call !in _calls.value) {
-            _calls.value = _calls.value + call
+            _calls.value = CallList(_calls.value + call)
             call.registerCallback(callCallback)
             // Seed the conferenceable set from the current details so merge decisions are correct
             // even if onConferenceableCallsChanged is only delivered on the next change.
@@ -504,8 +537,9 @@ object CallManager {
 
     fun removeCall(call: Call) {
         val removedCallId = callId(call)
+        clearAnswerRequest(call)
         if (call in _calls.value) {
-            _calls.value = _calls.value - call
+            _calls.value = CallList(_calls.value - call)
             call.unregisterCallback(callCallback)
         }
         synchronized(callIds) {
@@ -1011,12 +1045,50 @@ object CallManager {
     /** Answers the ringing call with the given id; no-op when it already changed state. */
     fun answerCallById(id: Long): Boolean {
         val call = callById(id) ?: return false
+        if (callId(call) != id) return false
+        return dispatchAnswer(call)
+    }
+
+    /**
+     * Answers exactly [call] once. The guard closes the window between `Call.answer()` and
+     * Telecom's first state callback, during which the UI still reads [Call.STATE_RINGING].
+     */
+    private fun dispatchAnswer(call: Call): Boolean {
         if (call.safeState != Call.STATE_RINGING) return false
+        val id = callId(call)
+        synchronized(answerRequestLock) {
+            if (!answerRequests.add(id)) return false
+        }
+        _pendingAnswerCallId.value = id
         return try {
             call.answer(VideoProfile.STATE_AUDIO_ONLY)
+            // If a stack never publishes the transition, do not leave the screen claiming that an
+            // answer is still in flight forever. The UI will return to the authoritative state.
+            scope.launch {
+                delay(ANSWER_PENDING_TIMEOUT_MS.milliseconds)
+                synchronized(answerRequestLock) {
+                    if (answerRequests.remove(id) && _pendingAnswerCallId.value == id &&
+                        callById(id)?.safeState == Call.STATE_RINGING
+                    ) {
+                        _pendingAnswerCallId.value = null
+                    }
+                }
+            }
             true
         } catch (_: Exception) {
+            synchronized(answerRequestLock) {
+                answerRequests.remove(id)
+                if (_pendingAnswerCallId.value == id) _pendingAnswerCallId.value = null
+            }
             false
+        }
+    }
+
+    private fun clearAnswerRequest(call: Call) {
+        val id = callId(call)
+        synchronized(answerRequestLock) {
+            answerRequests.remove(id)
+            if (_pendingAnswerCallId.value == id) _pendingAnswerCallId.value = null
         }
     }
 
@@ -1047,12 +1119,7 @@ object CallManager {
                 (caps and (Call.Details.CAPABILITY_HOLD or Call.Details.CAPABILITY_SUPPORT_HOLD)) != 0
             } == true }
             ?.let { runCatching { it.hold() } }
-        val answered = try {
-            waiting.answer(VideoProfile.STATE_AUDIO_ONLY)
-            true
-        } catch (_: Exception) {
-            false
-        }
+        val answered = dispatchAnswer(waiting)
         if (answered) updateWaitingCall(null)
         return answered
     }
@@ -1079,11 +1146,7 @@ object CallManager {
 
     fun answerCall(targetCall: Call? = null) {
         val call = targetCall ?: _waitingCall.value ?: _currentCall.value ?: return
-        try {
-            if (call.safeState == Call.STATE_RINGING) {
-                call.answer(VideoProfile.STATE_AUDIO_ONLY)
-            }
-        } catch (_: Exception) {}
+        dispatchAnswer(call)
     }
 
     fun answer() { answerCall() }
@@ -1098,7 +1161,11 @@ object CallManager {
         } catch (_: Exception) {}
     }
 
-    fun setMuted(muted: Boolean) { inCallService?.setMuted(muted) }
+    fun setMuted(muted: Boolean) {
+        val call = _currentCall.value ?: return
+        if (call.safeState != Call.STATE_ACTIVE && call.safeState != Call.STATE_HOLDING) return
+        inCallService?.setMuted(muted)
+    }
 
     /**
      * Speaker/handset toggle used by the notification actions and the Dynamic Island pill.
@@ -1142,6 +1209,7 @@ object CallManager {
 
     fun playDtmf(key: Char) {
         val call = _currentCall.value ?: return
+        if (call.safeState != Call.STATE_ACTIVE) return
         dtmfJob?.cancel()
         try { call.playDtmfTone(key) } catch (_: Exception) {}
         dtmfJob = scope.launch(Dispatchers.Default) {

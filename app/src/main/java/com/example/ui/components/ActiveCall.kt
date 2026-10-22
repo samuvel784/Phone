@@ -64,9 +64,11 @@ import com.example.ui.theme.LocalAmoledMode
 import com.example.util.CallAudioHelper
 import com.example.util.CallAudioRecorder
 import com.example.util.CallGestureSensorManager
+import com.example.util.MultiSimManager
 import com.example.util.RecordingDisclosure
 import com.example.util.RecordingFeedbackHelper
 import com.example.util.RichHapticEngine
+import kotlinx.coroutines.delay
 
 @Composable
 fun ActiveCallScreen(
@@ -124,7 +126,74 @@ fun ActiveCallScreen(
     val multiCallState by CallManager.multiCallState.collectAsStateWithLifecycle()
 
     var isAddCallDialogOpen by remember { mutableStateOf(false) }
+    var isInCallDialpadOpen by remember { mutableStateOf(false) }
+    var showAddCallSimDialog by remember { mutableStateOf(false) }
+    var pendingAddCallName by remember { mutableStateOf("") }
+    var pendingAddCallNumber by remember { mutableStateOf("") }
+    var addCallInFlight by remember { mutableStateOf(false) }
     var fakeActiveStartTimestamp by remember { mutableLongStateOf(0L) }
+    val callableSims = remember(context) { MultiSimManager.getCallableSims(context) }
+
+    // A successful second call adds a live call; a failed one changes nothing. Either way the
+    // one-shot submission guard can be released once Telecom reports the new shape.
+    LaunchedEffect(multiCallState.liveCallCount) {
+        addCallInFlight = false
+    }
+    LaunchedEffect(addCallInFlight) {
+        if (addCallInFlight) {
+            delay(5_000L)
+            if (multiCallState.liveCallCount < 2) addCallInFlight = false
+        }
+    }
+
+    fun finishAddCall(name: String, number: String, sim: String): Boolean {
+        if (addCallInFlight) return false
+        addCallInFlight = true
+        val placed = CallManager.placeCall(context, number, sim)
+        if (placed) {
+            isAddCallDialogOpen = false
+            isInCallDialpadOpen = false
+            showAddCallSimDialog = false
+            pendingAddCallName = ""
+            pendingAddCallNumber = ""
+        } else {
+            addCallInFlight = false
+            Toast.makeText(
+                context,
+                context.getString(R.string.add_call_unavailable),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        return placed
+    }
+
+    fun beginAddCall(name: String, number: String): Boolean {
+        val trimmed = number.trim()
+        if (trimmed.isEmpty() || addCallInFlight || !multiCallState.canAddCall) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.add_call_unavailable),
+                Toast.LENGTH_SHORT
+            ).show()
+            return false
+        }
+        val isEmergency = CallManager.isEmergencyNumber(trimmed)
+        if (!isEmergency && preferredSim.equals("Ask", ignoreCase = true) && callableSims.size >= 2) {
+            pendingAddCallName = name
+            pendingAddCallNumber = trimmed
+            isAddCallDialogOpen = false
+            isInCallDialpadOpen = false
+            showAddCallSimDialog = true
+            return true
+        }
+        val effectiveSim = when {
+            isEmergency -> "Ask"
+            preferredSim.equals("Ask", ignoreCase = true) && callableSims.size == 1 ->
+                "SIM ${callableSims.first().slotIndex + 1}"
+            else -> preferredSim
+        }
+        return finishAddCall(name, trimmed, effectiveSim)
+    }
 
     val isMuted = routeState.isMuted
     val isSpeakerOn = routeState.isSpeakerActive
@@ -185,11 +254,14 @@ fun ActiveCallScreen(
     // The other live call, when two calls exist, resolved from the Telecom-driven multi-call state
     // so the status card and its per-call End action always target a real, current call.
     val secondaryCall = remember(multiCallState.secondary, allCalls) {
-        multiCallState.secondary?.let { CallManager.callById(it.id) }
+        multiCallState.secondary
+            ?.let { CallManager.callById(it.id) }
+            // Defense in depth: a conference child/participant must never be rendered as a
+            // separate held line, even if a stack still reports it as another live call.
+            ?.takeIf { !CallManager.isConference(it) }
     }
 
     var isQuickDeclineMenuOpen by remember { mutableStateOf(false) }
-    var isInCallDialpadOpen by remember { mutableStateOf(false) }
     // Shown once, before the first manual recording, until the user accepts the notice.
     var showRecordingDisclosure by remember { mutableStateOf(false) }
 
@@ -206,10 +278,14 @@ fun ActiveCallScreen(
                 it.children.isNotEmpty() || it.details?.hasProperty(Call.Details.PROPERTY_CONFERENCE) == true
             }
             if (conferenceCall != null && conferenceCall.children.isNotEmpty()) {
-                conferenceCall.children.map { child ->
-                    val num = child.details?.handle?.schemeSpecificPart ?: ""
-                    val name = uiContacts.find { it.number == num }?.name ?: num
-                    Pair(name, num)
+                conferenceCall.children.mapNotNull { child ->
+                    val num = child.details?.handle?.schemeSpecificPart.orEmpty()
+                    val name = uiContacts.find { it.number == num }?.name
+                        ?: child.details?.callerDisplayName?.takeIf { it.isNotBlank() }
+                        ?: num
+                    // A participant with no name and no number must not create an empty
+                    // " • " separator line in the conference header.
+                    if (name.isBlank() && num.isBlank()) null else Pair(name, num)
                 }
             } else {
                 val num = currentCall?.details?.handle?.schemeSpecificPart ?: contactNumber
@@ -422,7 +498,9 @@ fun ActiveCallScreen(
                         InCallKeypad(
                             onClose = { isInCallDialpadOpen = false },
                             avatarShapeType = avatarShapeType,
-                            contacts = uiContacts
+                            contacts = uiContacts,
+                            isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
+                            onAddCall = { name, number -> beginAddCall(name, number) }
                         )
                     } else {
                         InCallAvatarDisplay(
@@ -443,17 +521,31 @@ fun ActiveCallScreen(
                             onAddCall = { finalName, number ->
                                 if (isFake) {
                                     fakeParticipants = fakeParticipants + Pair(finalName, number)
-                                } else if (!CallManager.placeCall(context, number)) {
-                                    // The call manager refuses a second call when Telecom already has
-                                    // two live calls or the same number was just dialled.
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.add_call_unavailable),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                } else {
+                                    // Reuses CallManager.placeCall(), including its duplicate guard,
+                                    // multi-SIM routing and Telecom fallback. The callback returns
+                                    // false only when the request could not be dispatched.
+                                    beginAddCall(finalName, number)
                                 }
                             },
                             avatarShapeType = avatarShapeType
+                        )
+                    }
+
+                    if (showAddCallSimDialog && pendingAddCallNumber.isNotBlank() && callableSims.size >= 2) {
+                        SimSelectDialog(
+                            context = context,
+                            pendingCallNumber = pendingAddCallNumber,
+                            sims = callableSims,
+                            onDismiss = {
+                                showAddCallSimDialog = false
+                                pendingAddCallName = ""
+                                pendingAddCallNumber = ""
+                            },
+                            onSimSelected = { simLabel ->
+                                showAddCallSimDialog = false
+                                finishAddCall(pendingAddCallName, pendingAddCallNumber, simLabel)
+                            }
                         )
                     }
 
@@ -513,6 +605,7 @@ fun ActiveCallScreen(
                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                             isInCallDialpadOpen = !isInCallDialpadOpen
                         },
+                        isCallActive = (currentCallState == Call.STATE_ACTIVE),
                         isMuted = isMuted,
                         onToggleMute = {
                             val next = !isMuted

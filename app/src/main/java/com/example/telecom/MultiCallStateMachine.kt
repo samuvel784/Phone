@@ -148,7 +148,18 @@ object MultiCallStateMachine {
         val ringing = live.filter { it.isRinging }
 
         val primary = pickPrimary(live, conference, preferredPrimaryId)
-        val secondary = pickSecondary(live, primary)
+        // Once Telecom reports a real conference, its children/participants are not independent
+        // held calls. Keep a genuinely separate live call as the secondary, but never expose a
+        // conference participant as a "pause/held" second line.
+        val secondary = if (conference != null) {
+            live.firstOrNull {
+                it.id != conference.id &&
+                    !it.isConference &&
+                    it.id != primary?.id
+            }
+        } else {
+            pickSecondary(live, primary)
+        }
 
         val liveCount = live.size
         val inProgressSecond = liveCount >= 2 && (dialing.isNotEmpty() || ringing.isNotEmpty())

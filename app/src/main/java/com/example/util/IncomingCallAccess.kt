@@ -53,6 +53,21 @@ data class IncomingCallAccess(
         get() = needsFullScreenSettings || needsNotificationSettings
 }
 
+/**
+ * Combined settings status for the permanent "Incoming Call Screen" entry. The default Phone role
+ * is reported independently from notification delivery and the Android 14+ full-screen grant.
+ */
+data class IncomingCallScreenState(
+    val access: IncomingCallAccess,
+    val isDefaultDialer: Boolean
+) {
+    val needsAttention: Boolean
+        get() = !isDefaultDialer || access.hasActionableIssue
+
+    val fullScreenReady: Boolean
+        get() = !access.fullScreenPermissionSupported || access.fullScreenIntentAllowed
+}
+
 object IncomingCallAccessReader {
 
     fun read(context: Context, channelId: String): IncomingCallAccess {

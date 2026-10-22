@@ -33,7 +33,6 @@
     <string name="filter_missed">Missed</string>
     <string name="filter_dialed">Dialed</string>
     <string name="filter_received">Received</string>
-    <string name="default_dialer_warning">Set as default dialer to enable all features.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Enable Phone Contacts</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Grant</string>
     <string name="btn_configure">Configure</string>
     <string name="btn_set_default">Set Default</string>
-    <string name="settings_lockscreen_calling_title">Full Screen Calls on Lock Screen</string>
-    <string name="settings_lockscreen_calling_sub">Display full-screen incoming call UI instantly when device is locked or screen is off</string>
-    <string name="settings_full_screen_intent_warning">Full-screen incoming call alerts restricted by system</string>
-    <string name="incoming_call_alerts_limited">Incoming call alerts are limited by notification settings</string>
-    <string name="incoming_call_notification_settings_help">Allow notifications and keep the Incoming Calls channel at high importance so incoming calls appear promptly.</string>
     <string name="feature_enable_prompt">Toggle the switch above to activate</string>
     <string name="feature_disabled_hint">Feature is disabled</string>
     <string name="btn_enable_feature">Enable Feature</string>
@@ -618,4 +612,44 @@
     <string name="recording_share_warning_confirm">Share unencrypted copy</string>
     <string name="recording_export_all">Export all recordings</string>
     <string name="default_dialer_card_title">Set as Default Phone App</string>
-    <string name="default_dialer_card_reason">Needed for full call handling and the in-call screen.</string></resources>
+    <string name="default_dialer_card_reason">Needed for full call handling and the in-call screen.</string>
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Keypad</string>
+    <string name="in_call_keypad_mode_add_call">Add call / Search</string>
+    <string name="in_call_add_call_search_hint">Type a name or number</string>
+    <string name="in_call_add_call_search_note">Searching contacts does not send tones</string>
+    <string name="in_call_add_call_no_matches">No matching contacts. Enter a phone number to call.</string>
+    <string name="in_call_add_call_selected">Call %1$s</string>
+    <string name="in_call_add_call_dtmf_note">Keys send tones to the current call</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Full-Screen Call Features</string>
+    <string name="full_screen_features_subtitle">Lock-screen display and background pop-up permissions for incoming calls</string>
+    <string name="full_screen_features_ready">No blocking lock-screen setting detected</string>
+    <string name="full_screen_features_attention">Review the settings below to improve incoming-call display</string>
+    <string name="permission_setup_title">Incoming Call Setup</string>
+    <string name="permission_sheet_done">Done</string>
+    <string name="permission_ignore">Ignore</string>
+    <string name="permission_status_label">Status: %1$s</string>
+    <string name="permission_status_enabled">Enabled</string>
+    <string name="permission_status_disabled">Disabled</string>
+    <string name="permission_status_unable">Unable to verify</string>
+    <string name="lock_screen_display_title">Show on Lock Screen</string>
+    <string name="lock_screen_display_desc">Helps the incoming-call screen appear while the device is locked. Actual behavior also depends on Android, notification settings and your device manufacturer.</string>
+    <string name="lock_screen_display_short">Helps incoming-call UI appear while the device is locked.</string>
+    <string name="lock_screen_display_enable">Enable</string>
+    <string name="lock_screen_display_fallback">The dedicated full-screen page is unavailable; Nova Dialer opened a related system page. Use the manual path below if needed.</string>
+    <string name="background_popup_title">Display Pop-up Windows While Running in the Background</string>
+    <string name="background_popup_desc">A manufacturer-specific permission that may be required for background pop-up windows. Android does not provide a public API to read or enable it.</string>
+    <string name="background_popup_short">May be required for background pop-up windows on some devices.</string>
+    <string name="background_popup_fallback">This device did not expose a background pop-up page to Nova Dialer. App Info was opened; check Other permissions or a similarly named manufacturer setting.</string>
+    <string name="permission_settings_unavailable">The system settings page could not be opened. Open Android Settings, then Apps, then Nova Dialer manually.</string>
+    <string name="permission_manual_guide">Manual path: Android Settings, then Apps, then Nova Dialer. For full-screen access, open Special app access, then Full-screen notifications. For background pop-ups, open Other permissions or the equivalent manufacturer setting.</string>
+    <string name="diagnostics_lock_screen">Lock-screen display: %1$s</string>
+    <string name="diagnostics_background_popup">Background pop-up: %1$s</string>
+    <string name="diagnostics_notifications">Notifications enabled: %1$s</string>
+    <string name="diagnostics_channel">Incoming channel importance: %1$d</string>
+    <string name="diagnostics_default_dialer">Default Phone app: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Configure lock screen</string>
+    <string name="diagnostics_configure_background_popup">Configure background pop-up</string>
+</resources>

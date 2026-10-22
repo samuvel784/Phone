@@ -33,7 +33,6 @@
     <string name="filter_missed">Perdidas</string>
     <string name="filter_dialed">Efetuadas</string>
     <string name="filter_received">Recebidas</string>
-    <string name="default_dialer_warning">Defina como discador padrão para ativar todos os recursos.</string>
 
     <!-- Permissions -->
     <string name="enable_contacts_perm">Ativar contatos do telefone</string>
@@ -422,11 +421,6 @@
     <string name="btn_grant">Conceder</string>
     <string name="btn_configure">Configurar</string>
     <string name="btn_set_default">Definir padrão</string>
-    <string name="settings_lockscreen_calling_title">Chamadas em tela cheia na tela de bloqueio</string>
-    <string name="settings_lockscreen_calling_sub">Exibe tela de chamada recebida instantaneamente com tela bloqueada ou apagada</string>
-    <string name="settings_full_screen_intent_warning">Alertas de chamada em tela cheia restritos pelo sistema</string>
-    <string name="incoming_call_alerts_limited">Os alertas de chamadas recebidas estão limitados pelas configurações de notificações</string>
-    <string name="incoming_call_notification_settings_help">Permita notificações e mantenha o canal Chamadas recebidas com importância alta para que as chamadas recebidas apareçam imediatamente.</string>
     <string name="feature_enable_prompt">Ative a chave acima para ativar</string>
     <string name="feature_disabled_hint">O recurso está desativado</string>
     <string name="btn_enable_feature">Ativar recurso</string>
@@ -617,4 +611,44 @@
     <string name="recording_export_all">Exportar todas as gravações</string>
     <string name="default_dialer_card_title">Definir como aplicativo de telefone padrão</string>
     <string name="default_dialer_card_reason">Necessário para o gerenciamento completo de chamadas e a tela de chamada.</string>
+
+    <!-- Incoming call screen / full-screen access settings and in-call Add Call search -->
+    <string name="in_call_keypad_mode_dtmf">Teclado</string>
+    <string name="in_call_keypad_mode_add_call">Adicionar chamada / Pesquisar</string>
+    <string name="in_call_add_call_search_hint">Escreva um nome ou número</string>
+    <string name="in_call_add_call_search_note">Pesquisar contactos não envia tons</string>
+    <string name="in_call_add_call_no_matches">Nenhum contacto correspondente. Introduza um número de telefone para ligar.</string>
+    <string name="in_call_add_call_selected">Ligar para %1$s</string>
+    <string name="in_call_add_call_dtmf_note">As teclas enviam tons para a chamada atual</string>
+
+    <!-- Full-screen call features: lock-screen and background pop-up permissions -->
+    <string name="full_screen_features_title">Recursos de chamada em tela cheia</string>
+    <string name="full_screen_features_subtitle">Permissões de exibição na tela de bloqueio e de janelas pop-up em segundo plano para chamadas recebidas</string>
+    <string name="full_screen_features_ready">Nenhuma configuração de tela de bloqueio bloqueante detectada</string>
+    <string name="full_screen_features_attention">Revise as configurações abaixo para melhorar a exibição de chamadas recebidas</string>
+    <string name="permission_setup_title">Configuração de chamadas recebidas</string>
+    <string name="permission_sheet_done">Concluído</string>
+    <string name="permission_ignore">Ignorar</string>
+    <string name="permission_status_label">Status: %1$s</string>
+    <string name="permission_status_enabled">Ativado</string>
+    <string name="permission_status_disabled">Desativado</string>
+    <string name="permission_status_unable">Não é possível verificar</string>
+    <string name="lock_screen_display_title">Mostrar na tela de bloqueio</string>
+    <string name="lock_screen_display_desc">Ajuda a tela de chamada recebida a aparecer com o dispositivo bloqueado. O comportamento real também depende do Android, das configurações de notificação e do fabricante.</string>
+    <string name="lock_screen_display_short">Ajuda a interface de chamada a aparecer com o dispositivo bloqueado.</string>
+    <string name="lock_screen_display_enable">Ativar</string>
+    <string name="lock_screen_display_fallback">A página de tela cheia dedicada não está disponível; o Nova Dialer abriu uma página do sistema relacionada. Use o caminho manual abaixo se necessário.</string>
+    <string name="background_popup_title">Mostrar janelas pop-up em segundo plano</string>
+    <string name="background_popup_desc">Permissão específica do fabricante que pode ser necessária para janelas pop-up em segundo plano. O Android não oferece uma API pública para ler ou ativar.</string>
+    <string name="background_popup_short">Pode ser necessário para janelas pop-up em segundo plano em alguns dispositivos.</string>
+    <string name="background_popup_fallback">Este dispositivo não expôs uma página de janelas pop-up em segundo plano. As informações do app foram abertas; verifique Outras permissões ou uma configuração do fabricante com nome semelhante.</string>
+    <string name="permission_settings_unavailable">Não foi possível abrir a página de configurações do sistema. Abra manualmente Android Configurações, depois Apps e depois Nova Dialer.</string>
+    <string name="permission_manual_guide">Caminho manual: Android Configurações, depois Apps e depois Nova Dialer. Para acesso em tela cheia, abra Acesso especial de apps e depois Notificações em tela cheia. Para janelas pop-up, abra Outras permissões ou a configuração equivalente do fabricante.</string>
+    <string name="diagnostics_lock_screen">Exibição na tela de bloqueio: %1$s</string>
+    <string name="diagnostics_background_popup">Janela pop-up em segundo plano: %1$s</string>
+    <string name="diagnostics_notifications">Notificações ativadas: %1$s</string>
+    <string name="diagnostics_channel">Importância do canal de chamadas recebidas: %1$d</string>
+    <string name="diagnostics_default_dialer">App Telefone padrão: %1$s</string>
+    <string name="diagnostics_configure_lock_screen">Configurar tela de bloqueio</string>
+    <string name="diagnostics_configure_background_popup">Configurar janela pop-up</string>
 </resources>
