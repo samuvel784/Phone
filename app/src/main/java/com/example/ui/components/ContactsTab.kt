@@ -217,16 +217,26 @@ fun ContactsTabContent(
                 if (startWithFavoritesOnly) {
                     val isDefaultDialer by viewModel.isDefaultDialer
                     var dismissedSafetyItems by remember { mutableStateOf(emptySet<String>()) }
+                    val defaultDialerTitle = stringResource(R.string.default_dialer_card_title)
+                    val defaultDialerReason = stringResource(R.string.default_dialer_card_reason)
+                    val defaultDialerAction = stringResource(R.string.btn_set_default)
 
-                    val safetyActions = remember(isDefaultDialer, hasPermission, dismissedSafetyItems) {
+                    val safetyActions = remember(
+                        isDefaultDialer,
+                        hasPermission,
+                        dismissedSafetyItems,
+                        defaultDialerTitle,
+                        defaultDialerReason,
+                        defaultDialerAction
+                    ) {
                         val list = mutableListOf<SafetyActionItem>()
                         if (!isDefaultDialer && "default_dialer" !in dismissedSafetyItems) {
                             list.add(
                                 SafetyActionItem(
                                     id = "default_dialer",
-                                    title = "Set as Default Phone App",
-                                    reason = "Required for caller ID, screening, and call history",
-                                    actionText = "Set Up",
+                                    title = defaultDialerTitle,
+                                    reason = defaultDialerReason,
+                                    actionText = defaultDialerAction,
                                     icon = Icons.Default.Call,
                                     onAction = onRequestPermission
                                 )

@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">Udostepniana kopia jest odszyfrowana i moze ja otworzyc wybrana aplikacja. Nova Dialer nie moze jej usunac z tej aplikacji, z urzadzenia odbiorcy ani z tworzonych tam kopii zapasowych, a kopia nie jest juz chroniona szyfrowaniem aplikacji.</string>
     <string name="recording_share_warning_confirm">Udostepnij niezaszyfrowana kopie</string>
     <string name="recording_export_all">Eksportuj wszystkie nagrania</string>
-</resources>
+    <string name="default_dialer_card_title">Ustaw jako domyślną aplikację telefonu</string>
+    <string name="default_dialer_card_reason">Wymagane do pełnej obsługi połączeń i ekranu połączenia.</string></resources>

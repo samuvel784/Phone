@@ -79,13 +79,43 @@ fun BlockListSettings(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.readTextFromUri(uri) { content ->
-                if (!content.isNullOrBlank()) {
-                    viewModel.importBlockedNumbers(content) { count ->
-                        Toast.makeText(context, context.getString(R.string.blocklist_import_count_success, count), Toast.LENGTH_LONG).show()
+            viewModel.readTextFromUri(
+                uri,
+                com.example.data.BackupRestoreManager.TextImportKind.TEXT_LIST
+            ) { result ->
+                when (result) {
+                    is com.example.data.BackupRestoreManager.TextReadResult.Success -> {
+                        if (result.text.isNotBlank()) {
+                            viewModel.importBlockedNumbers(result.text) { count ->
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.blocklist_import_count_success, count),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.backup_error_empty_file),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
-                } else {
-                    Toast.makeText(context, context.getString(R.string.file_read_failed), Toast.LENGTH_SHORT).show()
+                    com.example.data.BackupRestoreManager.TextReadResult.Empty -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_empty_file),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    com.example.data.BackupRestoreManager.TextReadResult.TooLarge -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_too_large),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    com.example.data.BackupRestoreManager.TextReadResult.Failure -> Toast.makeText(
+                        context,
+                        context.getString(R.string.file_read_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }

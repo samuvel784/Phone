@@ -326,6 +326,9 @@ object CallManager {
     /** Resolves an id produced by [callId], or null when the call is no longer known. */
     fun callById(id: Long): Call? = synchronized(callIds) { callsById[id] }
 
+    /** Immutable snapshots for pure action/presentation routing. */
+    fun liveCallSnapshots(): List<CallSnapshot> = _calls.value.map { snapshotOf(it) }
+
     /** Snapshot of a live call, reduced to what [MultiCallStateMachine] needs. */
     private fun snapshotOf(call: Call): CallSnapshot {
         val details = call.details

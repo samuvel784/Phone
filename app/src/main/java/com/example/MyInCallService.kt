@@ -38,8 +38,11 @@ import com.example.model.AppSetting
 import com.example.telecom.AudioEndpointInfo
 import com.example.telecom.AudioRoute
 import com.example.telecom.AudioRoutePolicy
+import com.example.telecom.CallAction
+import com.example.telecom.CallActionRouter
 import com.example.telecom.CallTimingLogger
 import com.example.telecom.CallDecisionStore
+import com.example.telecom.IncomingPresentationPlanner
 import com.example.telecom.RingingPolicy
 import com.example.security.IntentGuard
 import com.example.util.RichHapticEngine
@@ -59,6 +62,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
     private var callWaitingToneGenerator: ToneGenerator? = null
+    private var ringingCallId: Long? = null
 
     private val notificationLock = Any()
 
@@ -211,6 +215,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     @Synchronized
     private fun stopRinging() {
+        ringingCallId = null
         try {
             if (ringtone?.isPlaying == true) {
                 ringtone?.stop()
@@ -287,38 +292,27 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_HANG_UP -> {
-                stopRinging()
-                val targetId = intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
-                if (targetId != NO_CALL_ID) {
-                    CallManager.disconnectById(targetId)
-                } else {
-                    CallManager.disconnect()
+                val targetId = resolveActionTarget(CallAction.HANG_UP, intent)
+                if (targetId != null && CallManager.disconnectById(targetId)) {
+                    refreshIncomingPresentation()
                 }
-                cancelIncomingNotifications()
+                // A stale id is a safe no-op. Never fall through to the current/another call.
             }
             ACTION_DECLINE -> {
-                stopRinging()
-                val targetId = intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
-                val rejected = if (targetId != NO_CALL_ID) {
-                    CallManager.rejectCallById(targetId)
-                } else {
-                    false
+                val targetId = resolveActionTarget(CallAction.DECLINE, intent)
+                if (targetId != null && CallManager.rejectCallById(targetId)) {
+                    refreshIncomingPresentation()
                 }
-                if (!rejected) {
-                    if (!CallManager.rejectWaitingCall()) {
-                        CallManager.currentCall.value
-                            ?.takeIf { it.safeState == Call.STATE_RINGING }
-                            ?.let { CallManager.rejectCall(it) }
-                    }
-                }
-                cancelIncomingNotifications()
+                // No waiting/current fallback: declining a stale notification must leave
+                // every live call and its ringtone untouched.
             }
             ACTION_ANSWER -> {
-                stopRinging()
-                val targetId = intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
-                val answered = if (targetId != NO_CALL_ID) CallManager.answerCallById(targetId) else false
-                if (!answered) CallManager.answer()
-                launchCallScreen(answerOnLaunch = true)
+                val targetId = resolveActionTarget(CallAction.ANSWER, intent)
+                if (targetId != null && CallManager.answerCallById(targetId)) {
+                    refreshIncomingPresentation()
+                    launchCallScreen(targetId)
+                }
+                // No answer()/currentCall fallback. If the id is stale, do not answer anything.
             }
             ACTION_TOGGLE_MUTE -> {
                 val isMuted = CallManager.audioState.value?.isMuted ?: false
@@ -330,6 +324,16 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             }
         }
         return START_NOT_STICKY
+    }
+
+    /**
+     * Resolves an action target from the authoritative Telecom snapshot. The requested id is
+     * never replaced by an unrelated call; an id-less legacy intent only works when exactly one
+     * eligible call exists.
+     */
+    private fun resolveActionTarget(action: CallAction, intent: Intent): Long? {
+        val requestedId = intent.getLongExtra(EXTRA_CALL_ID, NO_CALL_ID)
+        return CallActionRouter.resolve(action, requestedId, CallManager.liveCallSnapshots())
     }
 
     override fun onCallAdded(call: Call) {
@@ -345,7 +349,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         CallManager.addCall(call)
 
         persistCnapIfPresent(call)
-        handleCallState(call)
+        refreshIncomingPresentation()
 
         call.registerCallback(object : Call.Callback() {
             private var wasRinging = (call.safeState == Call.STATE_RINGING)
@@ -354,31 +358,15 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 super.onStateChanged(c, state)
                 if (state == Call.STATE_RINGING) wasRinging = true
 
-                if (state == Call.STATE_ACTIVE || state == Call.STATE_DISCONNECTED) {
-                    stopRinging()
-                    cancelIncomingNotifications()
-                }
-
                 if (state in listOf(Call.STATE_ACTIVE, Call.STATE_DIALING, Call.STATE_CONNECTING, Call.STATE_HOLDING)) {
-                    stopRinging()
                     showActiveCallNotification(c)
                 }
 
-                if (state == Call.STATE_DISCONNECTED) {
-                    stopRinging()
-                    synchronized(notificationLock) {
-                        val remainingLiveCalls = CallManager.calls.value.filter {
-                            it != c && it.safeState != Call.STATE_DISCONNECTED
-                        }
-                        if (remainingLiveCalls.isEmpty()) {
-                            nm.cancel(NOTIFICATION_ID_ACTIVE)
-                        } else {
-                            val nextCall = remainingLiveCalls.firstOrNull()
-                            if (nextCall != null) showActiveCallNotification(nextCall)
-                            else nm.cancel(NOTIFICATION_ID_ACTIVE)
-                        }
-                    }
+                // Recompute, rather than blanket-cancelling, so a second ringing call keeps its
+                // ringtone/notification when an unrelated call connects or disconnects.
+                refreshIncomingPresentation()
 
+                if (state == Call.STATE_DISCONNECTED) {
                     if (wasRinging) {
                         val cause = c.details?.disconnectCause?.code
                         if (cause != DisconnectCause.REJECTED && cause != DisconnectCause.LOCAL) {
@@ -445,9 +433,8 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
-        stopRinging()
         CallManager.removeCall(call)
-        cancelIncomingNotifications()
+        refreshIncomingPresentation()
 
         synchronized(notificationLock) {
             val remainingActiveCalls = CallManager.calls.value.filter { it.safeState != Call.STATE_DISCONNECTED }
@@ -571,26 +558,43 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         nm.cancel(NOTIFICATION_ID_INCOMING_WAITING)
     }
 
-    private fun handleCallState(call: Call) {
-        when (call.safeState) {
-            Call.STATE_RINGING -> {
-                val hasExistingActiveCall = CallManager.calls.value.any {
-                    it != call && (it.safeState == Call.STATE_ACTIVE || it.safeState == Call.STATE_HOLDING || it.safeState == Call.STATE_DIALING)
-                }
-                if (hasExistingActiveCall) {
-                    CallManager.updateWaitingCall(call)
-                    playCallWaitingTone()
-                    showIncomingCallNotification(call, isCallWaiting = true)
-                } else {
-                    acquireWakeLock()
-                    startRinging(call)
-                    showIncomingCallNotification(call, isCallWaiting = false)
-                }
+    /**
+     * Recomputes ringtone, waiting tone and incoming notifications from the authoritative live
+     * call list. This is idempotent and is used after every action/state change, so a stale
+     * action cannot stop the presentation of a different live incoming call.
+     */
+    private fun refreshIncomingPresentation() {
+        val calls = CallManager.liveCallSnapshots()
+        val waitingId = CallManager.waitingCall.value?.let { CallManager.callId(it) }
+        val presentation = IncomingPresentationPlanner.plan(calls, waitingId)
+
+        val primary = presentation.primaryRingingId?.let { CallManager.callById(it) }
+        if (primary != null) {
+            acquireWakeLock()
+            val primaryId = CallManager.callId(primary)
+            if (ringingCallId != primaryId || ringtone?.isPlaying != true) {
+                startRinging(primary)
+                ringingCallId = primaryId
             }
-            Call.STATE_ACTIVE, Call.STATE_DIALING, Call.STATE_CONNECTING, Call.STATE_HOLDING -> {
-                stopRinging()
-                stopCallWaitingTone()
-                showActiveCallNotification(call)
+            showIncomingCallNotification(primary, isCallWaiting = false)
+        } else {
+            val hadPrimary = ringingCallId != null
+            ringingCallId = null
+            if (hadPrimary || presentation.waitingRingingId == null) stopRinging()
+            nm.cancel(NOTIFICATION_ID_INCOMING)
+        }
+
+        val waiting = presentation.waitingRingingId?.let { CallManager.callById(it) }
+        if (waiting != null) {
+            CallManager.updateWaitingCall(waiting)
+            playCallWaitingTone()
+            showIncomingCallNotification(waiting, isCallWaiting = true)
+        } else {
+            stopCallWaitingTone()
+            nm.cancel(NOTIFICATION_ID_INCOMING_WAITING)
+            if (presentation.primaryRingingId == null) {
+                // No ringing call at all: make sure the incoming notification is gone.
+                nm.cancel(NOTIFICATION_ID_INCOMING)
             }
         }
     }
@@ -849,17 +853,19 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         }
     }
 
-    private fun launchCallScreen(answerOnLaunch: Boolean) {
+    private fun launchCallScreen(callId: Long) {
         try {
             val intent = Intent(this, MainActivity::class.java).apply {
-                action = if (answerOnLaunch) ACTION_ANSWER else ACTION_INCOMING_CALL
+                // The action has already been applied to the exact call id. Do not ask
+                // MainActivity to answer a second time.
+                action = ACTION_INCOMING_CALL
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_SINGLE_TOP or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
                         Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 putExtra(EXTRA_SHOW_CALL, true)
+                putExtra(EXTRA_CALL_ID, callId)
                 putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-                if (answerOnLaunch) putExtra(EXTRA_ANSWER, true)
             }
             startActivity(intent)
         } catch (_: Exception) {}

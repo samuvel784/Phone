@@ -34,7 +34,6 @@ import com.example.util.DuplicateGroup
 import com.example.util.RecordingCompressionProfile
 import com.example.util.RecordingCrypto
 import com.example.util.ReminderScheduler
-import com.example.widget.FavoritesWidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -769,30 +768,13 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     fun buildCallLogPdf(title: String, exportedAt: String): ByteArray =
         com.example.util.CallLogExport.buildCallLogPdf(allCallHistoryFlow.value, title, exportedAt)
 
-    /**
-     * Persists a compact JSON snapshot of the favourite contacts for the
-     * home-screen widget and asks the provider to re-render. Kept intentionally
-     * small (name + number only) so launcher rendering never touches the DB.
-     */
-    fun updateWidgetFavorites(contacts: List<Contact>) {
-        try {
-            val arr = org.json.JSONArray()
-            contacts.take(6).forEach { c ->
-                if (c.number.isNotBlank()) {
-                    arr.put(org.json.JSONObject().put("n", c.name).put("v", c.number))
-                }
-            }
-            prefs.edit { putString(FavoritesWidgetProvider.KEY_SNAPSHOT, arr.toString()) }
-            FavoritesWidgetProvider.refreshAll(getApplication())
-        } catch (_: Exception) {
-            // Widget refresh must never crash the app
-        }
-    }
-
-    fun readTextFromUri(uri: Uri, onResult: (String?) -> Unit) {
+    fun readTextFromUri(
+        uri: Uri,
+        kind: com.example.data.BackupRestoreManager.TextImportKind,
+        onResult: (com.example.data.BackupRestoreManager.TextReadResult) -> Unit
+    ) {
         viewModelScope.launch {
-            val content = com.example.data.BackupRestoreManager.readTextFromUri(getApplication(), uri)
-            onResult(content)
+            onResult(com.example.data.BackupRestoreManager.readTextFromUri(getApplication(), uri, kind))
         }
     }
 

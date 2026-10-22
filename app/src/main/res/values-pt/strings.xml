@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">A cópia que partilha está desencriptada e pode ser aberta pela aplicação que escolher. O Nova Dialer não a pode apagar dessa aplicação, do dispositivo do destinatário nem de eventuais cópias de segurança que este faça, e deixa de estar protegida pela encriptação da aplicação.</string>
     <string name="recording_share_warning_confirm">Partilhar cópia não encriptada</string>
     <string name="recording_export_all">Exportar todas as gravações</string>
-</resources>
+    <string name="default_dialer_card_title">Definir como aplicativo de telefone padrão</string>
+    <string name="default_dialer_card_reason">Necessário para o gerenciamento completo de chamadas e a tela de chamada.</string></resources>

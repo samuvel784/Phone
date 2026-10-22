@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">共享的副本未加密，您选择的应用可以打开它。Nova Dialer 无法从该应用、接收者的设备或其创建的备份中删除它，它也不再受应用加密保护。</string>
     <string name="recording_share_warning_confirm">共享未加密副本</string>
     <string name="recording_export_all">导出所有录音</string>
-</resources>
+    <string name="default_dialer_card_title">设为默认电话应用</string>
+    <string name="default_dialer_card_reason">完整通话处理和通话界面需要此项。</string></resources>

@@ -28,6 +28,17 @@ object DatabaseKeyManager {
     @Volatile
     private var cachedKey: ByteArray? = null
 
+    /**
+     * True when any database-key metadata exists. Used by the file-family preflight so a
+     * missing database with surviving key material is treated as damaged, not as a fresh
+     * installation that may mint a new key.
+     */
+    fun hasPersistedKey(context: Context): Boolean {
+        val prefs = context.createDeviceProtectedStorageContext()
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.contains(ENCRYPTED_DB_KEY) || prefs.contains(GCM_IV)
+    }
+
     @Synchronized
     fun getDatabaseKey(context: Context): ByteArray {
         // 1. Fast-path: return cached key if already unlocked in memory
@@ -78,10 +89,11 @@ object DatabaseKeyManager {
             )
         }
 
-        // 4. A non-empty encrypted database without a stored key cannot be opened. Preserve it
-        // and surface the recovery requirement instead of generating a key that can never match.
+        // 4. Any existing encrypted database file without a stored key cannot be opened.
+        // A zero-byte file is still evidence of a previous database; never mint a fresh key
+        // over it, because that would make a later recovery attempt ambiguous.
         val databaseFile = context.getDatabasePath(DATABASE_NAME)
-        if (databaseFile.exists() && databaseFile.length() > 0L && !isPlaintextDatabase(databaseFile)) {
+        if (databaseFile.exists() && !isPlaintextDatabase(databaseFile)) {
             throw IllegalStateException(
                 "An encrypted dialer database exists but its key is missing. " +
                     "The database was left untouched."

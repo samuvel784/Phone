@@ -6,18 +6,24 @@ still needs the declarations and assets below.
 
 ## 1. Build and signing
 
-- [ ] Provide `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD` (or place the
-      upload keystore where `app/build.gradle.kts` expects it). The release build deliberately
-      fails fast without them.
-- [ ] Build a signed AAB with `bundleRelease`.
+- [ ] Create a local, untracked `key.properties` with `storeFile`, `storePassword`, `keyAlias`
+      and `keyPassword`. Exact release packaging tasks depend on `validateReleaseSigning` and
+      deliberately fail before packaging without valid credentials.
+- [ ] Build a signed AAB with `bundleRelease`; build the universal direct-install APK with
+      `assembleRelease`.
 - [ ] Confirm the AAB's application ID is the one registered in Play Console
       (`com.aistudio.novadial.kpxm`) or update it before the first upload.
 - [ ] Keep the upload key backed up. Losing it requires Play App Signing key reset.
 
-**Local candidate (21 October 2026, not uploaded):** `bundleRelease` produced a signed
-`app/build/outputs/bundle/release/app-release.aab` (10,570,437 bytes, SHA-256
-`676F996047A82F80C9E7E059ED1D8FEAF7C96C423FAE4E27BBA017D4A01F28F8`). `jarsigner -verify`
-reported `jar verified`; `bundletool validate` returned 0. The packaged identity is
+**Local candidate (22 October 2026, not uploaded):** `bundleRelease` produced a signed
+`app/build/outputs/bundle/release/app-release.aab` (10,598,691 bytes, SHA-256
+`27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`). `jarsigner -verify -verbose -certs`
+returned exit 0 and reported `jar verified`, with self-signed/no-timestamp and
+JarFile/JarInputStream consistency warnings; `bundletool 1.18.3 validate` returned exit 0.
+`assembleRelease` produced the
+universal `app/build/outputs/apk/release/app-release.apk` (11,239,878 bytes, SHA-256
+`75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`), verified with
+`apksigner` (APK Signature Scheme v2). The packaged identity is
 `com.aistudio.novadial.kpxm`, versionCode 4, versionName 2.1.0, minSdk 24, targetSdk 36.
 The upload signer certificate SHA-256 is
 `af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`. The unchecked Play-side
@@ -95,16 +101,39 @@ The matrix now contains per-test purpose, prerequisites, steps, expected result,
 field, status, evidence guidance, recovery instructions, and separate accessibility/RTL/large-font
 cards. **All device results remain NOT RUN.**
 
-## 6. Release-gate audit follow-up (21 October 2026)
+## 6. Release-gate audit follow-up (22 October 2026)
 
-The code-side blockers from the 21 October 2026 release-gate audit have been resolved; the
-remaining blockers are Play-side declarations, assets and physical-device validation.
+The code-side blockers from the 21 October 2026 release-gate audit have been resolved, and the
+22 October verification added real-file SQLCipher/recovery, Telecom-routing, restricted-UI and
+bounded-import coverage. The remaining blockers are Play-side declarations, assets and
+physical-device validation.
 
-- **Automated verification.** `testDebugUnitTest`: **286 tests, 0 failures, 0 errors, 0 skipped**.
-  `lintDebug` and `lintRelease`: **0 errors, 37 warnings**. `assembleDebug`, `assembleRelease`
-  and `bundleRelease` completed successfully. The final AAB was verified with
-  `jarsigner -verify -verbose -certs` (`jar verified`) and `bundletool validate` (exit 0), not
-  with an APK-only checker. `git diff --check` exited 0 with only line-ending notices.
+- **Automated verification.** `testDebugUnitTest`: **323 tests, 0 failures, 0 errors, 0 skipped**.
+  `connectedDebugAndroidTest` on API 37 `emulator-5554`: **8 tests, 0 failures, 0 errors,
+  0 skipped**. `lintDebug` and `lintRelease`: **0 errors, 36 warnings**. `assembleRelease` and
+  `bundleRelease` completed successfully. The APK (11,239,878 bytes, SHA-256
+  `75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`) is a single universal
+  signed APK; `apksigner` reports a valid APK Signature Scheme v2 signature. The AAB
+  (10,598,691 bytes, SHA-256
+  `27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`) was checked with
+  `jarsigner -verify -verbose -certs` (exit 0, `jar verified`, with self-signed/no-timestamp and
+  JarFile/JarInputStream consistency warnings); `bundletool 1.18.3 validate` returned exit 0.
+  The signer SHA-256 matches the intended upload certificate, and the packaged manifest reports
+  package `com.aistudio.novadial.kpxm`, version `2.1.0`/`4`, minSdk `24`, targetSdk `36`. The mapping is
+  51,347,886 bytes with SHA-256
+  `D0589AFB85131709922FE36EDAECF630C3350747AECA13BD495548A371A24098`.
+- **Current source audit fixes.** Database recovery now inspects the full SQLCipher file family,
+  restores interrupted swaps (including stale-sidecar quarantine), validates plaintext-to-SQLCipher
+  migration snapshots by integrity and row count, and fails closed instead of replacing a database.
+  The plaintext-to-SQLCipher exporter now opens the target with the same key API used by Room and
+  copies the schema/rows; this fixed the raw-key `ATTACH`/code-26 export failure found by the new
+  real-file instrumentation test.
+  Notification actions are bound to an exact call id with no generic fallback. With app lock
+  enabled, a live call shows only a restricted call surface and never authenticates the full app;
+  the incoming-call activity no longer dismisses the keyguard. Backup, vCard and text imports have
+  hard read limits. `IntentGuard` persists its token synchronously and validation never mints one.
+  Release packaging now depends on `validateReleaseSigning` by exact task name, and lint fails the
+  release on errors, missing translations or extra translations.
 - **Privacy strings.** The in-app privacy dialog copy (`privacy_section_1_desc`, `privacy_section_2_desc`,
   `privacy_section_3_desc`) was rewritten in all 10 locales (`values` + ar, de, es, fr, hi, ja, pl,
   pt, zh) so it no longer mentions call recording, the microphone or SOS location. The 42 orphaned
@@ -122,7 +151,7 @@ remaining blockers are Play-side declarations, assets and physical-device valida
   deleted.
 - **Duplicate Finder dead navigation.** The entry card that navigated to removed settings tab 11
   was removed; the deferred `DuplicateFinder` logic keeps its unit tests.
-- **Lint is now clean of errors.** `lintDebug` and `lintRelease` report **0 errors, 37 warnings**
+- **Lint is now clean of errors.** `lintDebug` and `lintRelease` report **0 errors, 36 warnings**
   (deferred-feature code such as `ReminderScheduler`, Gradle/dependency version housekeeping and
   style suggestions). The 5 previous errors (3× `MissingPermission` USE_BIOMETRIC in the deleted
   `VaultBiometricAuthHelper`, 2× `ForegroundServiceType` for the deleted `EmergencySosService`) are
@@ -171,15 +200,15 @@ Additional housekeeping findings (21 October 2026):
 
 ## 8. Lint warning disposition (21 October 2026)
 
-`lintDebug` and `lintRelease` reported **0 errors and 37 warnings** after the permission cleanup.
-No warnings were suppressed. No source/resource changes were made solely to reduce the count. The
-count is unchanged because the remaining warning is the deferred exact-alarm code plus version
-and localization housekeeping; the permission edits did not introduce a new lint issue.
+`lintDebug` and `lintRelease` reported **0 errors and 36 warnings** after the remediation. Two
+targeted annotations were added: `ReminderScheduler.schedule` suppresses `MissingPermission`
+because it checks `canScheduleExactAlarms()` before the exact-alarm call, and `IntentGuard.token`
+suppresses `UseKtx` because it needs the synchronous `commit()` result. No lint rule was disabled,
+and no unrelated source/resource change was made to lower the count.
 
 | Group | Count | Severity / relevance | Disposition |
 |---|---:|---|---|
-| `MissingPermission` — `ReminderScheduler.kt:55` exact-alarm call | 1 | Deferred code; reminder receiver is not registered and the feature is gated off | Not fixed. Adding a suppression would hide a real permission signal; if the feature returns, add `SCHEDULE_EXACT_ALARM`/power-exemption handling or redesign the scheduling. |
 | `PluralsCandidate` — `%d` followed by words in 9 strings | 9 | Localization correctness; not a crash or release blocker | Not fixed. Proper plural resources require a coordinated change across all 10 locales and UI call sites; track for a dedicated localization pass rather than a risky release-week edit. |
 | Version/toolchain: `GradleDependency` (15), `NewerVersionAvailable` (9), `AndroidGradlePluginVersion` (1), `OldTargetApi` (1) | 26 | Maintenance/upgrade suggestions; regression risk if upgraded without full testing | Not fixed. Upgrades are outside this documentation handoff and require a separate dependency/test cycle. |
 | `UnusedResources` — `Theme_MyApplication_Translucent` | 1 | Harmless unused style; no runtime impact | Not fixed. Removing a resource is not necessary for this release and would require a resource rebuild; leave it for planned cleanup or confirm no future use. |
-| **Total** | **37** | | **0 errors; no suppressions; 1 deferred exact-alarm warning retained.** |
+| **Total** | **36** | | **0 errors; no lint rules disabled; two narrow, justified annotations.** |

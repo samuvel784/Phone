@@ -19,6 +19,7 @@ package com.example
 
 import android.app.Application
 import android.content.Context
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.AppDatabase
 import com.example.model.CallRecording
@@ -36,8 +37,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(RobolectricTestRunner::class)
@@ -363,10 +367,20 @@ class CallRecordingComprehensiveTest {
             }
 
             val viewModel = DialerViewModel(context)
-            viewModel.syncRecordingsFromDisk(context)
+            val completed = CountDownLatch(1)
+            viewModel.syncRecordingsFromDisk(context) { completed.countDown() }
 
-            // Allow IO dispatcher to complete
-            kotlinx.coroutines.delay(200.milliseconds)
+            // The scan runs on Dispatchers.IO and reports completion on the paused Robolectric
+            // main looper. Wait for both rather than assuming a fixed 200 ms is enough.
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15)
+            while (completed.count > 0L && System.nanoTime() < deadline) {
+                shadowOf(Looper.getMainLooper()).idle()
+                Thread.sleep(25)
+            }
+            assertTrue(
+                "Recording recovery did not report completion within 15 seconds",
+                completed.count == 0L
+            )
 
             val dao = database.dialerDao()
             val recordings = dao.getAllCallRecordingsFlow().first()

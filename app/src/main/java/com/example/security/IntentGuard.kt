@@ -5,10 +5,10 @@
 
 package com.example.security
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import java.security.SecureRandom
-import androidx.core.content.edit
 
 /**
  * A per-install secret used to authenticate intents that ask Nova Dialer to perform a
@@ -31,18 +31,35 @@ object IntentGuard {
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    /** Returns the install's token, creating it once on first use. */
+    /** Returns the install's token, creating and durably persisting it once on first use. */
+    @SuppressLint("UseKtx") // commit() must be synchronous so first-use persistence is verified.
+    @Synchronized
     fun token(context: Context): String {
         val p = prefs(context)
         p.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() }?.let { return it }
         val bytes = ByteArray(TOKEN_BYTES).also { SecureRandom().nextBytes(it) }
         val created = bytes.joinToString("") { "%02x".format(it) }
-        p.edit { putString(KEY_TOKEN, created) }
+        // The token is embedded in notifications/pending intents that may be used after the
+        // process dies. apply() is asynchronous and can lose the first-use value on process
+        // death, so commit synchronously and fail closed if it was not persisted.
+        if (!p.edit().putString(KEY_TOKEN, created).commit()) {
+            throw IllegalStateException("Unable to persist the Nova Dialer intent token")
+        }
+        val persisted = p.getString(KEY_TOKEN, null)
+        if (persisted != created) {
+            throw IllegalStateException("Nova Dialer intent token persistence could not be verified")
+        }
         return created
     }
 
-    /** True when [candidate] equals this install's token. */
-    fun isValid(context: Context, candidate: String?): Boolean = matches(token(context), candidate)
+    /**
+     * True when [candidate] equals the already-persisted install token. This never mints a
+     * token as a side effect: an untrusted intent must not be able to initialise the secret.
+     */
+    fun isValid(context: Context, candidate: String?): Boolean {
+        val expected = prefs(context).getString(KEY_TOKEN, null)
+        return matches(expected, candidate)
+    }
 
     /**
      * Constant-time-ish comparison of two tokens. Pure so it can be unit-tested.

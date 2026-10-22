@@ -46,6 +46,19 @@ class IntentGuardTest {
     }
 
     @Test
+    fun tokenIsPersistedSynchronouslyAndInvalidCheckNeverMints() {
+        val prefs = context.getSharedPreferences("novadial_intent_guard", Application.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+
+        assertFalse(IntentGuard.isValid(context, "forged"))
+        assertFalse(prefs.contains("token"))
+
+        val token = IntentGuard.token(context)
+        assertEquals(token, prefs.getString("token", null))
+        assertTrue(IntentGuard.isValid(context, token))
+    }
+
+    @Test
     fun matchesIsFalseForBlankOrDifferentLengthValues() {
         assertFalse(IntentGuard.matches(null, null))
         assertFalse(IntentGuard.matches("", ""))

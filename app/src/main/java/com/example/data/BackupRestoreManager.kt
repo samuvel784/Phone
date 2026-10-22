@@ -27,10 +27,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.io.Reader
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,6 +71,25 @@ object BackupRestoreManager {
 
     /** Rejects absurdly large imports before any parsing or crypto work happens. */
     private const val MAX_BACKUP_CHARS = 20_000_000
+    private const val MAX_CONTACTS_VCF_CHARS = 5_000_000
+    private const val MAX_TEXT_LIST_CHARS = 2_000_000
+
+    /**
+     * Per-format ceilings enforced while reading. A stream is stopped as soon as one character
+     * beyond the limit is observed, before a large allocation or parse can occur.
+     */
+    enum class TextImportKind(val maxChars: Int) {
+        BACKUP(MAX_BACKUP_CHARS),
+        CONTACTS_VCF(MAX_CONTACTS_VCF_CHARS),
+        TEXT_LIST(MAX_TEXT_LIST_CHARS)
+    }
+
+    sealed interface TextReadResult {
+        data class Success(val text: String) : TextReadResult
+        data object Empty : TextReadResult
+        data object TooLarge : TextReadResult
+        data object Failure : TextReadResult
+    }
 
     /** Minimum accepted backup password length (also enforced by the UI). */
     const val MIN_PASSWORD_LENGTH = 8
@@ -147,13 +166,50 @@ object BackupRestoreManager {
         }
     }
 
-    suspend fun readTextFromUri(context: Context, uri: Uri): String? = withContext(Dispatchers.IO) {
+    suspend fun readTextFromUri(
+        context: Context,
+        uri: Uri,
+        kind: TextImportKind
+    ): TextReadResult = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openInputStream(uri)?.use { stream ->
-                BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
-            }
+                InputStreamReader(stream, Charsets.UTF_8).use { reader ->
+                    readTextFromReader(reader, kind.maxChars)
+                }
+            } ?: TextReadResult.Failure
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (_: Exception) {
-            null
+            TextReadResult.Failure
+        }
+    }
+
+    /**
+     * Bounded reader used by every text import. It intentionally never calls readText() or
+     * allocates a buffer sized from the provider's reported length.
+     */
+    internal fun readTextFromReader(reader: Reader, maxChars: Int): TextReadResult {
+        require(maxChars > 0) { "maxChars must be positive" }
+        return try {
+            val output = StringBuilder(minOf(maxChars, 8192))
+            val buffer = CharArray(8192)
+            while (true) {
+                val remaining = maxChars - output.length
+                val toRead = if (remaining > 0) minOf(buffer.size, remaining) else 1
+                val read = reader.read(buffer, 0, toRead)
+                if (read < 0) break
+                if (read == 0) continue
+                if (output.length + read > maxChars) return TextReadResult.TooLarge
+                output.append(buffer, 0, read)
+                if (output.length == maxChars) {
+                    // Exactly at the limit is allowed; one additional character is not.
+                    if (reader.read() >= 0) return TextReadResult.TooLarge
+                    break
+                }
+            }
+            if (output.isEmpty()) TextReadResult.Empty else TextReadResult.Success(output.toString())
+        } catch (_: Exception) {
+            TextReadResult.Failure
         }
     }
 

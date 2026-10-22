@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">Die geteilte Kopie ist entschlüsselt und kann von der von dir gewählten App geöffnet werden. Nova Dialer kann sie nicht aus dieser App, vom Gerät des Empfängers oder aus dort erstellten Sicherungen löschen, und sie ist nicht mehr durch die Verschlüsselung der App geschützt.</string>
     <string name="recording_share_warning_confirm">Unverschlüsselte Kopie teilen</string>
     <string name="recording_export_all">Alle Aufnahmen exportieren</string>
-</resources>
+    <string name="default_dialer_card_title">Als Standard-Telefon-App festlegen</string>
+    <string name="default_dialer_card_reason">Erforderlich für die vollständige Anrufverarbeitung und den Anrufbildschirm.</string></resources>

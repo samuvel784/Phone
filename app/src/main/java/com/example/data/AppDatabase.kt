@@ -18,6 +18,7 @@
 package com.example.data
 
 import android.content.Context
+import android.util.Log
 import androidx.room.*
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -163,6 +164,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "dialer_database"
+        const val DATABASE_VERSION = 9
 
         /**
          * v8 -> v9 keeps every table and row. New columns are added with safe defaults;
@@ -204,9 +206,45 @@ abstract class AppDatabase : RoomDatabase() {
             }
 
             System.loadLibrary("sqlcipher")
-            recoverInterruptedPlaintextSwap(appContext)
+
+            // Inspect the whole file family *before* asking DatabaseKeyManager for a key. A missing
+            // active file must never mint a new key when an interrupted swap, a legacy plaintext
+            // copy, a sidecar, or existing key material proves this is not a fresh install.
+            val databaseFile = appContext.getDatabasePath(DATABASE_NAME)
+            val family = DatabaseFileFamily.from(databaseFile)
+            val plan = DatabaseFileGuard.plan(
+                family = family,
+                hasPersistedKey = DatabaseKeyManager.hasPersistedKey(appContext)
+            )
+            when (plan) {
+                DatabaseFilePlan.FreshInstall -> Unit
+                is DatabaseFilePlan.RestoreSwap -> {
+                    DatabaseFileGuard.restoreInterruptedSwap(family, plan)
+                    android.util.Log.w(
+                        "NovaDialerDatabase",
+                        "Restored an interrupted database swap before opening the database."
+                    )
+                }
+                is DatabaseFilePlan.FailClosed -> {
+                    throw DatabaseRecoveryRequiredException(plan.reason)
+                }
+                is DatabaseFilePlan.Active -> {
+                    if (plan.preservedArtifacts.isNotEmpty()) {
+                        android.util.Log.w(
+                            "NovaDialerDatabase",
+                            "Preserving recovery artifacts: " +
+                                plan.preservedArtifacts.joinToString { it.name }
+                        )
+                    }
+                }
+            }
+
             val dbKey = DatabaseKeyManager.getDatabaseKey(appContext)
-            ensureDatabaseIntegrity(appContext, dbKey)
+            // A genuinely fresh install has no active file yet; Room will create and encrypt it.
+            // Every other path has an existing file that must pass validation before Room opens it.
+            if (family.active.exists()) {
+                ensureDatabaseIntegrity(appContext, dbKey)
+            }
             // Disable automatic password clearing so Room connection pool and concurrent readers can reopen connections
             val factory = SupportOpenHelperFactory(dbKey, null, false)
 
@@ -326,56 +364,59 @@ abstract class AppDatabase : RoomDatabase() {
         private fun ensureDatabaseIntegrity(appContext: Context, dbKey: ByteArray) {
             val dbFile = appContext.getDatabasePath(DATABASE_NAME)
             if (!dbFile.exists() || dbFile.length() == 0L) {
+                throw DatabaseRecoveryRequiredException(
+                    "The dialer database is missing or empty after recovery checks. " +
+                        "No replacement database was created."
+                )
+            }
+
+            // 1. An encrypted database must open, pass SQLite integrity checking, expose the
+            //    core Room tables, and not claim a schema version newer than this app supports.
+            val reader = SqlCipherDatabaseInspector
+            val snapshot = reader.readEncrypted(dbFile, dbKey)
+            if (snapshot != null && isAcceptableSnapshot(snapshot)) {
                 return
             }
 
-            // 1. Verify if database opens cleanly with the current key via native SQLCipher open
-            if (canOpenDatabase(dbFile, dbKey)) {
-                return
-            }
-
-            // 2. If it cannot be opened with the key, check if it's an unencrypted plaintext SQLite database.
-            //    Plaintext migration is a one-time import, not recovery-by-deletion, and keeps a
-            //    byte-for-byte copy of the original file.
+            // 2. A plaintext SQLite database is a legacy install. Migrate it through a
+            //    crash-safe same-directory swap, then validate the installed copy again.
             if (isPlaintextDatabase(dbFile)) {
-                if (migratePlaintextDatabase(dbFile, dbKey) && canOpenDatabase(dbFile, dbKey)) {
-                    return
+                val coordinator = PlaintextMigrationCoordinator(
+                    family = DatabaseFileFamily.from(dbFile),
+                    key = dbKey,
+                    reader = reader,
+                    exporter = SqlCipherDatabaseInspector
+                )
+                when (val result = coordinator.migrate()) {
+                    PlaintextMigrationCoordinator.Result.Migrated -> {
+                        val installed = reader.readEncrypted(dbFile, dbKey)
+                        if (installed != null && isAcceptableSnapshot(installed)) return
+                        throw DatabaseRecoveryRequiredException(
+                            "The plaintext database was migrated, but the installed encrypted " +
+                                "database did not pass validation. The original swap was preserved."
+                        )
+                    }
+                    is PlaintextMigrationCoordinator.Result.Failed -> {
+                        throw DatabaseRecoveryRequiredException(result.reason)
+                    }
                 }
             }
 
-            // 3. Never delete or replace an unreadable database. Preserve a copy (including WAL/SHM)
-            //    for manual recovery and fail closed. The user's data stays on the device.
+            // 3. Never delete or replace an unreadable database. Preserve a copy (including
+            //    WAL/SHM/journal) for manual recovery and fail closed.
             val preserved = preserveDatabaseFamily(dbFile, "${dbFile.name}_unreadable_bak.db")
             throw DatabaseRecoveryRequiredException(
-                "The encrypted dialer database could not be opened. " +
-                    "Original files were left intact" +
+                "The encrypted dialer database could not be opened or failed integrity/schema " +
+                    "validation. Original files were left intact" +
                     (preserved?.let { "; a protected copy is at ${it.name}" } ?: "") +
                     "."
             )
         }
 
-        private fun canOpenDatabase(dbFile: File, dbKey: ByteArray): Boolean {
-            if (!dbFile.exists() || dbFile.length() == 0L) return true
-            var testDb: SQLiteDatabase? = null
-            var cursor: android.database.Cursor? = null
-            return try {
-                testDb = SQLiteDatabase.openDatabase(
-                    dbFile.absolutePath,
-                    dbKey,
-                    null,
-                    SQLiteDatabase.OPEN_READWRITE,
-                    null as net.zetetic.database.DatabaseErrorHandler?,
-                    null as net.zetetic.database.sqlcipher.SQLiteDatabaseHook?
-                )
-                cursor = testDb?.rawQuery("SELECT count(*) FROM sqlite_master;", null)
-                cursor != null && cursor.moveToFirst()
-            } catch (_: Throwable) {
-                false
-            } finally {
-                try { cursor?.close() } catch (_: Throwable) {}
-                try { testDb?.close() } catch (_: Throwable) {}
-            }
-        }
+        private fun isAcceptableSnapshot(snapshot: DatabaseSnapshot): Boolean =
+            snapshot.integrityOk &&
+                snapshot.hasCoreTables &&
+                snapshot.userVersion <= DATABASE_VERSION
 
         private fun isPlaintextDatabase(dbFile: File): Boolean {
             if (!dbFile.exists() || dbFile.length() < 16L) return false
@@ -390,106 +431,217 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        private fun migratePlaintextDatabase(dbFile: File, dbKey: ByteArray): Boolean {
-            val tempEncryptedFile = File(dbFile.parentFile, "${dbFile.name}_encrypted_temp.db")
-            val originalBackup = File(dbFile.parentFile, "${dbFile.name}_plaintext_bak.db")
-            val swapBackup = File(dbFile.parentFile, "${dbFile.name}_swap_original.db")
-            if (tempEncryptedFile.exists()) tempEncryptedFile.delete()
-            if (swapBackup.exists()) swapBackup.delete()
-
-            var plaintextDb: SQLiteDatabase? = null
-            return try {
-                plaintextDb = SQLiteDatabase.openDatabase(
-                    dbFile.absolutePath,
-                    null,
-                    SQLiteDatabase.OPEN_READWRITE
-                )
-                // Flush any WAL contents before exporting, otherwise rows still in the
-                // -wal file can be missing from the encrypted copy.
-                try {
-                    plaintextDb.rawQuery("PRAGMA wal_checkpoint(FULL);", null)?.use { it.moveToFirst() }
-                } catch (_: Exception) {}
-
-                val keyHex = dbKey.joinToString("") { "%02x".format(it) }
-                plaintextDb.execSQL("ATTACH DATABASE '${tempEncryptedFile.absolutePath}' AS encrypted KEY \"x'$keyHex'\";")
-                plaintextDb.rawQuery("SELECT sqlcipher_export('encrypted');", null)?.use { it.moveToFirst() }
-                plaintextDb.execSQL("DETACH DATABASE encrypted;")
-                plaintextDb.close()
-                plaintextDb = null
-
-                // Do not touch the original until the encrypted export is proven readable.
-                if (!canOpenDatabase(tempEncryptedFile, dbKey)) {
-                    tempEncryptedFile.delete()
-                    return false
-                }
-
-                // Keep a permanent plaintext copy for manual recovery, then swap using a
-                // same-directory rename so an interrupted migration can be rolled back.
-                if (!originalBackup.exists()) dbFile.copyTo(originalBackup, overwrite = false)
-                if (!dbFile.renameTo(swapBackup)) {
-                    tempEncryptedFile.delete()
-                    return false
-                }
-                if (!tempEncryptedFile.renameTo(dbFile)) {
-                    swapBackup.renameTo(dbFile)
-                    tempEncryptedFile.delete()
-                    return false
-                }
-                deleteDatabaseFiles(swapBackup)
-                deleteDatabaseSidecars(dbFile)
-                true
-            } catch (_: Exception) {
-                try { plaintextDb?.close() } catch (_: Exception) {}
-                if (tempEncryptedFile.exists()) tempEncryptedFile.delete()
-                if (!dbFile.exists() && swapBackup.exists()) swapBackup.renameTo(dbFile)
-                false
-            }
-        }
-
-        /**
-         * If the process died between the two renames of the plaintext migration, restore
-         * the original before opening anything. This prevents a transient missing DB from
-         * causing DatabaseKeyManager to mint a fresh key against an orphaned file.
-         */
-        private fun recoverInterruptedPlaintextSwap(appContext: Context) {
-            val dbFile = appContext.getDatabasePath(DATABASE_NAME)
-            val swapBackup = File(dbFile.parentFile, "${dbFile.name}_swap_original.db")
-            if (!dbFile.exists() && swapBackup.exists()) {
-                swapBackup.renameTo(dbFile)
-            }
-        }
-
         private fun preserveDatabaseFamily(dbFile: File, backupName: String): File? {
             return try {
-                val backupFile = File(dbFile.parentFile, backupName)
-                dbFile.copyTo(backupFile, overwrite = true)
-                for (suffix in listOf("-wal", "-shm", "-journal")) {
-                    val source = File("${dbFile.absolutePath}$suffix")
-                    if (source.exists()) source.copyTo(File("${backupFile.absolutePath}$suffix"), overwrite = true)
+                val parent = dbFile.parentFile ?: return null
+                var backupFile = File(parent, backupName)
+                var suffix = 1
+                while (
+                    backupFile.exists() ||
+                    listOf("-wal", "-shm", "-journal").any {
+                        File("${backupFile.absolutePath}$it").exists()
+                    }
+                ) {
+                    backupFile = File(parent, "${backupName.removeSuffix(".db")}_$suffix.db")
+                    suffix++
+                }
+                dbFile.copyTo(backupFile, overwrite = false)
+                for (sidecar in listOf("-wal", "-shm", "-journal")) {
+                    val source = File("${dbFile.absolutePath}$sidecar")
+                    if (source.exists()) {
+                        source.copyTo(File("${backupFile.absolutePath}$sidecar"), overwrite = false)
+                    }
                 }
                 backupFile
             } catch (_: Exception) {
                 null
             }
         }
-
-        private fun deleteDatabaseSidecars(dbFile: File) {
-            for (suffix in listOf("-wal", "-shm", "-journal")) {
-                try { File("${dbFile.absolutePath}$suffix").delete() } catch (_: Throwable) {}
-            }
-        }
-
-        private fun deleteDatabaseFiles(dbFile: File) {
-            try {
-                android.database.sqlite.SQLiteDatabase.deleteDatabase(dbFile)
-            } catch (_: Throwable) {}
-            try {
-                dbFile.delete()
-                deleteDatabaseSidecars(dbFile)
-            } catch (_: Throwable) {}
-        }
     }
 }
 
 /** Raised instead of deleting an unreadable encrypted database. */
 class DatabaseRecoveryRequiredException(message: String) : IllegalStateException(message)
+
+/**
+ * SQLCipher-backed inspector/exporter. Kept separate from the file-state coordinator so the
+ * rename/rollback behavior can be tested on the JVM without pretending Robolectric exercises
+ * native SQLCipher.
+ */
+internal object SqlCipherDatabaseInspector : DatabaseSnapshotReader, DatabaseEncryptionExporter {
+
+    override fun readPlaintext(file: File): DatabaseSnapshot? = readSnapshot(file, null)
+
+    override fun readEncrypted(file: File, key: ByteArray): DatabaseSnapshot? =
+        readSnapshot(file, key)
+
+    private fun readSnapshot(file: File, key: ByteArray?): DatabaseSnapshot? {
+        if (!file.exists() || file.length() == 0L) return null
+        var database: SQLiteDatabase? = null
+        return try {
+            database = if (key == null) {
+                SQLiteDatabase.openDatabase(
+                    file.absolutePath,
+                    null,
+                    SQLiteDatabase.OPEN_READWRITE
+                )
+            } else {
+                SQLiteDatabase.openDatabase(
+                    file.absolutePath,
+                    key,
+                    null,
+                    SQLiteDatabase.OPEN_READWRITE,
+                    null as net.zetetic.database.DatabaseErrorHandler?,
+                    null as net.zetetic.database.sqlcipher.SQLiteDatabaseHook?
+                )
+            }
+
+            val integrityOk = readIntegrity(database)
+            val userVersion = readUserVersion(database)
+            val tableCounts = readTableCounts(database)
+            DatabaseSnapshot(
+                integrityOk = integrityOk,
+                userVersion = userVersion,
+                tableCounts = tableCounts
+            )
+        } catch (_: Throwable) {
+            null
+        } finally {
+            try { database?.close() } catch (_: Throwable) {}
+        }
+    }
+
+    private fun readIntegrity(database: SQLiteDatabase): Boolean {
+        var sawRow = false
+        database.rawQuery("PRAGMA integrity_check;", null).use { cursor ->
+            while (cursor.moveToNext()) {
+                sawRow = true
+                if (cursor.getString(0)?.trim() != "ok") return false
+            }
+        }
+        return sawRow
+    }
+
+    private fun readUserVersion(database: SQLiteDatabase): Int {
+        database.rawQuery("PRAGMA user_version;", null).use { cursor ->
+            return if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        }
+    }
+
+    private fun readTableCounts(database: SQLiteDatabase): Map<String, Long> {
+        val names = mutableListOf<String>()
+        database.rawQuery(
+            "SELECT name FROM sqlite_master " +
+                "WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%';",
+            null
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                cursor.getString(0)?.let { names.add(it) }
+            }
+        }
+
+        val counts = linkedMapOf<String, Long>()
+        for (name in names) {
+            val quoted = name.replace("`", "``")
+            database.rawQuery("SELECT COUNT(*) FROM `$quoted`;", null).use { cursor ->
+                if (!cursor.moveToFirst()) {
+                    throw IllegalStateException("Could not count table $name")
+                }
+                counts[name] = cursor.getLong(0)
+            }
+        }
+        return counts
+    }
+
+    override fun export(plaintext: File, encrypted: File, key: ByteArray): Boolean {
+        if (!plaintext.exists() || plaintext.length() == 0L) return false
+        if (encrypted.exists()) return false
+        encrypted.parentFile?.mkdirs()
+        if (!encrypted.createNewFile() && !encrypted.exists()) return false
+
+        var source: SQLiteDatabase? = null
+        var target: SQLiteDatabase? = null
+        return try {
+            // SQLCipher's `ATTACH ... KEY "x'...'"` creates a raw-key database, while
+            // SupportOpenHelperFactory passes the key bytes through sqlite3_key() as a
+            // passphrase. Those formats are not interchangeable. Open the encrypted target with
+            // the same key API used by Room, attach the plaintext source without a key, and copy
+            // the schema and rows explicitly. The caller still validates the result before any
+            // file is moved into place.
+            val sourceDatabase = SQLiteDatabase.openDatabase(
+                plaintext.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READWRITE
+            )
+            source = sourceDatabase
+            sourceDatabase.rawQuery("PRAGMA wal_checkpoint(FULL);", null).use { it.moveToFirst() }
+            val sourceVersion = sourceDatabase.version
+            sourceDatabase.close()
+            source = null
+
+            val targetDatabase = SQLiteDatabase.openDatabase(
+                encrypted.absolutePath,
+                key,
+                null,
+                SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.CREATE_IF_NECESSARY,
+                null as net.zetetic.database.DatabaseErrorHandler?,
+                null as net.zetetic.database.sqlcipher.SQLiteDatabaseHook?
+            )
+            target = targetDatabase
+            val escapedSource = plaintext.absolutePath.replace("'", "''")
+            targetDatabase.execSQL(
+                "ATTACH DATABASE '$escapedSource' AS plaintext_source KEY '';"
+            )
+
+            val tables = mutableListOf<String>()
+            val postDataSchema = mutableListOf<String>()
+            targetDatabase.rawQuery(
+                "SELECT type, name, sql FROM plaintext_source.sqlite_master " +
+                    "WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%';",
+                null
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    when (cursor.getString(0)) {
+                        "table" -> {
+                            tables.add(cursor.getString(1))
+                            targetDatabase.execSQL(cursor.getString(2))
+                        }
+                        "index", "view", "trigger" -> postDataSchema.add(cursor.getString(2))
+                    }
+                }
+            }
+
+            targetDatabase.beginTransaction()
+            try {
+                for (table in tables) {
+                    val quoted = quoteIdentifier(table)
+                    targetDatabase.execSQL(
+                        "INSERT INTO main.$quoted SELECT * FROM plaintext_source.$quoted;"
+                    )
+                }
+                targetDatabase.execSQL("PRAGMA user_version = $sourceVersion;")
+                targetDatabase.setTransactionSuccessful()
+            } finally {
+                targetDatabase.endTransaction()
+            }
+
+            for (sql in postDataSchema) {
+                targetDatabase.execSQL(sql)
+            }
+            targetDatabase.execSQL("DETACH DATABASE plaintext_source;")
+            true
+        } catch (t: Throwable) {
+            Log.e("NovaDialerDatabase", "SQLCipher export failed", t)
+            try { target?.close() } catch (_: Throwable) {}
+            target = null
+            try { encrypted.delete() } catch (_: Throwable) {}
+            false
+        } finally {
+            try { source?.close() } catch (_: Throwable) {}
+            try { target?.close() } catch (_: Throwable) {}
+        }
+    }
+
+    private fun quoteIdentifier(identifier: String): String =
+        "\"" + identifier.replace("\"", "\"\"") + "\""
+}

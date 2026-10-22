@@ -34,14 +34,6 @@ val hasReleaseSigningCredentials =
     !releaseKeyAlias.isNullOrBlank() &&
     !releaseKeyPassword.isNullOrBlank()
 
-val requestedTasks = gradle.startParameter.taskNames.joinToString(" ")
-val isDebugBuild = requestedTasks.let {
-    it.contains("Debug", ignoreCase = true) ||
-    it.contains("test", ignoreCase = true)
-}
-val isBundleTask = requestedTasks.contains("bundle", ignoreCase = true)
-val isReleaseTask = requestedTasks.contains("release", ignoreCase = true)
-
 android {
     namespace = "com.example"
     compileSdk {
@@ -58,22 +50,6 @@ android {
         versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    // APK builds can use ABI splits. App Bundles must not generate
-    // multiple ABI-split APK resource outputs during bundle processing.
-    splits {
-        abi {
-            isEnable = !isDebugBuild && !isBundleTask
-            reset()
-            include(
-                "armeabi-v7a",
-                "arm64-v8a",
-                "x86",
-                "x86_64"
-            )
-            isUniversalApk = true
-        }
     }
 
     signingConfigs {
@@ -100,11 +76,6 @@ android {
 
             if (hasReleaseSigningCredentials) {
                 signingConfig = signingConfigs.getByName("release")
-            } else if (isReleaseTask) {
-                throw GradleException(
-                    "Release build failed: Missing or invalid required release signing credentials " +
-                    "(storeFile, storePassword, keyAlias, keyPassword in key.properties)."
-                )
             }
         }
 
@@ -124,15 +95,52 @@ android {
     }
 
     lint {
-        checkReleaseBuilds = false
-        abortOnError = false
-        disable += "ExtraTranslation"
-        disable += "MissingTranslation"
+        // Release builds must fail on lint errors, and all shipped translations must stay
+        // complete. Warnings remain visible in reports without being silently promoted.
+        checkReleaseBuilds = true
+        abortOnError = true
     }
 
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+        }
+    }
+}
+
+// Validate by exact packaging task, not by substring-matching whatever the user typed on the
+// command line. This keeps release/test aggregate invocations from being misclassified while
+// still failing closed before an unsigned release artifact can be produced.
+val releasePackagingTaskNames = setOf(
+    "assembleRelease",
+    "bundleRelease",
+    "packageRelease",
+    "packageReleaseBundle",
+    "signReleaseBundle"
+)
+val validateReleaseSigning = tasks.register("validateReleaseSigning") {
+    // Store the result as a task input so the action never captures the Gradle script object.
+    inputs.property("signingCredentialsPresent", hasReleaseSigningCredentials)
+    doLast {
+        if (!(inputs.properties["signingCredentialsPresent"] as Boolean)) {
+            throw GradleException(
+                "Release build failed: Missing or invalid required release signing credentials " +
+                    "(storeFile, storePassword, keyAlias, keyPassword in key.properties)."
+            )
+        }
+    }
+}
+val releaseSigningAvailable = hasReleaseSigningCredentials
+tasks.configureEach {
+    if (name in releasePackagingTaskNames) {
+        dependsOn(validateReleaseSigning)
+        if (!releaseSigningAvailable) {
+            doFirst {
+                throw GradleException(
+                    "Release build failed: Missing or invalid required release signing credentials " +
+                        "(storeFile, storePassword, keyAlias, keyPassword in key.properties)."
+                )
+            }
         }
     }
 }

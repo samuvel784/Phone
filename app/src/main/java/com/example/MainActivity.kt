@@ -17,12 +17,6 @@
 
 package com.example
 
-import com.example.ui.theme.novaCanvas
-import com.example.ui.theme.NovaTheme
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -42,21 +36,19 @@ import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.safeState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.security.IntentGuard
+import com.example.telecom.CallAction
+import com.example.telecom.CallActionRouter
 import com.example.ui.MainScreen
-import com.example.ui.theme.AppShapes
+import com.example.ui.components.AppLockedScreen
+import com.example.ui.components.RestrictedCallSurface
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.DialerViewModel
 
@@ -120,29 +112,41 @@ class MainActivity : ComponentActivity() {
 
             val allCalls by CallManager.calls.collectAsStateWithLifecycle()
             val currentCall by CallManager.currentCall.collectAsStateWithLifecycle()
+            val hasLiveCall = currentCall != null || allCalls.any { it.safeState != Call.STATE_DISCONNECTED }
+            val contentMode = resolveMainContentMode(
+                isAppLockEnabled = viewModel.isBiometricLockEnabled.value,
+                isAppAuthenticated = isAppAuthenticated.value,
+                isCallActive = isCallActive,
+                hasLiveCall = hasLiveCall
+            )
+
             LaunchedEffect(allCalls, currentCall) {
-                val hasCall = currentCall != null ||
-                        allCalls.isNotEmpty() ||
-                        allCalls.any { it.safeState == Call.STATE_RINGING }
-                if (hasCall) {
-                    setLockScreenVisibility(true)
+                if (!hasLiveCall) {
+                    viewModel.isCallActive.value = false
+                } else {
+                    viewModel.isCallActive.value = true
                 }
             }
 
             // FIXED: Prevent lock screen back-gesture from revealing private contacts or recents
             val keyguardManager = remember { context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager }
             BackHandler(enabled = keyguardManager?.isKeyguardLocked == true) {
-                if (isCallActive) {
+                if (contentMode == MainContentMode.RESTRICTED_CALL || isCallActive) {
                     moveTaskToBack(true)
                 } else {
                     dismissCallUiAndExit()
                 }
             }
 
-            LaunchedEffect(isCallActive) {
+            LaunchedEffect(contentMode, isCallActive, hasLiveCall) {
                 try {
-                    setLockScreenVisibility(isCallActive)
-                    if (!isCallActive) {
+                    // Only a live call may put MainActivity over the keyguard, and even then the
+                    // unauthenticated surface is the restricted call screen below.
+                    setLockScreenVisibility(
+                        contentMode == MainContentMode.RESTRICTED_CALL ||
+                            (contentMode == MainContentMode.FULL_APP && (isCallActive || hasLiveCall))
+                    )
+                    if (!isCallActive && !hasLiveCall) {
                         isLaunchedForCall = false
                         viewModel.isLaunchedForCall.value = false
                         viewModel.isCallMinimized.value = false
@@ -157,11 +161,11 @@ class MainActivity : ComponentActivity() {
                         updateDefaultDialerStatus(context)
                         val hasActiveCall = CallManager.currentCall.value != null ||
                                 CallManager.calls.value.isNotEmpty()
-                        if (hasTrustedToken() || (hasActiveCall && isAppAuthenticated.value)) {
-                            isAppAuthenticated.value = true
+                        if (hasActiveCall && isAppAuthenticated.value) {
                             setLockScreenVisibility(true)
                         } else if (hasActiveCall) {
-                            // A real call is in progress but this intent is not ours: stay locked.
+                            // A live call never authenticates the app; the restricted call surface
+                            // remains in charge until device credentials succeed.
                         } else if (viewModel.isBiometricLockEnabled.value) {
                             if (!isAuthenticating && !isAppAuthenticated.value) {
                                 triggerDeviceAuthentication()
@@ -207,75 +211,19 @@ class MainActivity : ComponentActivity() {
                 isAmoledMode = isAmoledMode,
                 isM3Expressive = isM3Expressive
             ) {
-                if (isAppAuthenticated.value || isCallActive) {
-                    MainScreen(
+                when (contentMode) {
+                    MainContentMode.FULL_APP -> MainScreen(
                         viewModel = viewModel,
                         onShowRestrictedSettings = { showRestrictedSettingsDialog = true },
                         isDefaultDialer = viewModel.isDefaultDialer.value
                     )
-                } else {
-                    Surface(
-                        modifier = Modifier.fillMaxSize().novaCanvas(),
-                        color = androidx.compose.ui.graphics.Color.Transparent
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(32.dp)
-                            ) {
-                                // gradient badge with a soft glow
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .size(104.dp)
-                                        .shadow(
-                                            elevation = 22.dp,
-                                            shape = AppShapes.Avatar,
-                                            ambientColor = NovaTheme.colors.glow,
-                                            spotColor = NovaTheme.colors.glow
-                                        )
-                                        .clip(AppShapes.Avatar)
-                                        .background(NovaTheme.colors.brand)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = stringResource(R.string.app_locked_title),
-                                        tint = androidx.compose.ui.graphics.Color.White,
-                                        modifier = Modifier.size(48.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.size(24.dp))
-
-                                Text(
-                                    text = stringResource(R.string.app_locked_title),
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-
-                                Spacer(modifier = Modifier.size(12.dp))
-
-                                Text(
-                                    text = stringResource(R.string.app_locked_message),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                Spacer(modifier = Modifier.size(36.dp))
-
-                                Button(
-                                    onClick = { triggerDeviceAuthentication() },
-                                    modifier = Modifier.fillMaxWidth(0.7f).height(52.dp),
-                                    shape = AppShapes.Keypad
-                                ) {
-                                    Text(text = stringResource(R.string.btn_unlock_app), style = MaterialTheme.typography.titleMedium)
-                                }
-                            }
-                        }
-                    }
+                    MainContentMode.RESTRICTED_CALL -> RestrictedCallSurface(
+                        onUnlock = { triggerDeviceAuthentication() },
+                        onExit = { moveTaskToBack(true) }
+                    )
+                    MainContentMode.LOCKED -> AppLockedScreen(
+                        onUnlock = { triggerDeviceAuthentication() }
+                    )
                 }
             }
         }
@@ -318,8 +266,7 @@ class MainActivity : ComponentActivity() {
         CallManager.setAppInForeground(true)
         val hasRealCall = CallManager.currentCall.value != null ||
                 CallManager.calls.value.isNotEmpty()
-        if (hasTrustedToken() || (hasRealCall && isAppAuthenticated.value)) {
-            isAppAuthenticated.value = true
+        if (hasRealCall && isAppAuthenticated.value) {
             setLockScreenVisibility(true)
         } else if (isAppStopped) {
             isAppStopped = false
@@ -333,7 +280,7 @@ class MainActivity : ComponentActivity() {
         super.onAttachedToWindow()
         val hasRealCall = CallManager.currentCall.value != null ||
                 CallManager.calls.value.isNotEmpty()
-        if (hasTrustedToken() || (hasRealCall && isAppAuthenticated.value)) {
+        if (hasRealCall && isAppAuthenticated.value) {
             setLockScreenVisibility(true)
         }
     }
@@ -398,10 +345,6 @@ class MainActivity : ComponentActivity() {
         viewModel.isDefaultDialer.value = com.example.util.CallScreenPermissionHelper.isDefaultDialer(context)
     }
 
-    /** True when the current intent carries Nova Dialer's private per-install token. */
-    private fun hasTrustedToken(intent: Intent? = this.intent): Boolean =
-        IntentGuard.isValid(this, intent?.getStringExtra(IntentGuard.EXTRA_GUARD_TOKEN))
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -426,13 +369,12 @@ class MainActivity : ComponentActivity() {
                 // The notification's Answer action carries the id of the exact call it was built for.
                 // Only that call is answered; if it is no longer ringing nothing else is answered.
                 val answerCallId = intent.getLongExtra(MyInCallService.EXTRA_CALL_ID, MyInCallService.NO_CALL_ID)
-                val answered = if (answerCallId != MyInCallService.NO_CALL_ID) {
-                    CallManager.answerCallById(answerCallId)
-                } else {
-                    val before = CallManager.currentCall.value
-                    CallManager.answer()
-                    before != null && before.safeState == Call.STATE_RINGING
-                }
+                val targetId = CallActionRouter.resolve(
+                    action = CallAction.ANSWER,
+                    requestedId = answerCallId,
+                    calls = CallManager.liveCallSnapshots()
+                )
+                val answered = targetId?.let { CallManager.answerCallById(it) } ?: false
                 if (answered || CallManager.currentCall.value != null) {
                     viewModel.isCallActive.value = true
                     isLaunchedForCall = true

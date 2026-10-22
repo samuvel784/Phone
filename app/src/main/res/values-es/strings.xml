@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">La copia que compartes no está cifrada y puede abrirla la aplicación que elijas. Nova Dialer no puede eliminarla de esa aplicación, del dispositivo del destinatario ni de las copias de seguridad que este haga, y ya no está protegida por el cifrado de la aplicación.</string>
     <string name="recording_share_warning_confirm">Compartir copia sin cifrar</string>
     <string name="recording_export_all">Exportar todas las grabaciones</string>
-</resources>
+    <string name="default_dialer_card_title">Establecer como aplicación de teléfono predeterminada</string>
+    <string name="default_dialer_card_reason">Necesario para la gestión completa de llamadas y la pantalla de llamada.</string></resources>

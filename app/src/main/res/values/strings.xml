@@ -615,4 +615,5 @@
     <string name="recording_share_warning_body">The copy you share is decrypted and can be opened by the app you choose. Nova Dialer cannot delete it from that app, from the recipient\'s device, or from any backup they make, and it is no longer protected by the app\'s encryption.</string>
     <string name="recording_share_warning_confirm">Share unencrypted copy</string>
     <string name="recording_export_all">Export all recordings</string>
-</resources>
+    <string name="default_dialer_card_title">Set as Default Phone App</string>
+    <string name="default_dialer_card_reason">Needed for full call handling and the in-call screen.</string></resources>

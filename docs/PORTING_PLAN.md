@@ -1,8 +1,8 @@
 # Nova Dialer 2.1 — Porting Plan, Release Scope & Change Log
 
-**Current status (21 October 2026):** release candidate for the simplified v1 build,
-`2.1.0` (versionCode 4). The automated build, unit-test and lint results are recorded in
-§5. No physical-device test has been performed in this environment.
+**Current status (22 October 2026):** release candidate for the simplified v1 build,
+`2.1.0` (versionCode 4). The automated build, unit-test, lint, AAB-validation and signing
+results are recorded in §5. No physical-device test has been performed in this environment.
 
 This document started as the porting log for Nova Dialer 2.0. It now also records what the
 2.1 release actually ships and which older, deferred features remain in the source tree but
@@ -191,13 +191,23 @@ The commands are:
 git diff --check
 ```
 
-Results from the 21 October 2026 audit: **286 JVM unit tests** (0 failures, 0 errors,
-0 skipped); `lintDebug` and `lintRelease` **0 errors / 37 warnings**; successful
-`assembleDebug`, `assembleRelease` and `bundleRelease`; `jarsigner -verify` reported
-`jar verified` for the AAB and `bundletool validate` returned 0. The signed local AAB is
-`app/build/outputs/bundle/release/app-release.aab`; it has not been uploaded. This porting plan
-does not claim a physical-device pass: Telecom, full-screen intents, multi-call transitions, OEM
-background restrictions and upgrade/backup behaviour still need the matrix in
+Results from the 22 October 2026 verification: **323 JVM unit tests** (0 failures, 0 errors,
+0 skipped), **8 instrumentation tests** on an API 37 emulator (0 failures), and
+`lintDebug`/`lintRelease` **0 errors / 36 warnings**; successful `assembleRelease` and
+`bundleRelease`. The release APK is deliberately a single universal APK
+(`app-release.apk`, 11,239,878 bytes, SHA-256
+`75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`) so its output does not
+depend on which Gradle task is invoked; Play's ABI splitting comes from the AAB
+(`app-release.aab`, 10,598,691 bytes, SHA-256
+`27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`). Its mapping is
+`mapping.txt` (51,347,886 bytes, SHA-256
+`D0589AFB85131709922FE36EDAECF630C3350747AECA13BD495548A371A24098`). `apksigner` verified the
+APK with APK Signature Scheme v2; `jarsigner -verify -verbose -certs` returned exit 0 and reported
+`jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency
+warnings; `bundletool 1.18.3 validate` returned exit 0. The local AAB has not been uploaded. This
+porting plan does not claim a physical-device pass: Telecom, full-screen intents, multi-call
+transitions, OEM background
+restrictions and upgrade/backup behaviour still need the matrix in
 [`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
 
 ---

@@ -71,7 +71,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
-const val MAX_WIDGET_FAVORITES = 6
 private const val PHONE_STATE_PROMPT_PREF = "phone_state_prompted"
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -120,11 +119,6 @@ fun MainScreen(
 
     val favoriteContacts by viewModel.favoriteContacts.collectAsStateWithLifecycle()
     val dialpadMatches by viewModel.dialpadMatches.collectAsStateWithLifecycle()
-
-    // Keep the home-screen favourites widget snapshot in sync with the app
-    LaunchedEffect(favoriteContacts) {
-        viewModel.updateWidgetFavorites(favoriteContacts.take(MAX_WIDGET_FAVORITES))
-    }
 
     LaunchedEffect(selectedTab) {
         focusManager.clearFocus()

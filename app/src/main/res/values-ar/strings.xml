@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">النسخة التي تشاركها غير مشفرة ويمكن للتطبيق الذي تختاره فتحها. لا يستطيع Nova Dialer حذفها من ذلك التطبيق أو من جهاز المستلم أو من أي نسخة احتياطية ينشئها، ولم تعد محمية بتشفير التطبيق.</string>
     <string name="recording_share_warning_confirm">مشاركة نسخة غير مشفرة</string>
     <string name="recording_export_all">تصدير كل التسجيلات</string>
-</resources>
+    <string name="default_dialer_card_title">تعيين كتطبيق الهاتف الافتراضي</string>
+    <string name="default_dialer_card_reason">مطلوب لمعالجة المكالمات بالكامل وشاشة المكالمة.</string></resources>

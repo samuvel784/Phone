@@ -1,14 +1,52 @@
 # Nova Dialer physical-device test matrix
 
-**Status: NOT RUN.** No physical Android device, SIM, or AVD is available in this
-environment. Nothing in this file is a test result. Every test below must be executed and
-recorded by a human on a real phone before the build is called publishable.
+**Physical-device status: NOT RUN.** No physical Android device or SIM is available in this
+environment. An API 37 emulator AVD was available, and the automated checks recorded below were
+executed on it; those checks do not substitute for the physical-device matrix. Every test card
+below remains **NOT RUN** until a human records a result on a real phone.
 
 Target build: **Nova Dialer 2.1.0** (versionCode 4), `com.aistudio.novadial.kpxm`,
 minSdk 24, targetSdk 36. The current local release candidate is
-`app/build/outputs/bundle/release/app-release.aab` (10,570,437 bytes, SHA-256
-`676F996047A82F80C9E7E059ED1D8FEAF7C96C423FAE4E27BBA017D4A01F28F8`). Re-check that hash
+`app/build/outputs/bundle/release/app-release.aab` (10,598,691 bytes, SHA-256
+`27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`). For direct sideload
+testing use the universal APK
+`app/build/outputs/apk/release/app-release.apk` (11,239,878 bytes, SHA-256
+`75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`). Re-check the relevant hash
 before installing so the report and the tested artifact cannot drift apart.
+
+## Automated verification (22 October 2026)
+
+These are the only automated results recorded in this file. They are not physical-device results.
+
+- **JVM:** `:app:testDebugUnitTest` completed with **323 tests in 45 classes, 0 failures, 0 errors,
+  0 skipped**.
+- **Instrumentation:** `:app:connectedDebugAndroidTest` ran on
+  `Medium_Phone_API_37.0(AVD)` (`emulator-5554`, API 37): **8 tests, 0 failures, 0 errors,
+  0 skipped**. This covers seven real-file SQLCipher/recovery tests and one installed-manifest and
+  window-contract check for `IncomingCallActivity`.
+- **SQLCipher/recovery:** the tests exercised fresh encrypted create/reopen, wrong-key and
+  unreadable candidates, empty/incomplete candidates, fail-closed legacy evidence, interrupted
+  swap recovery with sidecars, plaintext-to-SQLCipher migration with representative rows, and
+  reuse of a validated interrupted-migration temp file.
+- **App lock/restricted UI:** JVM Compose assertions confirm locked/restricted surfaces expose no
+  Contacts, Recents, Favourites, Dialpad, or Settings destinations. The incoming-call activity
+  test confirms the installed manifest declares `showWhenLocked`/`turnScreenOn` and that the
+  activity does not request keyguard dismissal; it does not simulate a locked phone.
+- **Telecom/imports:** JVM tests cover stale call ids, call-waiting races, ambiguous hang-up
+  routing, and per-format over-limit import rejection with bounded reads.
+- **Lint:** `:app:lintDebug` and `:app:lintRelease` both completed with **0 errors and 36
+  warnings**.
+- **Release build:** `:app:assembleRelease` and `:app:bundleRelease` completed successfully.
+  `apksigner` verified the APK with APK Signature Scheme v2. `jarsigner -verify -verbose -certs`
+  returned exit 0 and reported `jar verified` for the AAB, with self-signed/no-timestamp and
+  JarFile/JarInputStream consistency warnings. `bundletool 1.18.3 validate` returned exit 0.
+- **Release APK smoke check:** the signed release APK installed successfully on
+  `Medium_Phone_API_37.0` and `MainActivity` cold-started (`versionCode=4`, `versionName=2.1.0`).
+  No `AndroidRuntime` crash was emitted. This is an emulator smoke check, not a physical-device
+  pass.
+- **Still NOT RUN:** a real locked-device incoming call, full-screen-intent grant/denial,
+  multi-SIM/call-waiting on a carrier, Bluetooth/wired audio, upgrade/recovery from a real previous
+  install, OEM background restrictions, and all Play Console checks.
 
 ## How to use this matrix
 
@@ -1059,9 +1097,14 @@ carrier limitations rather than app defects.
 - **Expected:** `jarsigner -verify` exits 0, `bundletool validate` exits 0, signer SHA-256 matches
   the upload certificate, and package/version match the Play Console app. The certificate is the
   expected self-signed upload certificate unless Play App Signing is configured.
-- **Actual result:** _Not recorded. Current audit: `jarsigner` exit 0; `bundletool` exit 0; signer
+- **Actual result:** _Not recorded. Automated preflight on 22 October 2026: `apksigner` verified the
+  APK with v2; `jarsigner -verify -verbose -certs` returned exit 0 and reported `jar verified` for
+  the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency warnings;
+  `bundletool 1.18.3 validate` returned exit 0. The packaged manifest reports package
+  `com.aistudio.novadial.kpxm`, versionName `2.1.0`, versionCode `4`, minSdk `24`, targetSdk `36`,
+  and the expected permissions/components; the Play Console identity was not checked. Signer
   SHA-256 `AF:42:B7:27:BA:4A:94:CF:C3:21:C5:B7:BE:2F:00:82:66:D9:3F:92:3B:75:99:0F:0E:9E:70:17:6D:5A:4B:40`;
-  AAB SHA-256 `676F996047A82F80C9E7E059ED1D8FEAF7C96C423FAE4E27BBA017D4A01F28F8`._
+  AAB SHA-256 `27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`._
 - **Status:** `NOT RUN` — repeat before any upload; Play Console check remains outstanding.
 - **Evidence:** `E-I4-01` — verification transcript; `E-I4-02` — Play Console identity.
 - **Recovery if it fails:** Do not upload. Rebuild only from the verified source and signing
@@ -1228,7 +1271,8 @@ cards; do not create a second set of results.
 
 - A result is complete only when the **Actual result**, **Status**, and **Evidence** fields are
   filled in each card and the session record above is complete.
-- All tests in this file are currently **NOT RUN**. Do not change the summary to "all passed"
+- All physical-device test cards in this file are currently **NOT RUN**. The automated emulator
+  results at the top of this file are not device passes. Do not change the summary to "all passed"
   without a human tester's evidence for every required card.
 - Before upload, the release owner must review every FAIL, every `N/A`, and every blocked test
   (especially G1 and I3) and decide whether the build may proceed. A crash-free run is not a

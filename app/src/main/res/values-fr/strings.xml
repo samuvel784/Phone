@@ -613,4 +613,5 @@
     <string name="recording_share_warning_body">La copie que vous partagez est déchiffrée et peut être ouverte par l\'application que vous choisissez. Nova Dialer ne peut pas la supprimer de cette application, de l\'appareil du destinataire ni des sauvegardes que celui-ci effectue, et elle n\'est plus protégée par le chiffrement de l\'application.</string>
     <string name="recording_share_warning_confirm">Partager la copie non chiffrée</string>
     <string name="recording_export_all">Exporter tous les enregistrements</string>
-</resources>
+    <string name="default_dialer_card_title">Définir comme application téléphone par défaut</string>
+    <string name="default_dialer_card_reason">Nécessaire pour la gestion complète des appels et l’écran d’appel.</string></resources>

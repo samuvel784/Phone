@@ -84,31 +84,55 @@ fun ContactsAndDataSettings(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.readTextFromUri(uri) { content ->
-                if (!content.isNullOrBlank()) {
-                    // Classify before doing anything. Legacy plaintext JSON must never be imported
-                    // without an explicit "this file is not encrypted" confirmation.
-                    when (BackupRestoreManager.classify(content)) {
-                        BackupRestoreManager.BackupKind.ENCRYPTED,
-                        BackupRestoreManager.BackupKind.LEGACY_ENCRYPTED -> {
-                            pendingEncryptedRestoreContent = content
-                            restorePasswordInput = ""
-                            showPasswordPromptDialog = true
-                        }
-                        BackupRestoreManager.BackupKind.LEGACY_PLAINTEXT_JSON -> {
-                            pendingPlaintextRestoreContent = content
-                            showPlaintextWarningDialog = true
-                        }
-                        BackupRestoreManager.BackupKind.UNKNOWN -> {
+            viewModel.readTextFromUri(uri, BackupRestoreManager.TextImportKind.BACKUP) { result ->
+                when (result) {
+                    is BackupRestoreManager.TextReadResult.Success -> {
+                        val content = result.text
+                        if (content.isNotBlank()) {
+                            // Classify before doing anything. Legacy plaintext JSON must never be imported
+                            // without an explicit "this file is not encrypted" confirmation.
+                            when (BackupRestoreManager.classify(content)) {
+                                BackupRestoreManager.BackupKind.ENCRYPTED,
+                                BackupRestoreManager.BackupKind.LEGACY_ENCRYPTED -> {
+                                    pendingEncryptedRestoreContent = content
+                                    restorePasswordInput = ""
+                                    showPasswordPromptDialog = true
+                                }
+                                BackupRestoreManager.BackupKind.LEGACY_PLAINTEXT_JSON -> {
+                                    pendingPlaintextRestoreContent = content
+                                    showPlaintextWarningDialog = true
+                                }
+                                BackupRestoreManager.BackupKind.UNKNOWN -> {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.backup_error_not_a_backup),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        } else {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.backup_error_not_a_backup),
+                                context.getString(R.string.backup_error_empty_file),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
                     }
-                } else {
-                    Toast.makeText(context, context.getString(R.string.file_read_failed), Toast.LENGTH_LONG).show()
+                    BackupRestoreManager.TextReadResult.Empty -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_empty_file),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    BackupRestoreManager.TextReadResult.TooLarge -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_too_large),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    BackupRestoreManager.TextReadResult.Failure -> Toast.makeText(
+                        context,
+                        context.getString(R.string.file_read_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
@@ -134,17 +158,36 @@ fun ContactsAndDataSettings(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.readTextFromUri(uri) { rawVcf ->
-                if (!rawVcf.isNullOrBlank()) {
-                    viewModel.importContactsVcf(rawVcf) { success ->
-                        if (success) {
-                            Toast.makeText(context, context.getString(R.string.vcf_import_count_success), Toast.LENGTH_LONG).show()
+            viewModel.readTextFromUri(uri, BackupRestoreManager.TextImportKind.CONTACTS_VCF) { result ->
+                when (result) {
+                    is BackupRestoreManager.TextReadResult.Success -> {
+                        if (result.text.isNotBlank()) {
+                            viewModel.importContactsVcf(result.text) { success ->
+                                if (success) {
+                                    Toast.makeText(context, context.getString(R.string.vcf_import_count_success), Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, context.getString(R.string.file_read_failed), Toast.LENGTH_LONG).show()
+                                }
+                            }
                         } else {
-                            Toast.makeText(context, context.getString(R.string.file_read_failed), Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.backup_error_empty_file), Toast.LENGTH_LONG).show()
                         }
                     }
-                } else {
-                    Toast.makeText(context, context.getString(R.string.file_read_failed), Toast.LENGTH_LONG).show()
+                    BackupRestoreManager.TextReadResult.Empty -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_empty_file),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    BackupRestoreManager.TextReadResult.TooLarge -> Toast.makeText(
+                        context,
+                        context.getString(R.string.backup_error_too_large),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    BackupRestoreManager.TextReadResult.Failure -> Toast.makeText(
+                        context,
+                        context.getString(R.string.file_read_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }

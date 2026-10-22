@@ -25,14 +25,11 @@ import android.os.Bundle
 import android.telecom.Call
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.security.IntentGuard
-import com.example.ui.components.ActiveCallScreen
+import com.example.ui.components.RestrictedCallSurface
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
@@ -77,7 +74,8 @@ class IncomingCallActivity : ComponentActivity() {
         }
 
         // Read the extras once; they are only a fallback for the very first frame, before the
-        // authoritative values arrive from CallManager.
+        // authoritative values arrive from CallManager. Actions are still resolved by call id
+        // from Telecom, never from these display-only strings.
         val extraName = intent.getStringExtra(EXTRA_CALLER_NAME).orEmpty()
         val extraNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER).orEmpty()
 
@@ -96,9 +94,6 @@ class IncomingCallActivity : ComponentActivity() {
         )
 
         setContent {
-            BackHandler {
-                moveTaskToBack(true)
-            }
             MyApplicationTheme(
                 themeMode = themeMode,
                 dynamicColor = useDynamicColor,
@@ -107,28 +102,14 @@ class IncomingCallActivity : ComponentActivity() {
                 isAmoledMode = amoledMode,
                 isM3Expressive = m3Expressive
             ) {
-                val currentCall by CallManager.currentCall.collectAsStateWithLifecycle()
-                val resolvedName by CallManager.callerName.collectAsStateWithLifecycle()
-                val resolvedNumber by CallManager.callerNumber.collectAsStateWithLifecycle()
-
-                val number = resolvedNumber.ifBlank { extraNumber }
-                val name = resolvedName.ifBlank { extraName }
-
-                ActiveCallScreen(
-                    contactName = name.ifBlank { number },
-                    contactNumber = number,
-                    preferredSim = "",
-                    // The lock path stays allocation-free: quick responses come from the database only
-                    // once the user is inside the unlocked app.
-                    quickResponses = emptyList(),
-                    isIncoming = true,
-                    callState = currentCall?.safeState ?: Call.STATE_RINGING,
-                    onAnswer = { answerCall() },
-                    onHangUp = { declineCall() },
-                    onQuickDecline = { declineCall() },
-                    // Nothing to minimise from the lock screen: the ring UI stays until the call is
-                    // answered, declined or ends by itself.
-                    onMinimize = null
+                // The lock-screen ringing path deliberately uses the same restricted surface as an
+                // unauthenticated MainActivity: caller identity plus answer/decline/mute/end only.
+                // Quick responses, notes, recordings, contacts and settings stay behind app auth.
+                RestrictedCallSurface(
+                    onUnlock = { openMainCallUi() },
+                    onExit = { moveTaskToBack(true) },
+                    fallbackName = extraName,
+                    fallbackNumber = extraNumber
                 )
             }
         }
@@ -145,14 +126,11 @@ class IncomingCallActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            val km = getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
-            km?.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -207,28 +185,6 @@ class IncomingCallActivity : ComponentActivity() {
             // If the hand-off is refused the service still launches MainActivity on the ACTIVE
             // transition, so the call is never left without a UI.
         }
-    }
-
-    /** Answers exactly the call this screen was opened for, never an unrelated one. */
-    private fun answerCall() {
-        val callId = intent.getLongExtra(MyInCallService.EXTRA_CALL_ID, MyInCallService.NO_CALL_ID)
-        val answered = if (callId != MyInCallService.NO_CALL_ID) {
-            CallManager.answerCallById(callId)
-        } else {
-            false
-        }
-        if (!answered) CallManager.answer()
-    }
-
-    /** Declines exactly the call this screen was opened for. Never touches a connected call. */
-    private fun declineCall() {
-        val callId = intent.getLongExtra(MyInCallService.EXTRA_CALL_ID, MyInCallService.NO_CALL_ID)
-        val rejected = if (callId != MyInCallService.NO_CALL_ID) {
-            CallManager.rejectCallById(callId)
-        } else {
-            false
-        }
-        if (!rejected) CallManager.rejectCall()
     }
 
     companion object {

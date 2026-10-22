@@ -17,6 +17,7 @@
 
 package com.example.util
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -26,6 +27,7 @@ import com.example.ReleaseScope
 
 object ReminderScheduler {
 
+    @SuppressLint("MissingPermission") // canScheduleExactAlarms() is checked before exact scheduling.
     fun schedule(context: Context, reminderId: Int, triggerTimeMillis: Long) {
         // Callback reminders are deferred in simplified v1; never post a lingering alarm.
         if (!ReleaseScope.CALLBACK_REMINDERS_ENABLED) return

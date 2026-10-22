@@ -18,11 +18,15 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
    notifications, and phone state only on multi-SIM devices). Call-log access is requested after
    Nova Dialer holds the default Phone
    role; grant it then if you want Recents to show calls.
-4. Release build: set `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (or put
-   `my-upload-key.jks` in the project folder), then run `.\gradlew.bat assembleRelease` for the
-   APKs or `.\gradlew.bat bundleRelease` for the Play upload bundle. The release build
-   deliberately fails fast without these credentials; it never falls back to the debug key.
-5. Unit tests: `./gradlew testDebugUnitTest`; lint: `./gradlew lintDebug`.
+4. Release build: create a local, untracked `key.properties` containing `storeFile`,
+   `storePassword`, `keyAlias`, and `keyPassword`, then run `.\gradlew.bat assembleRelease` for
+   the universal signed APK or `.\gradlew.bat bundleRelease` for the Play upload bundle. Exact
+   release packaging tasks depend on `validateReleaseSigning`; they fail before packaging when
+   the credentials are missing or invalid. They never fall back to the debug key. App Bundle
+   ABI splitting is handled by the AAB; the APK path is intentionally a single universal APK so
+   the output does not change with the Gradle invocation.
+5. Unit tests: `.\gradlew.bat testDebugUnitTest`; lint: `.\gradlew.bat lintDebug` (or
+   `lintRelease`). Release builds also check lint, and missing/extra translations are errors.
 
 > The debug build and JVM unit tests are verified locally. Telecom, full-screen intents,
 > multi-call transitions and OEM-specific background restrictions still require
@@ -41,7 +45,9 @@ Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version
   Bluetooth, speaker).
 - Signal bars and dBm come from Android (nothing estimated); network type says "4G LTE" / "5G".
 - Multi-call support (swap, merge, targeted answer/decline of the exact ringing call).
-- A lock-screen incoming-call surface launched by the notification's full-screen intent.
+- A lock-screen incoming-call surface launched by the notification's full-screen intent. When the
+  app lock is enabled and the app is not authenticated, it exposes only caller identity and
+  answer/decline/mute/end; a live call never unlocks the full dialer.
 
 ### Everything else
 - Contacts, recents, dialpad, favorites, voicemail, speed dial, quick replies.
@@ -123,6 +129,42 @@ Changing it means: users must uninstall the old build (different package = diffe
 data), and any hard-coded widget action strings (`com.aistudio.novadial.widget.*`) must be
 renamed to match. The id has intentionally **not** been changed yet.
 
+## Security and recovery invariants (2.1.0 audit)
+
+- **Database files fail closed.** Before asking for the SQLCipher key, the app inspects the whole
+  database family (active file, `-wal`/`-shm`/`-journal`, interrupted swap, migration temp,
+  legacy plaintext backup, and key material). A missing active file is a fresh install only when
+  no recovery evidence and no key material exist. A zero-byte or unreadable active database is
+  preserved and blocks startup; the app never creates an empty, plaintext, or in-memory
+  replacement. Interrupted swaps are restored, including quarantining stale sidecars.
+- **Plaintext migration is a validated swap.** Legacy plaintext SQLite is exported to SQLCipher,
+  the exported snapshot must pass integrity checking and match every table row count, and only
+  then is it renamed into place. Failed installs restore the original; failed rollback raises an
+  explicit recovery error with both files preserved. No permanent plaintext backup is created.
+- **Notification actions target exactly one call.** Answer, decline, and hang-up resolve the
+  call id from authoritative Telecom state. A stale id is a no-op; an id-less legacy action is
+  accepted only when exactly one eligible call exists. Ringtone and incoming notifications are
+  recomputed from live calls, so ending one call cannot silence another ringing call.
+- **A live call never authenticates the app.** With app lock enabled, an unauthenticated call
+  shows only caller identity plus answer/decline/mute/speaker/end. The full dialer, recents,
+  contacts, notes, recordings, quick responses, and settings stay locked. Neither the lock-screen
+  activity nor MainActivity dismisses the keyguard; the private intent token only authorises the
+  specific internal action and is durably persisted before use.
+- **Imports are bounded while reading.** Backup (20 million characters), vCard (5 million), and
+  text-list (2 million) imports stop at one character over the format limit. They never call
+  `readText()` or allocate from a provider-reported length, and return typed empty/too-large/
+  failure results to localised UI messages.
+- **Release packaging is gated.** Exact release packaging tasks validate `key.properties` before
+  packaging and cannot fall back to the debug key. Lint runs with `abortOnError` and missing or
+  extra translations enabled. The APK output is a single universal APK; the AAB provides Play's
+  ABI splits.
+
+The file-state recovery coordinator and the call-routing/presentation planners are covered by JVM
+tests. These tests do **not** claim native SQLCipher coverage (Robolectric uses the app's in-memory
+Room test path), and no physical-device, multi-SIM, lock-screen, or Play Console verification was
+performed for this audit. Those checks remain in
+[`docs/DEVICE_TEST_MATRIX.md`](docs/DEVICE_TEST_MATRIX.md).
+
 ## Premium redesign (2.1)
 
 A new design system, applied to every page, plus a round of performance work.
@@ -165,13 +207,20 @@ A new design system, applied to every page, plus a round of performance work.
 - The `reference/` archive and the separate design-files copy. `PORTING_PLAN.md` moved to `docs/`.
   Local IDE metadata under `.idea/` is git-ignored and is not part of the repository.
 
-> Automated verification on 21 October 2026: **286 JVM unit tests** (0 failures, 0 errors,
-> 0 skipped), `lintDebug`/`lintRelease` with **0 errors and 37 warnings**, and successful
-> `assembleRelease` and `bundleRelease` runs. The signed local candidate is
-> `app/build/outputs/bundle/release/app-release.aab` (10,570,437 bytes, SHA-256
-> `676F996047A82F80C9E7E059ED1D8FEAF7C96C423FAE4E27BBA017D4A01F28F8`) with per-ABI APKs under
-> `app/build/outputs/apk/release/`; `jarsigner -verify` and `bundletool validate` passed for the
-> AAB. Nothing has been uploaded to Play.
+> Automated verification on 22 October 2026: **323 JVM unit tests** (0 failures, 0 errors,
+> 0 skipped), **8 instrumentation tests** on an API 37 emulator (0 failures), `lintDebug`/
+> `lintRelease` with **0 errors and 36 warnings**, and successful `assembleRelease` and
+> `bundleRelease` runs. The signed local APK is a single universal
+> `app/build/outputs/apk/release/app-release.apk` (11,239,878 bytes, SHA-256
+> `75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`); the AAB is
+> `app/build/outputs/bundle/release/app-release.aab` (10,598,691 bytes, SHA-256
+> `27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`). `apksigner` verified
+> the APK with APK Signature Scheme v2. `jarsigner -verify -verbose -certs` returned exit 0 and
+> reported `jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream
+> consistency warnings; `bundletool 1.18.3 validate` returned exit 0. The mapping is
+> `app/build/outputs/mapping/release/mapping.txt` (51,347,886 bytes, SHA-256
+> `D0589AFB85131709922FE36EDAECF630C3350747AECA13BD495548A371A24098`). Nothing has been
+> uploaded to Play.
 > The app has not been tested on a physical phone in this environment, so Telecom,
 > full-screen intent handling, multi-call transitions and OEM background restrictions still need
 > the checklist below and the full matrix in `docs/DEVICE_TEST_MATRIX.md`.

@@ -36,6 +36,8 @@ Nova Dialer does not log passwords, backup contents, decrypted data, encryption 
 
 With the notification and full-screen-intent permissions, Nova Dialer displays incoming-call notifications, full-screen call interfaces, ongoing-call controls, and missed-call notifications. Notifications may reveal a caller's name or number depending on your notification settings and Android lock-screen configuration. The call UI uses `FLAG_SECURE`, so call details do not appear in the recent-apps screenshot, and the lock-screen call activity is excluded from Recents.
 
+If you enable the app lock, a live call does **not** unlock Nova Dialer. While the app is locked, the call screen exposes only the caller's name or number and the controls needed for that call (answer, decline, mute, speaker, end). The dialer, recents, contacts, notes, recordings, quick responses, and settings remain behind the device screen-lock credential. Nova Dialer does not dismiss the device keyguard or use a call notification token to open the full app.
+
 ## 3. How Information Is Used
 
 Nova Dialer processes information only to:
