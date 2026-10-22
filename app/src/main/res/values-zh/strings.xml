@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">锁屏全屏来电界面</string>
     <string name="settings_lockscreen_calling_sub">设备锁屏或息屏时立即显示全屏来电接听界面</string>
     <string name="settings_full_screen_intent_warning">全屏来电通知受到系统限制</string>
+    <string name="incoming_call_alerts_limited">来电提醒受通知设置限制</string>
+    <string name="incoming_call_notification_settings_help">允许通知并将来电频道保持为高重要性，以便来电及时显示。</string>
     <string name="feature_enable_prompt">开启上方开关即可启用</string>
     <string name="feature_disabled_hint">功能已停用</string>
     <string name="btn_enable_feature">启用功能</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">共享未加密副本</string>
     <string name="recording_export_all">导出所有录音</string>
     <string name="default_dialer_card_title">设为默认电话应用</string>
-    <string name="default_dialer_card_reason">完整通话处理和通话界面需要此项。</string></resources>
+    <string name="default_dialer_card_reason">完整通话处理和通话界面需要此项。</string>
+</resources>

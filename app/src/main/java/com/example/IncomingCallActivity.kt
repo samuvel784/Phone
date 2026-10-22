@@ -27,38 +27,52 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.security.IntentGuard
-import com.example.ui.components.RestrictedCallSurface
+import com.example.telecom.CallAction
+import com.example.telecom.CallActionRouter
+import com.example.ui.components.CallOnlyCallSurface
+import com.example.ui.components.IncomingCallAccessNotice
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.ThemeMode
+import com.example.util.CallScreenPermissionHelper
+import com.example.util.IncomingCallAccess
+import com.example.util.IncomingCallAccessReader
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The lock-screen incoming-call surface.
+ * The single call-only surface for incoming and active calls.
  *
- * Why this Activity exists instead of reusing [MainActivity]:
- *  - It is started by the incoming-call notification's **full-screen intent**, which is the only
- *    platform-sanctioned way to present UI while the device is locked (Android 10+ blocks ordinary
- *    background activity starts).
- *  - It deliberately bypasses MainActivity's app-lock gate, so the ringing dashboard appears even
- *    when Nova Dialer is behind biometric auth — answering a call must never require an unlock first.
- *  - It performs **no** contact/provider/database lookups. The caller name and number were already
- *    resolved by [MyInCallService] and handed over as intent extras, so the first frame is immediate
- *    and nothing on the incoming-call critical path touches disk.
+ * It is started by the incoming notification's full-screen intent when Android permits it, and by
+ * notification taps/Answer actions otherwise. It deliberately does not hand off to [MainActivity]:
+ * the same activity follows the exact Telecom call through ringing, connected, held and
+ * disconnected states. It never dismisses the device keyguard and never marks Nova Dialer itself
+ * as authenticated.
  *
- * Lifecycle contract: this screen owns the *ringing* UI only. As soon as the call is answered it
- * hands the user over to [MainActivity] (which owns the in-call dashboard) and finishes itself.
+ * The activity is private (`android:exported="false"`). Call actions additionally require the
+ * private [IntentGuard] token and are always resolved by the exact Telecom call id in the intent.
  */
 class IncomingCallActivity : ComponentActivity() {
 
-    /**
-     * Guards against a stale launch finishing the screen before the call has been published to
-     * [CallManager]. Only once a live call has actually been observed do we treat its disappearance
-     * as "the call is over".
-     */
+    private val callIdState = mutableStateOf(MyInCallService.NO_CALL_ID)
+    private val fallbackNameState = mutableStateOf("")
+    private val fallbackNumberState = mutableStateOf("")
+    private val accessState = mutableStateOf<IncomingCallAccess?>(null)
+    private val noticeDismissedState = mutableStateOf(false)
+
+    /** Guards against a stale launch finishing the screen before the call has been published. */
     private var sawLiveCall = false
+    private var pendingAnswer = false
+    private var staleLaunchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,15 +87,8 @@ class IncomingCallActivity : ComponentActivity() {
             window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         }
 
-        // Read the extras once; they are only a fallback for the very first frame, before the
-        // authoritative values arrive from CallManager. Actions are still resolved by call id
-        // from Telecom, never from these display-only strings.
-        val extraName = intent.getStringExtra(EXTRA_CALLER_NAME).orEmpty()
-        val extraNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER).orEmpty()
+        readIntent(intent)
 
-        // Theme settings are plain SharedPreferences reads (no database, no disk I/O beyond a tiny
-        // cached XML), so the lock-screen dashboard matches the user's palette without slowing the
-        // incoming-call path down.
         val themePrefs = getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
         val themeMode = ThemeMode.fromKey(themePrefs.getString("theme_mode", "default"))
         val themeColor = themePrefs.getString("theme_color", "system") ?: "system"
@@ -102,26 +109,157 @@ class IncomingCallActivity : ComponentActivity() {
                 isAmoledMode = amoledMode,
                 isM3Expressive = m3Expressive
             ) {
-                // The lock-screen ringing path deliberately uses the same restricted surface as an
-                // unauthenticated MainActivity: caller identity plus answer/decline/mute/end only.
-                // Quick responses, notes, recordings, contacts and settings stay behind app auth.
-                RestrictedCallSurface(
-                    onUnlock = { openMainCallUi() },
-                    onExit = { moveTaskToBack(true) },
-                    fallbackName = extraName,
-                    fallbackNumber = extraNumber
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CallOnlyCallSurface(
+                        callId = callIdState.value,
+                        fallbackName = fallbackNameState.value,
+                        fallbackNumber = fallbackNumberState.value,
+                        onBack = { moveTaskToBack(true) }
+                    )
+
+                    val access = accessState.value
+                    if (!noticeDismissedState.value && access?.hasActionableIssue == true) {
+                        IncomingCallAccessNotice(
+                            access = access,
+                            onOpenFullScreenSettings = {
+                                CallScreenPermissionHelper.requestFullScreenIntentPermission(this@IncomingCallActivity)
+                            },
+                            onOpenNotificationSettings = {
+                                CallScreenPermissionHelper.openChannelNotificationSettings(this@IncomingCallActivity)
+                            },
+                            onDismiss = { noticeDismissedState.value = true },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(start = 16.dp, top = 44.dp, end = 16.dp)
+                        )
+                    }
+                }
             }
         }
 
         observeCallLifecycle()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-read the real OS state after the user returns from Settings. The app never assumes
+        // that opening the settings screen granted anything.
+        refreshAccess()
+        refreshCallState()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readIntent(intent)
+        refreshAccess()
+        refreshCallState()
+    }
+
     /**
-     * Draws over the keyguard and wakes the panel. The `Activity.setShowWhenLocked` /
-     * `setTurnScreenOn` methods are API 27+, so this app (minSdk 24) needs the legacy window flags
-     * below that.
+     * Reads only routing/display extras here. Sensitive answer handling waits until the exact
+     * Telecom call is visible, and requires the private intent token.
      */
+    private fun readIntent(intent: Intent?) {
+        if (intent == null) return
+
+        val incomingId = intent.getLongExtra(MyInCallService.EXTRA_CALL_ID, MyInCallService.NO_CALL_ID)
+        if (incomingId != callIdState.value) {
+            callIdState.value = incomingId
+            sawLiveCall = false
+            // A pending answer belongs to the old call id. Never let it fall through to a new
+            // incoming call that arrives while the activity is reused.
+            pendingAnswer = false
+            noticeDismissedState.value = false
+            startStaleLaunchGuard()
+        } else if (incomingId == MyInCallService.NO_CALL_ID) {
+            // A missing id can never become authoritative; leave a short grace for a process
+            // race, then close instead of showing a false call screen.
+            startStaleLaunchGuard()
+        }
+
+        fallbackNameState.value = intent.getStringExtra(EXTRA_CALLER_NAME).orEmpty()
+        fallbackNumberState.value = intent.getStringExtra(EXTRA_CALLER_NUMBER).orEmpty()
+
+        val trusted = IntentGuard.isValid(
+            this,
+            intent.getStringExtra(IntentGuard.EXTRA_GUARD_TOKEN)
+        )
+        val wantsAnswer = intent.getBooleanExtra(MyInCallService.EXTRA_ANSWER, false) ||
+                intent.action == MyInCallService.ACTION_ANSWER
+        if (trusted && wantsAnswer) {
+            pendingAnswer = true
+        }
+        // Do not leave a privileged token in the Activity intent, even when it was invalid.
+        intent.removeExtra(IntentGuard.EXTRA_GUARD_TOKEN)
+    }
+
+    private fun startStaleLaunchGuard() {
+        staleLaunchJob?.cancel()
+        staleLaunchJob = lifecycleScope.launch {
+            delay(STALE_LAUNCH_GRACE_MS)
+            if (!sawLiveCall) finish()
+        }
+    }
+
+    private fun observeCallLifecycle() {
+        lifecycleScope.launch {
+            CallManager.calls.collect { calls ->
+                val targetId = callIdState.value
+                if (targetId == MyInCallService.NO_CALL_ID) return@collect
+
+                val target = calls.firstOrNull { CallManager.callId(it) == targetId }
+                if (target != null && target.safeState != Call.STATE_DISCONNECTED) {
+                    sawLiveCall = true
+                    maybeAnswerPending(target)
+                } else if (sawLiveCall) {
+                    // The call this screen owns has ended. Never finish because an unrelated
+                    // second call disappeared.
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun refreshCallState() {
+        val targetId = callIdState.value
+        if (targetId == MyInCallService.NO_CALL_ID) return
+        val target = CallManager.calls.value.firstOrNull { CallManager.callId(it) == targetId }
+        if (target != null && target.safeState != Call.STATE_DISCONNECTED) {
+            sawLiveCall = true
+            maybeAnswerPending(target)
+        } else if (sawLiveCall) {
+            finish()
+        }
+    }
+
+    private fun maybeAnswerPending(target: Call) {
+        if (!pendingAnswer) return
+        val targetId = callIdState.value
+        if (targetId == MyInCallService.NO_CALL_ID) {
+            pendingAnswer = false
+            return
+        }
+        if (target.safeState != Call.STATE_RINGING) {
+            // Another entry point already answered or ended this call. Never answer a later call
+            // because this stale action happened to remain pending.
+            pendingAnswer = false
+            return
+        }
+
+        val resolvedId = CallActionRouter.resolve(
+            action = CallAction.ANSWER,
+            requestedId = targetId,
+            calls = CallManager.liveCallSnapshots()
+        ) ?: return
+        pendingAnswer = false
+        CallManager.answerCallById(resolvedId)
+    }
+
+    private fun refreshAccess() {
+        accessState.value = IncomingCallAccessReader.read(this, MyInCallService.CHANNEL_INCOMING)
+    }
+
     private fun applyLockScreenFlags() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
@@ -136,66 +274,12 @@ class IncomingCallActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    /**
-     * Follows the real Telecom state:
-     *  - answered (here, from the notification, a headset or a car kit) -> hand off to MainActivity;
-     *  - ended / declined -> just get out of the way.
-     */
-    private fun observeCallLifecycle() {
-        // Liveness guard: if this screen was opened by a stale full-screen intent and no live call
-        // ever materialises, do not sit invisibly on top of the keyguard.
-        lifecycleScope.launch {
-            delay(STALE_LAUNCH_GRACE_MS)
-            if (!sawLiveCall) finish()
-        }
-
-        lifecycleScope.launch {
-            CallManager.currentCall.collect { call ->
-                val state = call?.safeState ?: Call.STATE_DISCONNECTED
-                val isLive = call != null && state != Call.STATE_DISCONNECTED
-                if (isLive) sawLiveCall = true
-
-                when {
-                    isLive && (state == Call.STATE_ACTIVE || state == Call.STATE_HOLDING) -> {
-                        openMainCallUi()
-                        finish()
-                    }
-                    !isLive && sawLiveCall -> finish()
-                }
-            }
-        }
-    }
-
-    /** Hands the answered call over to the in-call dashboard, which owns everything post-answer. */
-    private fun openMainCallUi() {
-        try {
-            startActivity(
-                Intent(this, MainActivity::class.java).apply {
-                    // NOT ACTION_ANSWER: the call is already connected, and an ANSWER_* action would
-                    // let MainActivity try to answer again (possibly a different, ringing call).
-                    action = MyInCallService.ACTION_INCOMING_CALL
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    putExtra(MyInCallService.EXTRA_SHOW_CALL, true)
-                    putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@IncomingCallActivity))
-                }
-            )
-        } catch (_: Exception) {
-            // If the hand-off is refused the service still launches MainActivity on the ACTIVE
-            // transition, so the call is never left without a UI.
-        }
-    }
-
     companion object {
-        /** Display-only fallbacks; the authoritative values come from [CallManager]. */
+        /** Display-only fallbacks; authoritative values come from the exact Telecom call. */
         const val EXTRA_CALLER_NAME = "com.example.EXTRA_CALLER_NAME"
         const val EXTRA_CALLER_NUMBER = "com.example.EXTRA_CALLER_NUMBER"
 
-        /**
-         * How long to wait for a live call after being opened by a full-screen intent before
-         * assuming the launch was stale. This is a liveness guard only; it never fakes call state.
-         */
+        /** How long to wait for the exact call before treating the launch as stale. */
         private const val STALE_LAUNCH_GRACE_MS = 1_500L
     }
 }

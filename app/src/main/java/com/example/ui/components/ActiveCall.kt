@@ -93,13 +93,22 @@ fun ActiveCallScreen(
     fakeState: String = "RINGING",
     onFakeAnswer: () -> Unit = {},
     onFakeHangUp: () -> Unit = {},
-    isSpam: Boolean = false
+    isSpam: Boolean = false,
+    /**
+     * Restricted mode for the lock-screen call activity. It keeps the call controls but removes
+     * private destinations (contact picker, quick responses, notes and recording) from the
+     * unauthenticated surface.
+     */
+    callOnlyMode: Boolean = false
 ) {
     BackHandler(enabled = true) {
         onMinimize?.invoke()
     }
 
     val context = LocalContext.current
+    // A lock-screen call surface must never receive the device contact list. ContactCache is
+    // still used for the current caller's already-resolved identity and photo.
+    val uiContacts = if (callOnlyMode) emptyList() else contacts
     val activeStartTimestamp by CallManager.activeStartTimestamp.collectAsStateWithLifecycle()
 
     val audioState by CallManager.audioState.collectAsStateWithLifecycle()
@@ -188,7 +197,7 @@ fun ActiveCallScreen(
         mutableStateOf(listOf(Pair(contactName, contactNumber)))
     }
 
-    val participants = remember(isFake, currentCall, allCalls, contactName, contactNumber, contacts, fakeParticipants) {
+    val participants = remember(isFake, currentCall, allCalls, contactName, contactNumber, uiContacts, fakeParticipants) {
         if (isFake) {
             fakeParticipants
         } else {
@@ -199,12 +208,12 @@ fun ActiveCallScreen(
             if (conferenceCall != null && conferenceCall.children.isNotEmpty()) {
                 conferenceCall.children.map { child ->
                     val num = child.details?.handle?.schemeSpecificPart ?: ""
-                    val name = contacts.find { it.number == num }?.name ?: num
+                    val name = uiContacts.find { it.number == num }?.name ?: num
                     Pair(name, num)
                 }
             } else {
                 val num = currentCall?.details?.handle?.schemeSpecificPart ?: contactNumber
-                val name = contacts.find { it.number == num }?.name ?: contactName.ifEmpty { num }
+                val name = uiContacts.find { it.number == num }?.name ?: contactName.ifEmpty { num }
                 listOf(Pair(name, num))
             }
         }
@@ -377,7 +386,7 @@ fun ActiveCallScreen(
                         preferredSim = preferredSim,
                         contactName = contactName,
                         contactNumber = contactNumber,
-                        contacts = contacts,
+                        contacts = uiContacts,
                         secondaryCall = if (isFake) null else secondaryCall,
                         secondaryNumber = if (isFake) "" else secondaryCall?.details?.handle?.schemeSpecificPart ?: "",
                         onEndSecondary = if (isFake || secondaryCall == null) null else {
@@ -392,15 +401,17 @@ fun ActiveCallScreen(
                         isSpam = isSpam
                     )
 
-                    waitingCall?.let { call ->
-                        InCallWaitingCallDialog(
-                            waitingCall = call,
-                            contacts = contacts,
-                            avatarShapeType = avatarShapeType
-                        )
+                    if (!callOnlyMode) {
+                        waitingCall?.let { call ->
+                            InCallWaitingCallDialog(
+                                waitingCall = call,
+                                contacts = uiContacts,
+                                avatarShapeType = avatarShapeType
+                            )
+                        }
                     }
 
-                    if (isQuickDeclineMenuOpen) {
+                    if (isQuickDeclineMenuOpen && !callOnlyMode) {
                         InCallQuickDeclineSheet(
                             contactNumber = contactNumber,
                             quickResponses = quickResponses,
@@ -411,23 +422,23 @@ fun ActiveCallScreen(
                         InCallKeypad(
                             onClose = { isInCallDialpadOpen = false },
                             avatarShapeType = avatarShapeType,
-                            contacts = contacts
+                            contacts = uiContacts
                         )
                     } else {
                         InCallAvatarDisplay(
                             participants = participants,
                             contactName = contactName,
                             contactNumber = contactNumber,
-                            contacts = contacts,
+                            contacts = uiContacts,
                             avatarShapeType = avatarShapeType,
                             isConference = isConference,
                             isSpam = isSpam
                         )
                     }
 
-                    if (isAddCallDialogOpen) {
+                    if (isAddCallDialogOpen && !callOnlyMode) {
                         InCallAddCallDialog(
-                            contacts = contacts,
+                            contacts = uiContacts,
                             onDismiss = { isAddCallDialogOpen = false },
                             onAddCall = { finalName, number ->
                                 if (isFake) {
@@ -529,10 +540,13 @@ fun ActiveCallScreen(
                             CallManager.toggleBluetooth()
                         },
                         isAddCallDialogOpen = isAddCallDialogOpen,
-                        isAddCallEnabled = multiCallState.canAddCall,
+                        isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
+                        showAddCall = !callOnlyMode,
                         onOpenAddCallDialog = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                            isAddCallDialogOpen = true
+                            if (!callOnlyMode) {
+                                RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                isAddCallDialogOpen = true
+                            }
                         },
                         isHoldEnabled = multiCallState.canHoldPrimary || multiCallState.canUnholdPrimary,
                         // Swap/Merge are derived solely from the Telecom call list + capabilities;
@@ -541,7 +555,7 @@ fun ActiveCallScreen(
                         onSwap = { CallManager.swapCalls() },
                         isMergeVisible = multiCallState.canMerge,
                         onMerge = { CallManager.mergeCalls() },
-                        recordingEnabled = recordingEnabled,
+                        recordingEnabled = recordingEnabled && !callOnlyMode,
                         isRecording = isRecording,
                         onToggleRecording = {
                             if (isRecording || CallAudioRecorder.isRecording.value) {
@@ -579,9 +593,12 @@ fun ActiveCallScreen(
                             }
                         },
                         isQuickNotesOpen = isQuickDeclineMenuOpen,
+                        showQuickNotes = !callOnlyMode,
                         onOpenQuickNotes = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                            isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen
+                            if (!callOnlyMode) {
+                                RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen
+                            }
                         },
                         avatarShapeType = avatarShapeType
                     )
@@ -591,7 +608,8 @@ fun ActiveCallScreen(
                         onAnswer = if (isFake) onFakeAnswer else onAnswer,
                         onHangUp = if (isFake) onFakeHangUp else onHangUp,
                         onToggleQuickDeclineMenu = { isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen },
-                        avatarShapeType = avatarShapeType
+                        avatarShapeType = avatarShapeType,
+                        showQuickResponseAction = !callOnlyMode
                     )
                 }
 

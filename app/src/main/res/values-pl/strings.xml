@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">Pełnoekranowe połączenia na ekranie blokady</string>
     <string name="settings_lockscreen_calling_sub">Wyświetlaj interfejs połączenia przychodzącego na pełnym ekranie, gdy urządzenie jest zablokowane lub ekran jest wyłączony</string>
     <string name="settings_full_screen_intent_warning">Pełnoekranowe powiadomienia o połączeniach są ograniczone przez system</string>
+    <string name="incoming_call_alerts_limited">Alerty o połączeniach przychodzących są ograniczone przez ustawienia powiadomień</string>
+    <string name="incoming_call_notification_settings_help">Zezwól na powiadomienia i ustaw kanał Połączenia przychodzące na wysoki priorytet, aby połączenia przychodzące pojawiały się natychmiast.</string>
     <string name="feature_enable_prompt">Użyj przełącznika powyżej, aby aktywować</string>
     <string name="feature_disabled_hint">Funkcja jest wyłączona</string>
     <string name="btn_enable_feature">Włącz funkcję</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">Udostepnij niezaszyfrowana kopie</string>
     <string name="recording_export_all">Eksportuj wszystkie nagrania</string>
     <string name="default_dialer_card_title">Ustaw jako domyślną aplikację telefonu</string>
-    <string name="default_dialer_card_reason">Wymagane do pełnej obsługi połączeń i ekranu połączenia.</string></resources>
+    <string name="default_dialer_card_reason">Wymagane do pełnej obsługi połączeń i ekranu połączenia.</string>
+</resources>

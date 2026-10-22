@@ -168,14 +168,11 @@ object MultiCallStateMachine {
                 active[0].canBeHeld &&
                 held[0].canBeHeld
 
-        // Merging a conference is only offered when Telecom says the calls can actually be
-        // merged: the capability bit must be set and the platform must list the other call as
-        // conferenceable (an empty conferenceable list from a call that *does* advertise the
-        // merge capability means the stack has not narrowed the candidate set).
-        val canMerge = twoCleanCalls && (
-                (active[0].supportsMergeConference && isConferenceableWith(active[0], held[0])) ||
-                        (held[0].supportsMergeConference && isConferenceableWith(held[0], active[0]))
-                )
+        // Telecom's conferenceable-call report is authoritative for a two-call merge. A stack may
+        // explicitly list the held call as conferenceable without setting the per-call
+        // CAPABILITY_MERGE_CONFERENCE bit. Only fall back to the capability when neither call has
+        // published a candidate list yet.
+        val canMerge = twoCleanCalls && canMergePair(active[0], held[0])
 
         val phase = when {
             conference != null -> MultiCallPhase.CONFERENCE
@@ -209,11 +206,34 @@ object MultiCallStateMachine {
     }
 
     /**
-     * A call is mergeable with [other] when either the platform listed [other] as conferenceable
-     * or the call advertises the merge capability but has not yet published a candidate list.
+     * Returns whether [first] and [second] form a mergeable ordinary two-call pair.
+     *
+     * The pair must be exactly one established active call and one established held call. An
+     * explicit Telecom conferenceable relationship is sufficient by itself. The merge capability
+     * is only a fallback while neither call has published any conferenceable candidates: a
+     * non-empty candidate list that excludes the other call is positive evidence that this
+     * particular pair is not mergeable.
      */
-    private fun isConferenceableWith(call: CallSnapshot, other: CallSnapshot): Boolean =
-        call.conferenceableIds.contains(other.id) || call.conferenceableIds.isEmpty()
+    fun canMergePair(first: CallSnapshot, second: CallSnapshot): Boolean {
+        if (first.id == second.id) return false
+        if (first.isDisconnected || second.isDisconnected) return false
+        if (first.isConference || second.isConference) return false
+
+        val oneActiveAndOneHeld =
+            (first.isActive && second.isHolding) || (first.isHolding && second.isActive)
+        if (!oneActiveAndOneHeld) return false
+
+        val explicitlyConferenceable =
+            first.conferenceableIds.contains(second.id) ||
+                second.conferenceableIds.contains(first.id)
+        if (explicitlyConferenceable) return true
+
+        val candidatesPublished =
+            first.conferenceableIds.isNotEmpty() || second.conferenceableIds.isNotEmpty()
+        if (candidatesPublished) return false
+
+        return first.supportsMergeConference || second.supportsMergeConference
+    }
 
     /**
      * Foreground call selection, matching how Nova Dialer tracked calls before: a conference host,

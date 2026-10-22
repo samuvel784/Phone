@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">Llamadas a pantalla completa en pantalla de bloqueo</string>
     <string name="settings_lockscreen_calling_sub">Muestra la interfaz de llamada entrante en pantalla completa cuando el dispositivo esté bloqueado o con pantalla apagada</string>
     <string name="settings_full_screen_intent_warning">Las alertas de llamada a pantalla completa están restringidas por el sistema</string>
+    <string name="incoming_call_alerts_limited">Las alertas de llamadas entrantes están limitadas por los ajustes de notificaciones</string>
+    <string name="incoming_call_notification_settings_help">Permite las notificaciones y mantén el canal Llamadas entrantes con importancia alta para que las llamadas entrantes aparezcan de inmediato.</string>
     <string name="feature_enable_prompt">Active el interruptor superior para activar</string>
     <string name="feature_disabled_hint">La función está desactivada</string>
     <string name="btn_enable_feature">Activar función</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">Compartir copia sin cifrar</string>
     <string name="recording_export_all">Exportar todas las grabaciones</string>
     <string name="default_dialer_card_title">Establecer como aplicación de teléfono predeterminada</string>
-    <string name="default_dialer_card_reason">Necesario para la gestión completa de llamadas y la pantalla de llamada.</string></resources>
+    <string name="default_dialer_card_reason">Necesario para la gestión completa de llamadas y la pantalla de llamada.</string>
+</resources>

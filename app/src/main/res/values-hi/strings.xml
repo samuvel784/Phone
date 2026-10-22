@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">लॉक स्क्रीन पर फ़ुल-स्क्रीन कॉल</string>
     <string name="settings_lockscreen_calling_sub">डिवाइस लॉक होने या स्क्रीन बंद होने पर तुरंत इनकमिंग कॉल स्क्रीन दिखाएं</string>
     <string name="settings_full_screen_intent_warning">फुल-स्क्रीन इनकमिंग कॉल अलर्ट सिस्टम द्वारा प्रतिबंधित हैं</string>
+    <string name="incoming_call_alerts_limited">इनकमिंग कॉल अलर्ट नोटिफ़िकेशन सेटिंग्स द्वारा सीमित हैं</string>
+    <string name="incoming_call_notification_settings_help">नोटिफ़िकेशन की अनुमति दें और इनकमिंग कॉल चैनल को उच्च महत्व पर रखें ताकि इनकमिंग कॉल तुरंत दिखाई दें।</string>
     <string name="feature_enable_prompt">सक्रिय करने के लिए ऊपर स्विच चालू करें</string>
     <string name="feature_disabled_hint">सुविधा अक्षम है</string>
     <string name="btn_enable_feature">सुविधा सक्षम करें</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">डिक्रिप्टेड प्रति साझा करें</string>
     <string name="recording_export_all">सभी रिकॉर्डिंग निर्यात करें</string>
     <string name="default_dialer_card_title">डिफ़ॉल्ट फ़ोन ऐप के रूप में सेट करें</string>
-    <string name="default_dialer_card_reason">पूर्ण कॉल प्रबंधन और इन-कॉल स्क्रीन के लिए आवश्यक।</string></resources>
+    <string name="default_dialer_card_reason">पूर्ण कॉल प्रबंधन और इन-कॉल स्क्रीन के लिए आवश्यक।</string>
+</resources>

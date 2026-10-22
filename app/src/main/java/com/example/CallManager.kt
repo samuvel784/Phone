@@ -84,6 +84,16 @@ object CallManager {
     private const val MIN_VALID_RECORDING_BYTES = 1024L
 
     /**
+     * Keeps a double tap (or a stale UI) from sending a second, conflicting conference request
+     * while Telecom is still processing the first one. The live conference state remains the
+     * authority; this is only a short dispatch guard.
+     */
+    private const val MERGE_REQUEST_GUARD_MS = 2_500L
+    private val mergeRequestLock = Any()
+    private var pendingMergePair: Pair<Long, Long>? = null
+    private var pendingMergeAtMs = 0L
+
+    /**
      * All stop paths (UI, notification, call-end, service destruction) converge on this lock.
      * A single job finalises the file, so an in-flight encryption can never be duplicated and
      * a second stop cannot insert a second database row.
@@ -308,7 +318,30 @@ object CallManager {
         _calls.value = currentList
         _isConferenceActive.value = currentList.any { it.safeState != Call.STATE_DISCONNECTED && isConference(it) } ||
                 isConference(_currentCall.value)
+        clearSettledMergeRequest()
         recomputeMultiCallState()
+    }
+
+    /**
+     * Drops the duplicate-merge guard once Telecom has clearly moved past the pending pair. The
+     * guard is never treated as proof that a merge succeeded; it only prevents a second request
+     * while the first is still in flight.
+     */
+    private fun clearSettledMergeRequest() {
+        synchronized(mergeRequestLock) {
+            val pair = pendingMergePair ?: return
+            val first = callById(pair.first)
+            val second = callById(pair.second)
+            val settled = first == null ||
+                    second == null ||
+                    first.safeState == Call.STATE_DISCONNECTED ||
+                    second.safeState == Call.STATE_DISCONNECTED ||
+                    isConference(first) ||
+                    isConference(second)
+            if (settled) {
+                pendingMergePair = null
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------------
@@ -334,6 +367,11 @@ object CallManager {
         val details = call.details
         val children = runCatching { call.children }.getOrDefault(emptyList())
         val parent = runCatching { call.parent }.getOrNull()
+        // Refresh from the live Call as well as the callback cache. A details change can arrive
+        // without a separate conferenceable-calls callback on some Telecom stacks.
+        runCatching { call.conferenceableCalls }.getOrNull()?.let {
+            conferenceableByCall[call] = it
+        }
         val conferenceables = conferenceableByCall[call].orEmpty()
         return CallSnapshot(
             id = callId(call),
@@ -821,37 +859,79 @@ object CallManager {
     }
 
     fun mergeCalls(): Boolean {
-        val state = _multiCallState.value
+        // Recompute from the live Telecom registry rather than trusting the last rendered state.
+        val liveSnapshots = liveCallSnapshots()
+        val state = MultiCallStateMachine.evaluate(
+            calls = liveSnapshots,
+            preferredPrimaryId = _currentCall.value?.let { callId(it) },
+            waitingCallId = _waitingCall.value?.let { callId(it) }
+        )
         if (!state.canMerge) {
             android.util.Log.i("Nova Dialer MultiCall", "merge not supported in phase ${state.phase}")
             return false
         }
+
         val active = state.primary?.takeIf { it.isActive && !it.isConference }
             ?: state.secondary?.takeIf { it.isActive && !it.isConference }
-            ?: state.primary?.takeIf { !it.isConference }
             ?: return false
-        val other = state.secondary?.takeIf { it.id != active.id }
-            ?: state.primary?.takeIf { it.id != active.id }
+        val held = state.primary?.takeIf { it.isHolding && !it.isConference }
+            ?: state.secondary?.takeIf { it.isHolding && !it.isConference }
             ?: return false
+        if (active.id == held.id) return false
 
-        // Validate against the live Telecom objects one more time before dispatching.
+        // Validate against the live Telecom objects one more time before dispatching. This catches
+        // a call that disconnected or entered a conference between composition and the tap.
+        val activeNow = liveSnapshots.firstOrNull { it.id == active.id } ?: return false
+        val heldNow = liveSnapshots.firstOrNull { it.id == held.id } ?: return false
+        if (activeNow.state != Call.STATE_ACTIVE || heldNow.state != Call.STATE_HOLDING) return false
+        if (!MultiCallStateMachine.canMergePair(activeNow, heldNow)) return false
+
         val activeCall = callById(active.id) ?: return false
-        val otherCall = callById(other.id) ?: return false
-        if (activeCall.safeState == Call.STATE_DISCONNECTED || otherCall.safeState == Call.STATE_DISCONNECTED) {
+        val heldCall = callById(held.id) ?: return false
+        if (activeCall.safeState != Call.STATE_ACTIVE || heldCall.safeState != Call.STATE_HOLDING) {
             return false
         }
 
-        return try {
-            activeCall.conference(otherCall)
-            true
-        } catch (_: Exception) {
-            // Some stacks only accept the merge from the held side.
-            try {
-                otherCall.conference(activeCall)
-                true
-            } catch (_: Exception) {
-                false
+        // Key the guard by the unordered pair so a state refresh that swaps active/held roles
+        // cannot make the same in-flight merge look like a new request.
+        val pair = if (active.id <= held.id) {
+            active.id to held.id
+        } else {
+            held.id to active.id
+        }
+        synchronized(mergeRequestLock) {
+            val now = System.currentTimeMillis()
+            if (pendingMergePair == pair && now - pendingMergeAtMs < MERGE_REQUEST_GUARD_MS) {
+                android.util.Log.i(
+                    "Nova Dialer MultiCall",
+                    "ignoring duplicate merge request for calls ${pair.first}/${pair.second}"
+                )
+                return false
             }
+            pendingMergePair = pair
+            pendingMergeAtMs = now
+        }
+
+        return try {
+            // For two ordinary calls this is the supported Telecom operation. Do not retry from
+            // the other side: that can submit a second, conflicting conference request.
+            activeCall.conference(heldCall)
+            android.util.Log.i(
+                "Nova Dialer MultiCall",
+                "conference request submitted for calls ${pair.first}/${pair.second}; " +
+                    "waiting for Telecom to report the conference state"
+            )
+            true
+        } catch (e: Exception) {
+            synchronized(mergeRequestLock) {
+                if (pendingMergePair == pair) pendingMergePair = null
+            }
+            android.util.Log.w(
+                "Nova Dialer MultiCall",
+                "conference request failed for calls ${pair.first}/${pair.second}: " +
+                    "${e.javaClass.simpleName}: ${e.message}"
+            )
+            false
         }
     }
 
@@ -863,7 +943,12 @@ object CallManager {
      * performed here; the user must ask for it explicitly.
      */
     fun swapCalls(): Boolean {
-        val state = _multiCallState.value
+        val liveSnapshots = liveCallSnapshots()
+        val state = MultiCallStateMachine.evaluate(
+            calls = liveSnapshots,
+            preferredPrimaryId = _currentCall.value?.let { callId(it) },
+            waitingCallId = _waitingCall.value?.let { callId(it) }
+        )
         if (!state.canSwap) {
             android.util.Log.i("Nova Dialer MultiCall", "swap not supported in phase ${state.phase}")
             return false
@@ -876,12 +961,27 @@ object CallManager {
             // State moved on since the button was rendered; stay with what Telecom reports.
             return false
         }
-        return try {
+        if (isConference(activeCall) || isConference(heldCall)) return false
+
+        try {
             activeCall.hold()
+        } catch (e: Exception) {
+            android.util.Log.w(
+                "Nova Dialer MultiCall",
+                "swap hold failed: ${e.javaClass.simpleName}: ${e.message}"
+            )
+            return false
+        }
+
+        try {
             heldCall.unhold()
-            true
-        } catch (_: Exception) {
-            false
+            return true
+        } catch (e: Exception) {
+            android.util.Log.w(
+                "Nova Dialer MultiCall",
+                "swap unhold failed: ${e.javaClass.simpleName}: ${e.message}"
+            )
+            return false
         }
     }
 

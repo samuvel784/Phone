@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">Vollbild-Anrufe auf dem Sperrbildschirm</string>
     <string name="settings_lockscreen_calling_sub">Eingehende Anrufe sofort im Vollbildmodus anzeigen, wenn das Gerät gesperrt oder der Bildschirm aus ist</string>
     <string name="settings_full_screen_intent_warning">Vollbild-Anrufbenachrichtigungen sind vom System eingeschränkt</string>
+    <string name="incoming_call_alerts_limited">Benachrichtigungen für eingehende Anrufe sind durch die Benachrichtigungseinstellungen eingeschränkt</string>
+    <string name="incoming_call_notification_settings_help">Erlauben Sie Benachrichtigungen und lassen Sie den Kanal Eingehende Anrufe auf hoher Wichtigkeit, damit eingehende Anrufe sofort angezeigt werden.</string>
     <string name="feature_enable_prompt">Schalter oben zum Aktivieren umschalten</string>
     <string name="feature_disabled_hint">Funktion ist deaktiviert</string>
     <string name="btn_enable_feature">Funktion aktivieren</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">Unverschlüsselte Kopie teilen</string>
     <string name="recording_export_all">Alle Aufnahmen exportieren</string>
     <string name="default_dialer_card_title">Als Standard-Telefon-App festlegen</string>
-    <string name="default_dialer_card_reason">Erforderlich für die vollständige Anrufverarbeitung und den Anrufbildschirm.</string></resources>
+    <string name="default_dialer_card_reason">Erforderlich für die vollständige Anrufverarbeitung und den Anrufbildschirm.</string>
+</resources>

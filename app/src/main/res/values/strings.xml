@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">Full Screen Calls on Lock Screen</string>
     <string name="settings_lockscreen_calling_sub">Display full-screen incoming call UI instantly when device is locked or screen is off</string>
     <string name="settings_full_screen_intent_warning">Full-screen incoming call alerts restricted by system</string>
+    <string name="incoming_call_alerts_limited">Incoming call alerts are limited by notification settings</string>
+    <string name="incoming_call_notification_settings_help">Allow notifications and keep the Incoming Calls channel at high importance so incoming calls appear promptly.</string>
     <string name="feature_enable_prompt">Toggle the switch above to activate</string>
     <string name="feature_disabled_hint">Feature is disabled</string>
     <string name="btn_enable_feature">Enable Feature</string>

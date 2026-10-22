@@ -164,6 +164,47 @@ class MultiCallStateMachineTest {
     }
 
     @Test
+    fun explicitConferenceablePairDoesNotNeedThePerCallMergeCapability() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                call(1, Call.STATE_ACTIVE, capabilities = holdCaps, conferenceableIds = listOf(2L)),
+                call(2, Call.STATE_HOLDING, capabilities = holdCaps)
+            )
+        )
+        assertTrue("Telecom's explicit pair is authoritative", state.canMerge)
+        assertTrue("Merge does not suppress a valid Swap", state.canSwap)
+    }
+
+    @Test
+    fun heldSideCanEstablishTheExplicitConferenceablePair() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                call(1, Call.STATE_ACTIVE, capabilities = holdCaps),
+                call(2, Call.STATE_HOLDING, capabilities = holdCaps, conferenceableIds = listOf(1L))
+            )
+        )
+        assertTrue(state.canMerge)
+    }
+
+    @Test
+    fun swapAndMergeRemainIndependentWhenBothAreAvailable() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                call(
+                    1,
+                    Call.STATE_ACTIVE,
+                    capabilities = holdCaps or mergeCaps,
+                    conferenceableIds = listOf(2L)
+                ),
+                call(2, Call.STATE_HOLDING, capabilities = holdCaps)
+            ),
+            preferredPrimaryId = 1
+        )
+        assertTrue("Swap must remain visible when Merge is available", state.canSwap)
+        assertTrue("Merge must remain visible when Swap is available", state.canMerge)
+    }
+
+    @Test
     fun mergeIsBlockedWhenConferenceableListExcludesTheOtherCall() {
         val state = MultiCallStateMachine.evaluate(
             listOf(
@@ -273,5 +314,83 @@ class MultiCallStateMachineTest {
             )
         )
         assertFalse("A conference host is not a plain active call", state.canSwap)
+    }
+
+    @Test
+    fun ringingSecondCallIsNeverMergeableEvenIfTelecomListsIt() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                call(1, Call.STATE_ACTIVE, capabilities = holdCaps, conferenceableIds = listOf(2L)),
+                call(2, Call.STATE_RINGING)
+            )
+        )
+        assertFalse(state.canMerge)
+        assertFalse(state.canSwap)
+    }
+
+    @Test
+    fun dialingSecondCallIsNeverMergeableEvenIfCapabilityExists() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                call(1, Call.STATE_ACTIVE, capabilities = holdCaps or mergeCaps),
+                call(2, Call.STATE_DIALING, capabilities = holdCaps or mergeCaps)
+            )
+        )
+        assertFalse(state.canMerge)
+    }
+
+    @Test
+    fun oneNonMatchingPublishedCandidateListBlocksCapabilityFallback() {
+        val state = MultiCallStateMachine.evaluate(
+            listOf(
+                // The active side published candidates, but not call 2. The held side has an empty
+                // list and the merge capability; that must not override the active side's report.
+                call(1, Call.STATE_ACTIVE, capabilities = holdCaps, conferenceableIds = listOf(99L)),
+                call(2, Call.STATE_HOLDING, capabilities = holdCaps or mergeCaps)
+            )
+        )
+        assertFalse(state.canMerge)
+    }
+
+    @Test
+    fun canMergePairRejectsDisconnectedAndNonEstablishedCalls() {
+        val active = call(1, Call.STATE_ACTIVE, capabilities = holdCaps, conferenceableIds = listOf(2L))
+        val held = call(2, Call.STATE_HOLDING, capabilities = holdCaps)
+
+        assertTrue(MultiCallStateMachine.canMergePair(active, held))
+        assertFalse(
+            "A disconnected side is stale",
+            MultiCallStateMachine.canMergePair(active, held.copy(state = Call.STATE_DISCONNECTED))
+        )
+        assertFalse(
+            "Ringing is not an established merge pair",
+            MultiCallStateMachine.canMergePair(active, held.copy(state = Call.STATE_RINGING))
+        )
+        assertFalse(
+            "Two active calls cannot be merged as an active/held pair",
+            MultiCallStateMachine.canMergePair(
+                active,
+                held.copy(state = Call.STATE_ACTIVE, conferenceableIds = emptyList())
+            )
+        )
+    }
+
+    @Test
+    fun canMergePairRejectsConferenceParticipantsAndHosts() {
+        val active = call(1, Call.STATE_ACTIVE, capabilities = holdCaps, conferenceableIds = listOf(2L))
+        val held = call(2, Call.STATE_HOLDING, capabilities = holdCaps)
+
+        assertFalse(
+            MultiCallStateMachine.canMergePair(
+                active.copy(isConferenceParticipant = true),
+                held
+            )
+        )
+        assertFalse(
+            MultiCallStateMachine.canMergePair(
+                active,
+                held.copy(isConferenceHost = true)
+            )
+        )
     }
 }

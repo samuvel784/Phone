@@ -56,11 +56,18 @@ object CallScreenPermissionHelper {
     }
 
     fun canUseFullScreenIntent(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        return try {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-            nm?.canUseFullScreenIntent() ?: true
-        } else {
-            true
+            nm?.canUseFullScreenIntent() ?: false
+        } catch (e: Exception) {
+            // Fail closed and expose a useful diagnostic. Assuming access here would make the
+            // settings UI and call notification claim a full-screen launch that cannot happen.
+            android.util.Log.w(
+                "Nova Dialer Notifications",
+                "canUseFullScreenIntent() failed: ${e.javaClass.simpleName}: ${e.message}"
+            )
+            false
         }
     }
 

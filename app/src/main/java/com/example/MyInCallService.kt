@@ -30,7 +30,6 @@ import android.telecom.DisconnectCause
 import android.telecom.InCallService
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.content.ContextCompat
 import com.example.data.AppDatabase
@@ -45,6 +44,8 @@ import com.example.telecom.CallDecisionStore
 import com.example.telecom.IncomingPresentationPlanner
 import com.example.telecom.RingingPolicy
 import com.example.security.IntentGuard
+import com.example.util.IncomingCallAccess
+import com.example.util.IncomingCallAccessReader
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -605,28 +606,26 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         val callId = CallManager.callId(call)
 
         val requestCodeBase = (callId % 100_000L).toInt() * 10
+        val access = IncomingCallAccessReader.read(this, CHANNEL_INCOMING)
+        val guardToken = IntentGuard.token(this@MyInCallService)
 
-        val callScreenIntent = Intent(this, MainActivity::class.java).apply {
-            action = ACTION_INCOMING_CALL
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-            putExtra(EXTRA_SHOW_CALL, true)
-            putExtra(EXTRA_CALL_ID, callId)
-            putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-        }
-
-        val fullScreenIntent = Intent(this, IncomingCallActivity::class.java).apply {
-            action = ACTION_INCOMING_CALL
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(EXTRA_CALL_ID, callId)
-            putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, displayName)
-            putExtra(IncomingCallActivity.EXTRA_CALLER_NUMBER, number)
-            putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-        }
+        // Every call presentation entry point targets the same call-only activity. It is the one
+        // owner of the incoming -> active lifecycle; MainActivity is never launched merely because
+        // a call arrived.
+        val callScreenIntent = CallOnlyIntents.callScreen(
+            context = this,
+            callId = callId,
+            callerName = displayName,
+            callerNumber = number,
+            guardToken = guardToken
+        )
+        val fullScreenIntent = CallOnlyIntents.callScreen(
+            context = this,
+            callId = callId,
+            callerName = displayName,
+            callerNumber = number,
+            guardToken = guardToken
+        )
 
         val declinePendingIntent = PendingIntent.getService(
             this, requestCodeBase + 2,
@@ -637,19 +636,19 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        // Answer opens the call-only activity with the exact call id. The activity validates the
+        // token and answers that id once, so a notification tap cannot answer a different call.
         val answerPendingIntent = PendingIntent.getActivity(
             this, requestCodeBase + 3,
-            Intent(this, MainActivity::class.java).apply {
-                action = ACTION_ANSWER
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                putExtra(EXTRA_SHOW_CALL, true)
-                putExtra(EXTRA_ANSWER, true)
-                putExtra(EXTRA_CALL_ID, callId)
-                putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-            },
+            CallOnlyIntents.callScreen(
+                context = this,
+                callId = callId,
+                callerName = displayName,
+                callerNumber = number,
+                guardToken = guardToken,
+                action = ACTION_ANSWER,
+                answer = true
+            ),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -679,17 +678,30 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             .setContentIntent(openCallScreenPendingIntent)
 
         if (!isCallWaiting) {
-            if (canUseFullScreenIntent()) {
+            if (access.canAttachFullScreenIntent) {
                 notificationBuilder.setFullScreenIntent(fullScreenPendingIntent, true)
+                // This event is recorded only when the intent was actually attached. The system
+                // can still choose to show only the notification, but the app did not suppress it.
+                CallTimingLogger.markActive(CallTimingLogger.Event.FULL_SCREEN_INTENT)
+                android.util.Log.i(
+                    NOTIFICATION_TAG,
+                    "Full-screen incoming-call intent attached for callId=$callId " +
+                        "(notifications=${access.notificationsEnabled}, " +
+                        "fullScreenAllowed=${access.fullScreenIntentAllowed})"
+                )
             } else {
                 android.util.Log.w(
                     NOTIFICATION_TAG,
-                    "Full-screen intent not permitted (canUseFullScreenIntent=false). " +
-                        "Incoming call will show as a heads-up notification."
+                    "Full-screen incoming-call intent NOT attached for callId=$callId: " +
+                        "notifications=${access.notificationsEnabled}, " +
+                        "fullScreenAllowed=${access.fullScreenIntentAllowed}, " +
+                        "checkFailed=${access.fullScreenPermissionCheckFailed}. " +
+                        "The notification is the honest fallback."
                 )
             }
-            CallTimingLogger.markActive(CallTimingLogger.Event.FULL_SCREEN_INTENT)
         }
+
+        logIncomingAccess(access, isCallWaiting)
 
         CallTimingLogger.markActive(CallTimingLogger.Event.NOTIFICATION_POSTED)
         nm.notify(
@@ -698,38 +710,46 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         )
     }
 
-    private fun canUseFullScreenIntent(): Boolean = try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            nm.canUseFullScreenIntent()
-        } else {
-            NotificationManagerCompat.from(this).areNotificationsEnabled()
-        }
-    } catch (_: Exception) {
-        true
-    }
-
-    private fun logFullScreenIntentAvailability() {
-        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+    private fun logIncomingAccess(access: IncomingCallAccess, isCallWaiting: Boolean) {
+        if (!access.notificationsEnabled) {
             android.util.Log.w(
                 NOTIFICATION_TAG,
                 "Notifications are disabled for Nova Dialer; incoming calls cannot be presented."
             )
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !canUseFullScreenIntent()) {
+        if (access.channelCheckSupported && !access.channelExists) {
             android.util.Log.w(
                 NOTIFICATION_TAG,
-                "Full-screen intent access is not granted; incoming calls will use the heads-up notification fallback."
+                "Incoming-call channel ${CHANNEL_INCOMING} is missing; create it before relying on alerts."
+            )
+        } else if (access.channelSupportsHeadsUp.not() && access.channelCheckSupported) {
+            android.util.Log.w(
+                NOTIFICATION_TAG,
+                "Incoming-call channel importance is ${access.channelImportance}; " +
+                    "heads-up presentation requires IMPORTANCE_HIGH. The user's channel choice is respected."
             )
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val incoming = nm.getNotificationChannel(CHANNEL_INCOMING)
-            if (incoming != null && incoming.importance < NotificationManager.IMPORTANCE_HIGH) {
-                android.util.Log.w(
-                    NOTIFICATION_TAG,
-                    "Incoming-call channel importance is ${incoming.importance}; heads-up presentation requires IMPORTANCE_HIGH."
-                )
-            }
+        if (!isCallWaiting && access.needsFullScreenSettings) {
+            android.util.Log.w(
+                NOTIFICATION_TAG,
+                "Full-screen intent access is unavailable; the user can enable it from the call screen or system settings."
+            )
         }
+    }
+
+    private fun logFullScreenIntentAvailability() {
+        val access = IncomingCallAccessReader.read(this, CHANNEL_INCOMING)
+        logIncomingAccess(access, isCallWaiting = false)
+        android.util.Log.i(
+            NOTIFICATION_TAG,
+            "Incoming call access: notifications=${access.notificationsEnabled}, " +
+                "channelSupported=${access.channelCheckSupported}, " +
+                "channelExists=${access.channelExists}, " +
+                "channelImportance=${access.channelImportance}, " +
+                "fullScreenPermissionSupported=${access.fullScreenPermissionSupported}, " +
+                "fullScreenAllowed=${access.fullScreenIntentAllowed}, " +
+                "checkFailed=${access.fullScreenPermissionCheckFailed}"
+        )
     }
 
     private fun showActiveCallNotification(call: Call) {
@@ -744,12 +764,13 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
             val contentPendingIntent = PendingIntent.getActivity(
                 this, 200,
-                Intent(this, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    putExtra(EXTRA_SHOW_CALL, true)
-                    putExtra(EXTRA_CALL_ID, activeCallId)
-                    putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-                },
+                CallOnlyIntents.callScreen(
+                    context = this,
+                    callId = activeCallId,
+                    callerName = displayName,
+                    callerNumber = number,
+                    guardToken = IntentGuard.token(this@MyInCallService)
+                ),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
@@ -855,19 +876,15 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     private fun launchCallScreen(callId: Long) {
         try {
-            val intent = Intent(this, MainActivity::class.java).apply {
-                // The action has already been applied to the exact call id. Do not ask
-                // MainActivity to answer a second time.
-                action = ACTION_INCOMING_CALL
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                putExtra(EXTRA_SHOW_CALL, true)
-                putExtra(EXTRA_CALL_ID, callId)
-                putExtra(IntentGuard.EXTRA_GUARD_TOKEN, IntentGuard.token(this@MyInCallService))
-            }
-            startActivity(intent)
+            // The action has already been applied to the exact call id. Do not ask the activity
+            // to answer a second time.
+            startActivity(
+                CallOnlyIntents.callScreen(
+                    context = this,
+                    callId = callId,
+                    guardToken = IntentGuard.token(this@MyInCallService)
+                )
+            )
         } catch (_: Exception) {}
     }
 

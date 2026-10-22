@@ -425,6 +425,8 @@
     <string name="settings_lockscreen_calling_title">Chamadas em tela cheia na tela de bloqueio</string>
     <string name="settings_lockscreen_calling_sub">Exibe tela de chamada recebida instantaneamente com tela bloqueada ou apagada</string>
     <string name="settings_full_screen_intent_warning">Alertas de chamada em tela cheia restritos pelo sistema</string>
+    <string name="incoming_call_alerts_limited">Os alertas de chamadas recebidas estão limitados pelas configurações de notificações</string>
+    <string name="incoming_call_notification_settings_help">Permita notificações e mantenha o canal Chamadas recebidas com importância alta para que as chamadas recebidas apareçam imediatamente.</string>
     <string name="feature_enable_prompt">Ative a chave acima para ativar</string>
     <string name="feature_disabled_hint">O recurso está desativado</string>
     <string name="btn_enable_feature">Ativar recurso</string>
@@ -614,4 +616,5 @@
     <string name="recording_share_warning_confirm">Partilhar cópia não encriptada</string>
     <string name="recording_export_all">Exportar todas as gravações</string>
     <string name="default_dialer_card_title">Definir como aplicativo de telefone padrão</string>
-    <string name="default_dialer_card_reason">Necessário para o gerenciamento completo de chamadas e a tela de chamada.</string></resources>
+    <string name="default_dialer_card_reason">Necessário para o gerenciamento completo de chamadas e a tela de chamada.</string>
+</resources>
