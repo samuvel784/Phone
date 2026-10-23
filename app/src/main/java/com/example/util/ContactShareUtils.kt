@@ -17,6 +17,7 @@
 
 package com.example.util
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -28,16 +29,21 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.UUID
 
 object ContactShareUtils {
 
+    private const val STALE_FILE_RETENTION_MS = 15 * 60 * 1000L // 15 minutes
+
     fun shareAsVCard(context: Context, contact: Contact) {
         try {
+            cleanupStaleExports(context)
+
             val vCardString = buildVCard(contact)
             val sanitizedName = contact.name.ifBlank { "Contact" }.replace("[^a-zA-Z0-9_-]".toRegex(), "_")
-            val vCardFile = File(context.cacheDir, "exports").apply { mkdirs() }.let { dir ->
-                File(dir, "$sanitizedName.vcf")
-            }
+            val exportsDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val vCardFile = File(exportsDir, "${sanitizedName}_${UUID.randomUUID()}.vcf")
+
             FileOutputStream(vCardFile).use { fos ->
                 fos.write(vCardString.toByteArray(StandardCharsets.UTF_8))
             }
@@ -53,16 +59,32 @@ object ContactShareUtils {
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, contact.name)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                clipData = ClipData.newUri(context.contentResolver, "vCard", uri)
             }
 
             val chooser = Intent.createChooser(intent, context.getString(R.string.share_recording)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(chooser)
         } catch (_: Exception) {
             Toast.makeText(context, context.getString(R.string.share_recording), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun cleanupStaleExports(context: Context) {
+        try {
+            val exportsDir = File(context.cacheDir, "exports")
+            if (exportsDir.exists() && exportsDir.isDirectory) {
+                val now = System.currentTimeMillis()
+                exportsDir.listFiles()?.forEach { file ->
+                    if (file.isFile && (now - file.lastModified() > STALE_FILE_RETENTION_MS)) {
+                        try { file.delete() } catch (_: Exception) {}
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     fun shareAsText(context: Context, contact: Contact) {
@@ -89,11 +111,11 @@ object ContactShareUtils {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, contact.name)
                 putExtra(Intent.EXTRA_TEXT, textBuilder.toString().trim())
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
             val chooser = Intent.createChooser(intent, context.getString(R.string.share_recording)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(chooser)
         } catch (_: Exception) {

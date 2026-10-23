@@ -183,12 +183,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: try {
-                    buildDatabase(context.applicationContext).also { INSTANCE = it }
-                } catch (e: Throwable) {
-                    Log.e("NovaDialerDatabase", "Database open error, rebuilding database safely", e)
-                    quarantineAndRebuild(context.applicationContext).also { INSTANCE = it }
-                }
+                INSTANCE ?: buildDatabase(context.applicationContext).also { INSTANCE = it }
             }
         }
 
@@ -264,43 +259,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .build()
         }
 
-        private fun quarantineAndRebuild(appContext: Context): AppDatabase {
-            try {
-                val dbFile = appContext.getDatabasePath(DATABASE_NAME)
-                if (dbFile.exists()) {
-                    preserveDatabaseFamily(dbFile, "${dbFile.name}_corrupted_bak.db")
-                    dbFile.delete()
-                    listOf("-wal", "-shm", "-journal").forEach {
-                        File("${dbFile.absolutePath}$it").delete()
-                    }
-                }
-            } catch (_: Throwable) {}
 
-            return try {
-                val dbKey = DatabaseKeyManager.getDatabaseKey(appContext)
-                val factory = SupportOpenHelperFactory(dbKey, null, false)
-                Room.databaseBuilder(
-                    appContext,
-                    AppDatabase::class.java,
-                    DATABASE_NAME
-                )
-                    .openHelperFactory(factory)
-                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(*MIGRATIONS)
-                    .fallbackToDestructiveMigration(dropAllTables = true)
-                    .build()
-            } catch (_: Throwable) {
-                Room.databaseBuilder(
-                    appContext,
-                    AppDatabase::class.java,
-                    "${DATABASE_NAME}_fallback"
-                )
-                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(*MIGRATIONS)
-                    .fallbackToDestructiveMigration(dropAllTables = true)
-                    .build()
-            }
-        }
 
         private fun isRobolectricTest(): Boolean {
             return try {

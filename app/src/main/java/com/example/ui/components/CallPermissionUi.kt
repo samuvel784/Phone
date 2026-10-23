@@ -43,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -124,17 +123,6 @@ fun FullScreenCallPermissionCard(
                     text = stringResource(R.string.full_screen_features_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(summary),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (state.needsReminder) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -249,7 +237,8 @@ fun CallPermissionSetupDialog(
                 Text(
                     text = stringResource(R.string.permission_manual_guide),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Medium
                 )
             }
         },
@@ -430,18 +419,8 @@ private fun PermissionSetupRow(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = stringResource(
-                    R.string.permission_status_label,
-                    permissionStatusLabel(status)
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = permissionStatusColor(status),
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             FilledTonalButton(
                 onClick = onAction,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
@@ -479,14 +458,6 @@ private fun BannerPermissionRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
             )
-            Text(
-                text = stringResource(
-                    R.string.permission_status_label,
-                    permissionStatusLabel(status)
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = permissionStatusColor(status)
-            )
         }
         Spacer(modifier = Modifier.width(8.dp))
         Button(
@@ -498,26 +469,6 @@ private fun BannerPermissionRow(
                 style = MaterialTheme.typography.labelMedium
             )
         }
-    }
-}
-
-@Composable
-internal fun permissionStatusLabel(status: CallPermissionStatus): String {
-    return stringResource(
-        when (status) {
-            CallPermissionStatus.ENABLED -> R.string.permission_status_enabled
-            CallPermissionStatus.DISABLED -> R.string.permission_status_disabled
-            CallPermissionStatus.UNABLE_TO_VERIFY -> R.string.permission_status_unable
-        }
-    )
-}
-
-@Composable
-internal fun permissionStatusColor(status: CallPermissionStatus): Color {
-    return when (status) {
-        CallPermissionStatus.ENABLED -> MaterialTheme.colorScheme.primary
-        CallPermissionStatus.DISABLED -> MaterialTheme.colorScheme.error
-        CallPermissionStatus.UNABLE_TO_VERIFY -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 

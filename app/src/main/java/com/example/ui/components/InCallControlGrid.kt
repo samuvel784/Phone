@@ -106,7 +106,7 @@ fun InCallControlGrid(
                 onClick = onToggleSpeaker,
                 shape = btnShape,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                enabled = isCallActive
+                enabled = true // Speaker remains enabled and accessible while ringing/dialing
             )
         }
 
