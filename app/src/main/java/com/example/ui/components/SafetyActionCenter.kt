@@ -138,7 +138,7 @@ fun SafetyActionCenter(
 
                     IconButton(
                         onClick = { onDismissItem(item.id) },
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,

@@ -49,7 +49,6 @@ fun CallingAccountsSettings(
 ) {
     val context = LocalContext.current
     val callWaitingEnabled by viewModel.callWaitingEnabled
-    val flashAlertsEnabled by viewModel.flashAlertsEnabled
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -147,30 +146,6 @@ fun CallingAccountsSettings(
             }
         }
 
-        // [Header] INCOMING CALL ALERTS
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            PreferenceHeader(stringResource(R.string.header_incoming_alerts))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Column {
-                    SettingsRowToggle(
-                        title = stringResource(R.string.settings_flash_alerts),
-                        subtitle = stringResource(R.string.settings_flash_alerts_sub),
-                        checked = flashAlertsEnabled,
-                        onCheckedChange = { viewModel.updateFlashAlertsEnabled(it) },
-                        icon = Icons.Default.FlashlightOn,
-                        iconBgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        iconTint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
     }
 }
 

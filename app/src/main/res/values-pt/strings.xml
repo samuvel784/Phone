@@ -18,12 +18,10 @@
     <string name="tab_recents">Recentes</string>
     <string name="tab_contacts">Contatos</string>
     <string name="tab_dialpad">Teclado</string>
-    <string name="home_call_analytics">Análise de chamadas</string>
-    <string name="cat_call_analytics_sub">Total de chamadas, chamadas perdidas e métricas de duração</string>
 
     <!-- Search & General UI -->
     <string name="search_placeholder">Buscar contatos e números</string>
-    <string name="search_settings_placeholder">Pesquisar configurações�</string>
+    <string name="search_settings_placeholder">Pesquisar configurações?</string>
     <string name="search_clear">Limpar</string>
     <string name="search_results_count">Resultados da busca (%1$d)</string>
     <string name="no_matching_settings">Nenhuma configuração encontrada</string>
@@ -102,9 +100,8 @@
     <string name="btn_end_call">Encerrar chamada</string>
     <string name="btn_expand">Expandir</string>
     <string name="btn_collapse">Recolher</string>
-    <string name="btn_play">Reproduzir</string>
-    <string name="btn_pause">Pausar</string>
     <string name="in_call_spoof_warning">Possível número falsificado</string>
+    <string name="in_call_spam_detected">Chamador de spam detetado</string>
     <string name="app_locked_title">Nova Dialer bloqueado</string>
     <string name="app_locked_message">Este app é protegido para salvaguardar sua privacidade. Autentique-se com o bloqueio do dispositivo para continuar.</string>
     <string name="btn_unlock_app">Desbloquear discador</string>
@@ -115,13 +112,6 @@
     <string name="hold">Reter</string>
     <string name="keypad">Teclado</string>
     <string name="record">Gravar</string>
-    <string name="recording">Gravando</string>
-    <string name="recording_saved">Gravação salva com segurança</string>
-    <string name="recording_started">⏺️ Gravação de chamada iniciada</string>
-    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
-    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
-    <string name="recording_empty">Call recording failed or the file was empty</string>
-    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">Chamar</string>
     <string name="action_message">Mensagem</string>
     <string name="action_swipe_call">Ligar</string>
@@ -160,12 +150,10 @@
 
     <!-- Settings Headers -->
     <string name="header_sim_carrier">CONFIGURAÇÃO DE SIM E OPERADORA</string>
-    <string name="header_incoming_alerts">ALERTAS DE CHAMADAS RECEBIDAS</string>
     <string name="header_carrier_voicemail">CORREIO DE VOZ DA OPERADORA</string>
     <string name="header_contacts_management">GERENCIAMENTO DE CONTATOS</string>
     <string name="header_data_backup">DADOS E BACKUP</string>
     <string name="header_privacy_protection">PROTEÇÃO DE PRIVACIDADE</string>
-    <string name="header_call_recording">GRAVAÇÃO DE CHAMADAS</string>
     <string name="header_app_specs">ESPECIFICAÇÕES DO APP</string>
     <string name="header_navigation_layout">NAVEGAÇÃO E LAYOUT</string>
     <string name="header_community">COMUNIDADE</string>
@@ -207,10 +195,6 @@
     <string name="settings_flip_to_silence_sub">Silencie o toque de chamada virando o telefone com a tela para baixo</string>
     <string name="settings_swipe_actions">Deslizar para Ligar / Enviar mensagem</string>
     <string name="settings_swipe_actions_sub">Deslize para a direita para ligar e para a esquerda para enviar mensagem no histórico.</string>
-    <string name="settings_flash_alerts">Alertas de Flash na Chamada</string>
-    <string name="settings_flash_alerts_sub">Pisca o flash da câmera ao receber chamadas</string>
-    <string name="settings_auto_tune_volume">Ajuste automático de volume para gravação</string>
-    <string name="settings_auto_tune_volume_sub" formatted="false">Equilibra o volume do alto-falante em 55% durante a gravação para captura acústica nítida.</string>
     <string name="header_theme_styling">TEMA E ESTILO</string>
     <string name="header_sound_haptics">SOM E RESPOSTA TÁTIL</string>
 
@@ -269,66 +253,15 @@
     <string name="save_voicemail_number">Salvar número do correio de voz</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
-    <string name="settings_blocked_numbers">Números bloqueados</string>
-    <string name="settings_blocked_numbers_sub">Gerenciar chamadores recebidos restritos</string>
-    <string name="enter_number_to_block">Digite o número para bloquear</string>
-    <string name="block_this_number">Bloquear este número</string>
-    <string name="blocked_callers_header">CHAMADORES BLOQUEADOS</string>
-    <string name="no_blocked_numbers_title">Nenhum número bloqueado</string>
-    <string name="no_blocked_numbers_desc">Os números que você bloquear aparecerão aqui. Eles não poderão ligar para você.</string>
     <string name="block">Bloquear</string>
     <string name="unblock">Desbloquear</string>
     <string name="block_number">Bloquear número</string>
     <string name="unblock_number">Desbloquear número</string>
     <string name="call_blocked_toast">🚫 Chamada bloqueada</string>
-    <string name="settings_spam_protection">Proteção de Spam Offline</string>
-    <string name="local_offline_protection">Proteção Local Offline</string>
-    <string name="spam_entries_label">Entradas de Spam</string>
-    <string name="spam_numbers_blocked">%1$d números bloqueados</string>
-    <string name="add_spam_manually_title">Adicionar Número de Spam Manualmente</string>
-    <string name="label_phone_number_hint">Número de Telefone</string>
-    <string name="label_spam_label_hint">Rótulo</string>
-    <string name="btn_add_to_offline_db">Adicionar ao Banco de Dados Local</string>
-    <string name="blocklist_empty_title">A lista de bloqueio está vazia</string>
-    <string name="blocklist_empty_desc">Importe uma lista CSV ou adicione números manualmente para bloquear spam localmente.</string>
-    <string name="blocked_offline_numbers_title">Números Bloqueados Offline</string>
     <string name="btn_clear_all">Limpar Tudo</string>
-    <string name="btn_export_blocklist">Exportar lista de bloqueio</string>
-    <string name="btn_import_blocklist">Importar arquivo</string>
-    <string name="btn_export_spam_csv">Exportar CSV</string>
-    <string name="btn_import_spam_file">Importar arquivo</string>
-    <string name="blocklist_import_count_success">%1$d números bloqueados importados!</string>
-    <string name="spam_import_count_success">%1$d entradas de spam importadas!</string>
 
     <!-- Settings - Call Recording Vault, Audio & Compression -->
-    <string name="settings_call_recording_sub">Ativar controles de gravação em chamada e salvar localmente</string>
-    <string name="settings_recordings_title">Gravações salvas</string>
-    <string name="no_recordings_title">Nenhuma gravação encontrada</string>
-    <string name="no_recordings_desc">Ative a gravação de chamadas e toque no botão de gravar durante uma chamada.</string>
     <string name="share_recording">Compartilhar</string>
-    <string name="delete_recording">Excluir</string>
-    <string name="toast_deleted_recording">Gravação excluída</string>
-    <string name="settings_recording_chime">Toque e vibração de gravação</string>
-    <string name="settings_recording_chime_sub">Reproduz som discreto e vibração quando a gravação de chamada inicia ou para</string>
-    <string name="share_recording_title">Compartilhar e exportar gravação</string>
-    <string name="share_via_apps">Compartilhar via aplicativos</string>
-    <string name="share_via_apps_sub">Enviar arquivo de áudio para mensagens, nuvem ou outros apps</string>
-    <string name="save_to_downloads">Salvar em Downloads</string>
-    <string name="save_to_downloads_sub">Exportar uma cópia desencriptada e reproduzível diretamente para a pasta Downloads do dispositivo</string>
-    <string name="recording_details">Detalhes da gravação</string>
-    <string name="headset_recording_warning">Fones conectados: apenas sua voz será gravada, a menos que mude para o viva-voz.</string>
-    <string name="settings_recordings_always_on">Sempre gravar chamadas</string>
-    <string name="settings_recordings_always_on_sub">Inicia a gravação automaticamente assim que uma chamada é atendida</string>
-    <string name="settings_recordings_biometric_lock">Bloquear gravações com biometria</string>
-    <string name="settings_recordings_biometric_lock_sub">Exige impressão digital ou credencial para ouvir as gravações</string>
-    <string name="settings_recordings_auto_export">Exportar automaticamente para Downloads</string>
-    <string name="settings_recordings_auto_export_sub">Copia automaticamente cada gravação finalizada como ficheiro desencriptado para Downloads/Nova Dialer</string>
-    <string name="settings_recordings_compression_title">Compressão e qualidade de áudio</string>
-    <string name="settings_recordings_compression_sub">Otimiza a taxa de bits e amostragem para equilibrar fidelidade e espaço</string>
-    <string name="settings_recordings_cleanup_empty">Limpar gravações vazias/silenciosas</string>
-    <string name="vault_locked_title">Cofre de gravações bloqueado</string>
-    <string name="vault_locked_desc">Autenticação biométrica é necessária para acessar as gravações confidenciais.</string>
-    <string name="btn_unlock_vault">Desbloquear cofre</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
     <!-- Settings - Contacts, Deduplication & Storage -->
@@ -386,11 +319,6 @@
     <string name="settings_call_log_filters">Filtros rápidos do histórico de chamadas</string>
     <string name="settings_call_log_filters_sub">Exibir filtros rápidos acima do histórico de chamadas</string>
     <string name="settings_all_call_notes">Notas de chamadas</string>
-    <string name="settings_all_call_notes_sub">Exibir e gerenciar notas de chamadas salvas</string>
-    <string name="no_notes_title">Nenhuma nota de chamada</string>
-    <string name="no_notes_desc">Notas adicionadas durante chamadas aparecerão aqui</string>
-    <string name="search_notes_placeholder">Pesquisar notas ou números…</string>
-    <string name="note_deleted_toast">Nota de chamada excluída</string>
     <string name="add_call_note_btn">Adicionar nota de chamada</string>
     <string name="call_notes_count_title">Notas de chamadas (%1$d)</string>
     <string name="call_notes_count_badge">%1$d notas</string>
@@ -400,25 +328,9 @@
     <string name="btn_save_note">Salvar nota</string>
 
     <!-- Settings - Recording, Notes and Reminders -->
-    <string name="duration_label">Duração</string>
-    <string name="callback_reminders_title">Lembretes de retorno de chamada</string>
-    <string name="callback_reminders_stats">%1$d ativos, %2$d concluídos</string>
-    <string name="active_reminders_title">Lembretes Ativos</string>
-    <string name="no_active_reminders_title">Nenhum lembrete ativo</string>
-    <string name="no_active_reminders_desc">Nos detalhes de qualquer chamada, você pode agendar um lembrete.</string>
-    <string name="history_passed_title">Histórico (Anteriores)</string>
-    <string name="scheduled_prefix">Agendado: %1$s</string>
-    <string name="triggered_prefix">Disparado: %1$s</string>
-    <string name="schedule_callback_reminder_title">Agendar Lembrete de Retorno</string>
-    <string name="schedule_callback_reminder_sub">Receba um alarme para retornar a chamada</string>
-    <string name="remind_call_back_prompt">Lembrar de retornar para %1$s em:</string>
-    <string name="optional_note_label">Nota Opcional</string>
-    <string name="settings_callback_reminders">Painel de Lembretes de Chamada</string>
-    <string name="settings_callback_reminders_sub">Ver e cancelar lembretes de chamadas pendentes</string>
     <string name="btn_call_back">Retornar chamada</string>
 
     <!-- Settings - System Calling & Lock Screen Permissions -->
-    <string name="btn_grant">Conceder</string>
     <string name="btn_configure">Configurar</string>
     <string name="btn_set_default">Definir padrão</string>
     <string name="feature_enable_prompt">Ative a chave acima para ativar</string>
@@ -447,30 +359,7 @@
     <string name="btn_delete">Excluir</string>
     <string name="btn_edit">Editar</string>
     <string name="btn_discard">Descartar</string>
-    <string name="delete">Excluir</string>
     <!-- Duplicate Finder -->
-    <string name="dup_finder_title">Localizador de duplicados</string>
-    <string name="dup_finder_sub">Encontre contatos com o mesmo número e mescle ou exclua os extras.</string>
-    <string name="dup_scanning">Escaneando contatos…</string>
-    <string name="dup_groups_found">%1$d grupos duplicados</string>
-    <string name="dup_none_title">Nenhum duplicado encontrado</string>
-    <string name="dup_none_desc">Seus contatos estão limpos — nada para mesclar ou excluir.</string>
-    <string name="dup_permission_title">Permissão de contatos necessária</string>
-    <string name="dup_permission_desc">Conceda acesso aos contatos para que o Nova Dialer possa escanear, mesclar e remover duplicados.</string>
-    <string name="dup_rescan">Reescanear</string>
-    <string name="dup_merge">Mesclar</string>
-    <string name="dup_delete_others">Excluir outros</string>
-    <string name="dup_merge_confirm_title">Mesclar duplicados?</string>
-    <string name="dup_merge_confirm_desc">O contato selecionado mantém seus dados e as outras entradas são mescladas permanentemente.</string>
-    <string name="dup_delete_confirm_title">Excluir duplicados?</string>
-    <string name="dup_delete_confirm_desc">Os duplicados não selecionados serão excluídos permanentemente. Isso não pode ser desfeito.</string>
-    <string name="dup_delete_one_confirm_desc">Este contato será excluído permanentemente. Isso não pode ser desfeito.</string>
-    <string name="dup_merged">%1$d contatos mesclados</string>
-    <string name="dup_deleted">%1$d contato(s) excluído(s)</string>
-    <string name="dup_merge_all">Mesclar tudo</string>
-    <string name="dup_delete_all">Excluir tudo</string>
-    <string name="dup_merge_all_confirm_desc">Cada grupo de duplicados é mesclado, mantendo o contato selecionado em cada um. Isso é salvo permanentemente.</string>
-    <string name="dup_delete_all_confirm_desc">Todos os duplicados não selecionados em cada grupo serão excluídos permanentemente. Isso não pode ser desfeito.</string>
     <string name="close">Fechar</string>
     <string name="add_call">Adicionar chamada</string>
     <string name="add_call_search_hint">Buscar contato ou digitar número</string>
@@ -480,97 +369,8 @@
     <string name="history">Histórico</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="header_focus_mode">MODO FOCO</string>
-    <string name="header_call_protection">NÍVEL DE PROTEÇÃO DE CHAMADAS</string>
-    <string name="header_vip_numbers">NÚMEROS VIP</string>
-    <string name="header_caller_announcer">ANUNCIADOR DE CHAMADAS</string>
-
-    <string name="screening_role_granted">Filtragem de chamadas ativa</string>
-    <string name="screening_role_needed">Permissão de filtragem de chamadas necessária</string>
-    <string name="screening_role_desc">Permita que o Nova Dialer filtre chamadas recebidas para que o modo foco, regras VIP e bloqueio funcionem.</string>
-
-    <string name="focus_mode_title">Modo foco</string>
-    <string name="focus_mode_sub">Escolha quais chamadas podem tocar enquanto você se concentra.</string>
-    <string name="focus_mode_off">Desativado</string>
-    <string name="focus_mode_off_sub">Todas as chamadas recebidas tocam normalmente.</string>
-    <string name="focus_mode_saved">Apenas contatos salvos</string>
-    <string name="focus_mode_saved_sub">Apenas pessoas em seus contatos podem tocar.</string>
-    <string name="focus_mode_vip">Apenas VIP</string>
-    <string name="focus_mode_vip_sub">Apenas números em sua lista VIP podem tocar.</string>
-    <string name="focus_mode_silence_all">Silenciar tudo</string>
-    <string name="focus_mode_silence_all_sub">Silencia tudo, exceto contatos VIP e favoritos.</string>
-
-    <string name="protection_level_title">Nível de proteção de chamadas</string>
-    <string name="protection_level_sub">Bloqueia chamadas desconhecidas quando o modo foco está desativado.</string>
-    <string name="protection_standard">Padrão</string>
-    <string name="protection_standard_sub">Todas as chamadas tocam normalmente.</string>
-    <string name="protection_strict">Rigoroso</string>
-    <string name="protection_strict_sub">Silencia números não salvos; contatos salvos, VIPs e chamadas repetidas ainda tocam.</string>
-    <string name="protection_maximum">Máximo</string>
-    <string name="protection_maximum_sub">Silencia todos, exceto VIPs, favoritos e chamadas repetidas.</string>
-    <string name="protection_allow_repeat_title">Permitir chamadas repetidas</string>
-    <string name="protection_allow_repeat_sub">Uma segunda chamada do mesmo número dentro de 3 minutos sempre toca.</string>
-    <string name="protection_disclaimer">Números de emergência sempre tocam. Chamadas silenciadas aparecem no histórico como perdidas.</string>
-
-    <string name="vip_title">Chamadores VIP</string>
-    <string name="vip_sub">Números VIP sempre ultrapassam o modo foco e a proteção de chamadas.</string>
-    <string name="vip_empty">Nenhum número VIP ainda. Adicione as pessoas que sempre precisam falar com você.</string>
-    <string name="vip_add">Adicionar número VIP</string>
-    <string name="vip_add_sub">Escolha um número que sempre possa falar com você</string>
-    <string name="vip_remove">Remover número VIP</string>
-
-    <string name="announcer_enable_title">Anunciar nome do chamador</string>
-    <string name="announcer_enable_sub">Lê o nome do chamador em voz alta enquanto o telefone toca.</string>
-    <string name="announcer_message_title">Mensagem de anúncio</string>
-    <string name="announcer_template_label">Modelo de mensagem</string>
-    <string name="announcer_template_help">Use {name}, {user} e {type} como marcadores de posição.</string>
-    <string name="announcer_your_name_label">Seu nome ({user})</string>
-    <string name="announcer_repeat_title">Contagem de repetições</string>
-    <string name="announcer_speed_title">Velocidade da fala</string>
-    <string name="announcer_pitch_title">Tom de voz</string>
-    <string name="announcer_volume_title">Volume</string>
-    <string name="announcer_unknown_title">Anunciar números desconhecidos</string>
-    <string name="announcer_unknown_sub">Diga \"um número desconhecido\" para chamadores que não estão em seus contatos.</string>
-    <string name="announcer_headphones_title">Anunciar apenas em fones de ouvido</string>
-    <string name="announcer_headphones_sub">Permaneça em silêncio quando nenhum fone de ouvido ou dispositivo Bluetooth estiver conectado.</string>
-    <string name="announcer_test_title">Testar anúncio</string>
-    <string name="announcer_test_sub">Tocar uma amostra usando suas configurações atuais</string>
-    <string name="announcer_voice_title">Voz</string>
-    <string name="announcer_voice_default">Padrão</string>
-    <string name="announcer_voice_male">Masculina</string>
-    <string name="announcer_voice_female">Feminina</string>
-    <string name="announcer_voice_note">Usa a voz de texto para fala do seu dispositivo. O resultado depende do mecanismo de voz instalado.</string>
 <string name="dialpad_matches_title">Quick matches</string>
     <string name="dialpad_matches_hint">Tap a match to call</string>
-
-    <string name="spam_label">Spam</string>
-    <string name="mark_spam">Mark as spam</string>
-    <string name="remove_spam">Remove spam</string>
-    <string name="spam_marked">Marked as spam</string>
-    <string name="spam_unmarked">Removed from spam</string>
-
-    <string name="export_call_log_title">Export call log</string>
-    <string name="export_call_log_sub">Save your call history to a file on your device.</string>
-    <string name="export_call_log_csv">Export as CSV</string>
-    <string name="export_call_log_pdf">Export as PDF</string>
-    <string name="call_log_exported">Call log exported</string>
-
-    <string name="dnd_title">Do Not Disturb</string>
-    <string name="dnd_sub">Silence calls outside your quiet hours. Saved contacts and VIPs still ring.</string>
-    <string name="dnd_enabled_title">Schedule</string>
-    <string name="dnd_enabled_sub">Silence calls during the schedule below</string>
-    <string name="dnd_start_label">Start</string>
-    <string name="dnd_end_label">End</string>
-    <string name="dnd_days_label">Repeat on</string>
-    <string name="dnd_day_mon">Mon</string>
-    <string name="dnd_day_tue">Tue</string>
-    <string name="dnd_day_wed">Wed</string>
-    <string name="dnd_day_thu">Thu</string>
-    <string name="dnd_day_fri">Fri</string>
-    <string name="dnd_day_sat">Sat</string>
-    <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
-    <string name="dnd_pick_time_title">Pick a time</string>
 
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
@@ -578,10 +378,6 @@
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
     <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
     <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
-
-    <string name="widget_favorites_title">Nova Dialer Favourites</string>
-    <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">Ficheiro de cópia não encriptado</string>
@@ -596,19 +392,6 @@
     <string name="backup_error_invalid_payload">A cópia está danificada ou contém dados inválidos.</string>
 
     <!-- Call recording disclosure -->
-    <string name="recording_disclosure_title">Antes de gravar uma chamada</string>
-    <string name="recording_disclosure_body">Gravar uma chamada guarda o áudio neste dispositivo. As novas gravações devem ficar encriptadas em repouso, mas a encriptação pode falhar e, nesse caso, o Nova Dialer pode manter uma cópia não encriptada no armazenamento privado da aplicação. Limitações do dispositivo, da versão do Android, da operadora e do fabricante podem impedir a gravação ou limitar qual lado da chamada é captado. É responsável por cumprir as leis locais e por obter o consentimento que os participantes tenham de dar.</string>
-    <string name="recording_disclosure_accept">Compreendi</string>
-    <string name="recording_auto_disclosure_title">Ativar a gravação automática?</string>
-    <string name="recording_auto_disclosure_body">Enquanto estiver ativa, as chamadas que cumpram as suas condições de gravação podem ser gravadas automaticamente, sem lhe perguntar de cada vez. O aviso de gravação acima continua a aplicar-se. Pode desativá-la a qualquer momento.</string>
-    <string name="recording_auto_disclosure_confirm">Ativar gravação automática</string>
-    <string name="recording_export_warning_title">Exportar uma cópia reproduzível?</string>
-    <string name="recording_export_warning_body">O ficheiro escrito em Downloads é desencriptado e pode ser aberto por outras aplicações. Permanece no dispositivo mesmo que desinstale o Nova Dialer e deixa de estar protegido pela encriptação da aplicação.</string>
-    <string name="recording_export_warning_confirm">Exportar cópia não encriptada</string>
-    <string name="recording_share_warning_title">Partilhar uma cópia reproduzível?</string>
-    <string name="recording_share_warning_body">A cópia que partilha está desencriptada e pode ser aberta pela aplicação que escolher. O Nova Dialer não a pode apagar dessa aplicação, do dispositivo do destinatário nem de eventuais cópias de segurança que este faça, e deixa de estar protegida pela encriptação da aplicação.</string>
-    <string name="recording_share_warning_confirm">Partilhar cópia não encriptada</string>
-    <string name="recording_export_all">Exportar todas as gravações</string>
     <string name="default_dialer_card_title">Definir como aplicativo de telefone padrão</string>
     <string name="default_dialer_card_reason">Necessário para o gerenciamento completo de chamadas e a tela de chamada.</string>
 
@@ -644,6 +427,10 @@
     <string name="background_popup_fallback">Este dispositivo não expôs uma página de janelas pop-up em segundo plano. As informações do app foram abertas; verifique Outras permissões ou uma configuração do fabricante com nome semelhante.</string>
     <string name="permission_settings_unavailable">Não foi possível abrir a página de configurações do sistema. Abra manualmente Android Configurações, depois Apps e depois Nova Dialer.</string>
     <string name="permission_manual_guide">Caminho manual: Android Configurações, depois Apps e depois Nova Dialer. Para acesso em tela cheia, abra Acesso especial de apps e depois Notificações em tela cheia. Para janelas pop-up, abra Outras permissões ou a configuração equivalente do fabricante.</string>
+    <string name="permission_background_popup_acknowledge">Já ativei</string>
+    <string name="permission_background_popup_acknowledged">Você marcou como ativado</string>
+    <string name="permission_background_popup_ack_hint">Confirme apenas depois de alterar esta configuração no seu dispositivo. O Nova Dialer não consegue verificar configurações do fabricante.</string>
+    <string name="permission_background_popup_ack_undo">Desfazer</string>
     <string name="diagnostics_lock_screen">Exibição na tela de bloqueio: %1$s</string>
     <string name="diagnostics_background_popup">Janela pop-up em segundo plano: %1$s</string>
     <string name="diagnostics_notifications">Notificações ativadas: %1$s</string>
@@ -651,4 +438,16 @@
     <string name="diagnostics_default_dialer">App Telefone padrão: %1$s</string>
     <string name="diagnostics_configure_lock_screen">Configurar tela de bloqueio</string>
     <string name="diagnostics_configure_background_popup">Configurar janela pop-up</string>
+    <string name="loading">Loading</string>
+    <string name="loading_contacts">Loading contacts</string>
+    <string name="loading_recents">Loading recent calls</string>
+    <string name="load_error_title">Could not load your data</string>
+    <string name="load_error_message">Check the app permissions and try again.</string>
+    <string name="btn_retry">Retry</string>
+    <string name="refreshing">Refreshing</string>
+    <string name="progress_exporting_backup">Exporting backup&#8230;</string>
+    <string name="progress_importing_backup">Restoring backup&#8230;</string>
+    <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
+    <string name="progress_importing_contacts">Importing contacts&#8230;</string>
+    <string name="progress_reading_file">Reading file&#8230;</string>
 </resources>

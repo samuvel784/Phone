@@ -49,7 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.R
-import com.example.ReleaseScope
 import com.example.model.CallRecord
 import com.example.model.CallRecording
 import com.example.model.CallType
@@ -68,6 +67,7 @@ import java.util.Locale
 import androidx.core.net.toUri
 import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RecentCallRow(
     group: CallGroup,
@@ -75,7 +75,9 @@ fun RecentCallRow(
     onDeleteRecord: (Int) -> Unit,
     getHistory: suspend (String) -> List<CallRecord>,
     viewModel: DialerViewModel,
-    onHistoryClick: (String) -> Unit
+    onHistoryClick: (String) -> Unit,
+    /** Hoisted by the list so a screen of N rows does not open N blocked-number collectors. */
+    blockedNumbers: Set<String>
 ) {
     val record = group.primary
     val context = LocalContext.current
@@ -98,17 +100,6 @@ fun RecentCallRow(
 
     // Prepared once for the whole list (see RecentsLookup): a row only does cheap map lookups.
     val lookup = LocalRecentsLookup.current
-    val matchingRecordings = remember(lookup, record.number, record.name) {
-        if (ReleaseScope.CALL_RECORDING_ENABLED) {
-            lookup.recordingsFor(record.number, record.name)
-        } else {
-            emptyList()
-        }
-    }
-    var showPlaybackDialog by remember { mutableStateOf(false) }
-
-    val spamEntity = remember(lookup, record.number) { lookup.spamFor(record.number) }
-    val isSpam = spamEntity != null
 
     val rowCardContent = @Composable {
         Card(
@@ -218,65 +209,6 @@ fun RecentCallRow(
                                     }
                                 }
 
-                                if (isSpam) {
-                                    Surface(
-                                        shape = AppShapes.Chip,
-                                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
-                                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Report,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(10.dp)
-                                            )
-                                            Text(
-                                                text = stringResource(R.string.spam_label),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (ReleaseScope.CALL_RECORDING_ENABLED && matchingRecordings.isNotEmpty()) {
-                                    Surface(
-                                        shape = AppShapes.Chip,
-                                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        modifier = Modifier.clickable {
-                                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                            showPlaybackDialog = true
-                                        }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 4.5.dp, vertical = 1.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Mic,
-                                                contentDescription = stringResource(R.string.recording),
-                                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                                modifier = Modifier.size(10.dp)
-                                            )
-                                            Text(
-                                                text = "Rec",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                                            )
-                                        }
-                                    }
-                                }
-
                                 val extraInfo = when {
                                     record.isVerified && record.number.isNotBlank() -> "${record.number} • "
                                     record.label.isNotBlank() && !record.label.equals("Mobile", ignoreCase = true) -> "${localizeContactLabel(record.label)} • "
@@ -353,10 +285,7 @@ fun RecentCallRow(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
 
-                val blockedNumbersEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
-                val isBlocked = remember(blockedNumbersEntities, record.number) {
-                    blockedNumbersEntities.any { it.number == record.number }
-                }
+                val isBlocked = isBlockedNumber(record.number, blockedNumbers)
 
                 AnimatedVisibility(
                     visible = isExpanded,
@@ -374,12 +303,13 @@ fun RecentCallRow(
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
 
-                        Row(
+                        FlowRow(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            maxItemsInEachRow = 4
                         ) {
                             val isContact = record.name != record.number
 
@@ -415,25 +345,6 @@ fun RecentCallRow(
                                     }
                                 }
                             )
-
-                            if (ReleaseScope.SPAM_LABELS_ENABLED) {
-                                DetailActionItem(
-                                    icon = if (isSpam) Icons.Default.ReportOff else Icons.Default.Report,
-                                    label = if (isSpam) stringResource(R.string.remove_spam) else stringResource(R.string.mark_spam),
-                                    containerColor = if (isSpam) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    contentColor = if (isSpam) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.error,
-                                    onClick = {
-                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                        if (spamEntity != null) {
-                                            viewModel.deleteSpamNumber(spamEntity)
-                                            Toast.makeText(context, context.getString(R.string.spam_unmarked), Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            viewModel.addSpamNumber(record.number, context.getString(R.string.spam_label))
-                                            Toast.makeText(context, context.getString(R.string.spam_marked), Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                )
-                            }
 
                             DetailActionItem(
                                 icon = Icons.Default.History,
@@ -477,18 +388,6 @@ fun RecentCallRow(
                                 }
                             )
 
-                            if (ReleaseScope.CALL_RECORDING_ENABLED && matchingRecordings.isNotEmpty()) {
-                                DetailActionItem(
-                                    icon = Icons.Default.Mic,
-                                    label = stringResource(R.string.recording),
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    onClick = {
-                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                        showPlaybackDialog = true
-                                    }
-                                )
-                            }
                         }
                     }
                 }
@@ -562,379 +461,4 @@ fun RecentCallRow(
         rowCardContent()
     }
 
-    if (ReleaseScope.CALL_RECORDING_ENABLED && showPlaybackDialog && matchingRecordings.isNotEmpty()) {
-        DirectRecordingPlayerDialog(
-            recordings = matchingRecordings,
-            onDismiss = { showPlaybackDialog = false },
-            viewModel = viewModel
-        )
-    }
-}
-
-@Composable
-fun DirectRecordingPlayerDialog(
-    recordings: List<CallRecording>,
-    onDismiss: () -> Unit,
-    viewModel: DialerViewModel
-) {
-    val context = LocalContext.current
-    var selectedIndex by remember { mutableIntStateOf(0) }
-    val currentRecording = recordings.getOrNull(selectedIndex) ?: recordings.firstOrNull()
-
-    if (currentRecording == null) {
-        onDismiss()
-        return
-    }
-
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentPositionMs by remember { mutableIntStateOf(0) }
-    var totalDurationMs by remember { mutableIntStateOf((currentRecording.duration * 1000).toInt()) }
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var isEditingNote by remember { mutableStateOf(false) }
-    var noteInput by remember(currentRecording.id) { mutableStateOf(currentRecording.note) }
-    var showShareWarning by remember { mutableStateOf(false) }
-
-    fun stopPlayer() {
-        try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-        } catch (_: Exception) {}
-        mediaPlayer = null
-        isPlaying = false
-        currentPositionMs = 0
-    }
-
-    fun startPlaying(rec: CallRecording) {
-        stopPlayer()
-        val file = File(rec.filePath)
-        if (!file.exists() || file.length() == 0L) {
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-            return
-        }
-        // Encrypted recordings must be decrypted into the private cache before MediaPlayer can
-        // read them. Legacy plaintext recordings are returned unchanged.
-        val playable = CallAudioRecorder.playableFile(context, file)
-        if (playable == null) {
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val mp = MediaPlayer().apply {
-                setDataSource(playable.absolutePath)
-                prepare()
-                totalDurationMs = duration.coerceAtLeast(1000)
-                setOnCompletionListener {
-                    isPlaying = false
-                    currentPositionMs = 0
-                    CallAudioRecorder.clearPlaybackCache(context)
-                }
-                start()
-            }
-            mediaPlayer = mp
-            isPlaying = true
-        } catch (_: Exception) {
-            stopPlayer()
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    DisposableEffect(currentRecording.id) {
-        onDispose {
-            stopPlayer()
-            // Drop the decrypted playback cache when the dialog closes.
-            CallAudioRecorder.clearPlaybackCache(context)
-        }
-    }
-
-    /** Shares a playable (decrypted) copy only, mirroring the recordings screen. */
-    fun shareRecording(rec: CallRecording) {
-        val file = File(rec.filePath)
-        if (!file.exists()) {
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-            return
-        }
-        val shareFile = CallAudioRecorder.playableFile(context, file)
-        if (shareFile == null) {
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                shareFile
-            )
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "audio/*"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_recording)))
-        } catch (_: Exception) {
-            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            delay(100.milliseconds)
-            mediaPlayer?.let { mp ->
-                try {
-                    if (mp.isPlaying) {
-                        currentPositionMs = mp.currentPosition
-                    }
-                } catch (_: Exception) {}
-            }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = {
-            stopPlayer()
-            onDismiss()
-        },
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Mic,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(
-                text = stringResource(R.string.settings_recordings_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = "${currentRecording.name.ifEmpty { currentRecording.number }} • ${currentRecording.timestamp}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                if (recordings.size > 1) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        recordings.forEachIndexed { idx, rec ->
-                            FilterChip(
-                                selected = selectedIndex == idx,
-                                onClick = {
-                                    stopPlayer()
-                                    selectedIndex = idx
-                                },
-                                label = { Text("#${idx + 1} (${rec.duration}s)") }
-                            )
-                        }
-                    }
-                }
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    shape = AppShapes.Card,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            FilledIconButton(
-                                onClick = {
-                                    if (isPlaying) {
-                                        stopPlayer()
-                                    } else {
-                                        startPlaying(currentRecording)
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                    contentDescription = stringResource(if (isPlaying) R.string.btn_pause else R.string.btn_play)
-                                )
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                val progress = if (totalDurationMs > 0) currentPositionMs.toFloat() / totalDurationMs.toFloat() else 0f
-                                LinearProgressIndicator(
-                                    progress = { progress.coerceIn(0f, 1f) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(AppShapes.Chip)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    val currentSec = currentPositionMs / 1000
-                                    val totalSec = totalDurationMs / 1000
-                                    Text(
-                                        text = String.format(Locale.ROOT, "%02d:%02d", currentSec / 60, currentSec % 60),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = String.format(Locale.ROOT, "%02d:%02d", totalSec / 60, totalSec % 60),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (isEditingNote) {
-                    OutlinedTextField(
-                        value = noteInput,
-                        onValueChange = { noteInput = it },
-                        label = { Text(stringResource(R.string.jot_call_note_title)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = false
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        TextButton(onClick = { isEditingNote = false }) {
-                            Text(stringResource(R.string.btn_cancel))
-                        }
-                        Button(
-                            onClick = {
-                                viewModel.updateCallRecordingNote(currentRecording.id, noteInput.trim())
-                                if (noteInput.isNotBlank() && currentRecording.number.isNotBlank()) {
-                                    viewModel.saveCallNote(currentRecording.number, noteInput.trim())
-                                }
-                                isEditingNote = false
-                                Toast.makeText(context, context.getString(R.string.note_saved), Toast.LENGTH_SHORT).show()
-                            }
-                        ) {
-                            Text(stringResource(R.string.btn_save_note))
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                noteInput = currentRecording.note
-                                isEditingNote = true
-                            }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = if (currentRecording.note.isNotBlank()) "📝 ${currentRecording.note}" else "➕ ${stringResource(R.string.jot_call_note_title)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (currentRecording.note.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        IconButton(onClick = {
-                            noteInput = currentRecording.note
-                            isEditingNote = true
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(R.string.btn_edit),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = { showShareWarning = true }
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.share_recording))
-                    }
-
-                    TextButton(
-                        onClick = {
-                            stopPlayer()
-                            viewModel.deleteCallRecording(currentRecording.id)
-                            try {
-                                val file = File(currentRecording.filePath)
-                                if (file.exists()) file.delete()
-                            } catch (_: Exception) {}
-                            CallAudioRecorder.clearPlaybackCache(context)
-                            Toast.makeText(context, context.getString(R.string.toast_deleted_recording), Toast.LENGTH_SHORT).show()
-                            onDismiss()
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.delete_recording))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    stopPlayer()
-                    onDismiss()
-                }
-            ) {
-                Text(stringResource(R.string.close))
-            }
-        }
-    )
-
-    // The shared copy is decrypted, so warn before it leaves app-private storage. This mirrors
-    // the recordings screen and keeps both share paths consistent.
-    if (showShareWarning) {
-        AlertDialog(
-            onDismissRequest = { showShareWarning = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            title = { Text(stringResource(R.string.recording_share_warning_title)) },
-            text = { Text(stringResource(R.string.recording_share_warning_body)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showShareWarning = false
-                        shareRecording(currentRecording)
-                    }
-                ) {
-                    Text(stringResource(R.string.recording_share_warning_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showShareWarning = false }) {
-                    Text(stringResource(R.string.close))
-                }
-            }
-        )
-    }
 }

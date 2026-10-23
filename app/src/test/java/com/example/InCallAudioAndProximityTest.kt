@@ -39,6 +39,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowPowerManager
 
@@ -52,6 +53,7 @@ class InCallAudioAndProximityTest {
     private lateinit var context: Context
     private lateinit var powerManager: PowerManager
     private lateinit var shadowPowerManager: ShadowPowerManager
+    private var activityController: ActivityController<MainActivity>? = null
 
     @Before
     fun setup() {
@@ -65,13 +67,23 @@ class InCallAudioAndProximityTest {
 
     @After
     fun tearDown() {
+        // A live Compose activity keeps a window/recomposer registered and makes later
+        // Compose tests wait forever for idle, so always destroy it before the next class.
+        activityController?.destroy()
+        activityController = null
         CallManager.updateCall(null)
         CallManager.updateAudioState(null)
     }
 
+    private fun buildMainActivity(): ActivityController<MainActivity> {
+        return Robolectric.buildActivity(MainActivity::class.java).also {
+            activityController = it
+        }
+    }
+
     @Test
     fun testVolumeControlStreamBinding() {
-        val controller = Robolectric.buildActivity(MainActivity::class.java)
+        val controller = buildMainActivity()
         val activity = controller.get()
 
         controller.create()
@@ -210,7 +222,7 @@ class InCallAudioAndProximityTest {
 
     @Test
     fun testVolumeKeyEventsNotConsumed() {
-        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        val activity = buildMainActivity().setup().get()
 
         val volUpEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_UP)
         val volDownEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN)

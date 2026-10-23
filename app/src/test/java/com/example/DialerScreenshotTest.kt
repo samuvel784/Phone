@@ -277,7 +277,6 @@ class DialerScreenshotTest {
                     onHangUp = {},
                     onQuickDecline = {},
                     isIncoming = true,
-                    recordingEnabled = false,
                     isFake = true,
                     fakeState = "RINGING"
                 )
@@ -288,7 +287,7 @@ class DialerScreenshotTest {
     }
 
     @Test
-    fun active_call_screen_recording_state() {
+    fun active_call_screen_connected_state() {
         composeTestRule.setContent {
             MyApplicationTheme(darkTheme = false) {
                 com.example.ui.components.ActiveCallScreen(
@@ -299,7 +298,6 @@ class DialerScreenshotTest {
                     onHangUp = {},
                     onQuickDecline = {},
                     isIncoming = false,
-                    recordingEnabled = true,
                     callNotesEnabled = true,
                     isFake = true,
                     fakeState = "ACTIVE"

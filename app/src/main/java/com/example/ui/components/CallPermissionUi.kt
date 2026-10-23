@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,11 +55,13 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.MyInCallService
 import com.example.R
+import com.example.util.CallPermissionAcknowledgement
 import com.example.util.CallPermissionStatus
 import com.example.util.CallPresentationPermissions
 import com.example.util.CallPresentationPermissionsReader
 import com.example.util.CallScreenPermissionHelper
 import com.example.util.RichHapticEngine
+import com.example.util.needsReminder
 
 private const val PREFERENCES_NAME = "dialer_prefs"
 private const val IGNORE_LOCK_SCREEN_POPUP = "ignore_lock_screen_popup"
@@ -71,10 +74,10 @@ private const val IGNORE_LOCK_SCREEN_POPUP = "ignore_lock_screen_popup"
 fun FullScreenCallPermissionCard(
     modifier: Modifier = Modifier
 ) {
-    val permissions = rememberCallPresentationPermissions()
+    val state = rememberCallPermissionUiState()
     var showSetup by remember { mutableStateOf(false) }
 
-    val summary = if (permissions.needsAttention) {
+    val summary = if (state.needsReminder) {
         R.string.full_screen_features_attention
     } else {
         R.string.full_screen_features_ready
@@ -126,7 +129,7 @@ fun FullScreenCallPermissionCard(
                 Text(
                     text = stringResource(summary),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (permissions.needsAttention) {
+                    color = if (state.needsReminder) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -163,6 +166,9 @@ fun CallPermissionSetupDialog(
 ) {
     val context = LocalContext.current
     val permissions = rememberCallPresentationPermissions()
+    var acknowledged by remember {
+        mutableStateOf(CallPermissionAcknowledgement.isAcknowledged(context))
+    }
     var fallbackNotice by remember { mutableStateOf<Int?>(null) }
 
     AlertDialog(
@@ -222,6 +228,16 @@ fun CallPermissionSetupDialog(
                     }
                 )
 
+                if (permissions.needsBackgroundPopupAttention) {
+                    BackgroundPopupAcknowledgement(
+                        acknowledged = acknowledged,
+                        onAcknowledgedChange = { enabled ->
+                            CallPermissionAcknowledgement.setAcknowledged(context, enabled)
+                            acknowledged = enabled
+                        }
+                    )
+                }
+
                 fallbackNotice?.let { notice ->
                     Text(
                         text = stringResource(notice),
@@ -263,6 +279,9 @@ fun LockScreenAndPopupPermissionsBanner(
     var permissions by remember {
         mutableStateOf(readPermissions(context))
     }
+    var acknowledged by remember {
+        mutableStateOf(CallPermissionAcknowledgement.isAcknowledged(context))
+    }
     var fallbackNotice by remember { mutableStateOf<Int?>(null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -271,13 +290,14 @@ fun LockScreenAndPopupPermissionsBanner(
             if (event == Lifecycle.Event.ON_RESUME) {
                 isIgnored = prefs.getBoolean(IGNORE_LOCK_SCREEN_POPUP, false)
                 permissions = readPermissions(context)
+                acknowledged = CallPermissionAcknowledgement.isAcknowledged(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    if (isIgnored || !permissions.needsAttention) {
+    if (isIgnored || !permissions.needsReminder(acknowledged)) {
         return
     }
 
@@ -364,6 +384,17 @@ fun LockScreenAndPopupPermissionsBanner(
                     }
                 }
             )
+
+            if (permissions.needsBackgroundPopupAttention) {
+                Spacer(modifier = Modifier.height(8.dp))
+                BackgroundPopupAcknowledgement(
+                    acknowledged = acknowledged,
+                    onAcknowledgedChange = { enabled ->
+                        CallPermissionAcknowledgement.setAcknowledged(context, enabled)
+                        acknowledged = enabled
+                    }
+                )
+            }
 
             fallbackNotice?.let { notice ->
                 Spacer(modifier = Modifier.height(8.dp))
@@ -490,25 +521,111 @@ internal fun permissionStatusColor(status: CallPermissionStatus): Color {
     }
 }
 
+/**
+ * Acknowledgement controls for a setting that Android cannot verify. The text is deliberately
+ * separate from the OS-reported status row so the UI never claims the OEM permission was verified.
+ */
+@Composable
+private fun BackgroundPopupAcknowledgement(
+    acknowledged: Boolean,
+    onAcknowledgedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        if (acknowledged) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.permission_background_popup_acknowledged),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = { onAcknowledgedChange(false) },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.permission_background_popup_ack_undo),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.permission_background_popup_ack_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = { onAcknowledgedChange(true) },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.permission_background_popup_acknowledge),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun rememberCallPresentationPermissions(): CallPresentationPermissions {
+    return rememberCallPermissionUiState().permissions
+}
+
+/**
+ * Permissions plus the user's manual acknowledgement of the unverifiable OEM pop-up setting.
+ * Both are re-read on ON_RESUME so returning from Android Settings updates the UI immediately.
+ */
+private data class CallPermissionUiState(
+    val permissions: CallPresentationPermissions,
+    val backgroundPopupAcknowledged: Boolean
+) {
+    val needsReminder: Boolean
+        get() = permissions.needsReminder(backgroundPopupAcknowledged)
+}
+
+@Composable
+private fun rememberCallPermissionUiState(): CallPermissionUiState {
     val context = LocalContext.current
-    var permissions by remember(context) {
-        mutableStateOf(readPermissions(context))
+    var state by remember(context) {
+        mutableStateOf(readCallPermissionUiState(context))
     }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                permissions = readPermissions(context)
+                state = readCallPermissionUiState(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    return permissions
+    return state
+}
+
+private fun readCallPermissionUiState(context: Context): CallPermissionUiState {
+    return CallPermissionUiState(
+        permissions = readPermissions(context),
+        backgroundPopupAcknowledged = CallPermissionAcknowledgement.isAcknowledged(context)
+    )
 }
 
 private fun readPermissions(context: Context): CallPresentationPermissions {

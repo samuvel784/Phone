@@ -11,12 +11,15 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Call
@@ -223,6 +226,10 @@ fun DialpadOverlay(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            // Cap the sheet on tall screens but let it shrink and scroll on short/landscape
+            // windows, where a fixed 600dp+ keypad would otherwise be clipped off-screen.
+            .heightIn(max = 680.dp)
+            .fillMaxHeight(0.92f)
             .clip(AppShapes.BottomSheet),
         color = if (isAmoled) Color.Black else MaterialTheme.colorScheme.surface,
         border = if (isAmoled) BorderStroke(1.dp, Color(0xFF222222)) else null,
@@ -232,6 +239,7 @@ fun DialpadOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -354,14 +362,24 @@ fun DialpadOverlay(
                 }
 
                 if (inputValue.isNotEmpty()) {
-                    IconButton(
-                        onClick = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                            if (inputValue.isNotEmpty()) {
-                                onValueChange(inputValue.dropLast(1))
-                            }
-                        },
-                        modifier = Modifier.size(48.dp)
+                    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .combinedClickable(
+                                onClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    if (inputValue.isNotEmpty()) {
+                                        onValueChange(inputValue.dropLast(1))
+                                    }
+                                },
+                                onLongClick = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.SUCCESS)
+                                    onValueChange("")
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Backspace,

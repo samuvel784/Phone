@@ -18,12 +18,10 @@
     <string name="tab_recents">हाल के कॉल</string>
     <string name="tab_contacts">संपर्क</string>
     <string name="tab_dialpad">डायलपैड</string>
-    <string name="home_call_analytics">कॉल विश्लेषण</string>
-    <string name="cat_call_analytics_sub">कुल कॉल, मिस्ड कॉल और कॉल अवधि का विवरण</string>
 
     <!-- Search & General UI -->
     <string name="search_placeholder">संपर्क और नंबर खोजें</string>
-    <string name="search_settings_placeholder">सेटिंग्स खोजें�</string>
+    <string name="search_settings_placeholder">सेटिंग्स खोजें?</string>
     <string name="search_clear">साफ करें</string>
     <string name="search_results_count">खोज परिणाम (%1$d)</string>
     <string name="no_matching_settings">कोई मिलती-जुलती सेटिंग नहीं मिली</string>
@@ -102,9 +100,8 @@
     <string name="btn_end_call">कॉल समाप्त करें</string>
     <string name="btn_expand">विस्तृत करें</string>
     <string name="btn_collapse">संकुचित करें</string>
-    <string name="btn_play">चलाएँ</string>
-    <string name="btn_pause">रोकें</string>
     <string name="in_call_spoof_warning">संभावित स्पूफ़ किया गया नंबर</string>
+    <string name="in_call_spam_detected">स्पैम कॉलर पाया गया</string>
     <string name="app_locked_title">Nova Dialer लॉक है</string>
     <string name="app_locked_message">यह ऐप आपकी गोपनीयता की सुरक्षा के लिए सुरक्षित है। जारी रखने के लिए कृपया अपने डिवाइस लॉक से प्रमाणित करें।</string>
     <string name="btn_unlock_app">डायलर अनलॉक करें</string>
@@ -115,13 +112,6 @@
     <string name="hold">होल्ड</string>
     <string name="keypad">कीपैड</string>
     <string name="record">रिकॉर्ड</string>
-    <string name="recording">रिकॉर्डिंग</string>
-    <string name="recording_saved">रिकॉर्डिंग सुरक्षित रूप से सहेजी गई</string>
-    <string name="recording_started">⏺️ कॉल रिकॉर्डिंग शुरू हुई</string>
-    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
-    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
-    <string name="recording_empty">Call recording failed or the file was empty</string>
-    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">कॉल करें</string>
     <string name="action_message">संदेश</string>
     <string name="action_swipe_call">कॉल</string>
@@ -160,12 +150,10 @@
 
     <!-- Settings Headers -->
     <string name="header_sim_carrier">सिम और कैरियर कॉन्फ़िगरेशन</string>
-    <string name="header_incoming_alerts">इनकमिंग कॉल अलर्ट</string>
     <string name="header_carrier_voicemail">कैरियर वॉयसमेल</string>
     <string name="header_contacts_management">संपर्क प्रबंधन</string>
     <string name="header_data_backup">डेटा और बैकअप</string>
     <string name="header_privacy_protection">गोपनीयता सुरक्षा</string>
-    <string name="header_call_recording">कॉल रिकॉर्डिंग</string>
     <string name="header_app_specs">ऐप विनिर्देश</string>
     <string name="header_navigation_layout">नेविगेशन और लेआउट</string>
     <string name="header_community">समुदाय</string>
@@ -207,10 +195,6 @@
     <string name="settings_flip_to_silence_sub">फ़ोन को नीचे की ओर पलटकर इनकमिंग कॉल की घंटी म्यूट करें</string>
     <string name="settings_swipe_actions">कॉल / मैसेज के लिए स्वाइप करें</string>
     <string name="settings_swipe_actions_sub">कॉल लॉग पर कॉल करने के लिए दाएं और मैसेज के लिए बाएं स्वाइप करें।</string>
-    <string name="settings_flash_alerts">कॉल पर फ्लैश अलर्ट</string>
-    <string name="settings_flash_alerts_sub">इनकमिंग कॉल पर कैमरा फ्लैश ब्लिंक करता है</string>
-    <string name="settings_auto_tune_volume">रिकॉर्डिंग के लिए स्पीकर वॉल्यूम स्वतः ट्यून करें</string>
-    <string name="settings_auto_tune_volume_sub" formatted="false">स्पष्ट आवाज़ रिकॉर्डिंग के लिए कॉल के दौरान स्पीकर वॉल्यूम को स्वतः 55% पर संतुलित करता है।</string>
     <string name="header_theme_styling">थीम और स्टाइलिंग</string>
     <string name="header_sound_haptics">ध्वनि और हैप्टिक्स</string>
 
@@ -269,66 +253,15 @@
     <string name="save_voicemail_number">वॉइसमेल नंबर सहेजें</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
-    <string name="settings_blocked_numbers">ब्लॉक किए गए नंबर</string>
-    <string name="settings_blocked_numbers_sub">प्रतिबंधित आने वाले कॉल प्रबंधित करें</string>
-    <string name="enter_number_to_block">ब्लॉक करने के लिए नंबर दर्ज करें</string>
-    <string name="block_this_number">इस नंबर को ब्लॉक करें</string>
-    <string name="blocked_callers_header">ब्लॉक किए गए कॉलर</string>
-    <string name="no_blocked_numbers_title">कोई ब्लॉक नंबर नहीं</string>
-    <string name="no_blocked_numbers_desc">आपके द्वारा ब्लॉक किए गए नंबर यहां दिखाई देंगे। वे आपको कॉल नहीं कर पाएंगे।</string>
     <string name="block">ब्लॉक करें</string>
     <string name="unblock">अनब्लॉक करें</string>
     <string name="block_number">नंबर ब्लॉक करें</string>
     <string name="unblock_number">नंबर अनब्लॉक करें</string>
     <string name="call_blocked_toast">🚫 कॉल ब्लॉक की गई</string>
-    <string name="settings_spam_protection">ऑफ़लाइन स्पैम सुरक्षा</string>
-    <string name="local_offline_protection">स्थानीय ऑफ़लाइन सुरक्षा</string>
-    <string name="spam_entries_label">स्पैम प्रविष्टियां</string>
-    <string name="spam_numbers_blocked">%1$d नंबर ब्लॉक किए गए</string>
-    <string name="add_spam_manually_title">स्पैम नंबर मैन्युअल रूप से जोड़ें</string>
-    <string name="label_phone_number_hint">फ़ोन नंबर</string>
-    <string name="label_spam_label_hint">लेबल</string>
-    <string name="btn_add_to_offline_db">ऑफ़लाइन डेटाबेस में जोड़ें</string>
-    <string name="blocklist_empty_title">ब्लॉकलिस्ट खाली है</string>
-    <string name="blocklist_empty_desc">स्थानीय रूप से स्पैम ब्लॉक करने के लिए CSV ब्लॉकलिस्ट आयात करें या नंबर जोड़ें।</string>
-    <string name="blocked_offline_numbers_title">ऑफ़लाइन ब्लॉक किए गए नंबर</string>
     <string name="btn_clear_all">सभी साफ़ करें</string>
-    <string name="btn_export_blocklist">ब्लॉकलिस्ट एक्सपोर्ट करें</string>
-    <string name="btn_import_blocklist">फ़ाइल आयात करें</string>
-    <string name="btn_export_spam_csv">CSV एक्सपोर्ट करें</string>
-    <string name="btn_import_spam_file">फ़ाइल आयात करें</string>
-    <string name="blocklist_import_count_success">%1$d ब्लॉक किए गए नंबर आयात किए गए!</string>
-    <string name="spam_import_count_success">%1$d स्पैम प्रविष्टियां आयात की गईं!</string>
 
     <!-- Settings - Call Recording Vault, Audio & Compression -->
-    <string name="settings_call_recording_sub">कॉल रिकॉर्डिंग नियंत्रण सक्षम करें और स्थानीय रूप से सहेजें</string>
-    <string name="settings_recordings_title">रिकॉर्डिंग</string>
-    <string name="no_recordings_title">कोई रिकॉर्डिंग नहीं मिली</string>
-    <string name="no_recordings_desc">कॉल रिकॉर्डिंग सक्षम करें और किसी भी सक्रिय कॉल के दौरान रिकॉर्ड बटन टैप करें।</string>
     <string name="share_recording">शेयर करें</string>
-    <string name="delete_recording">हटाएं</string>
-    <string name="toast_deleted_recording">रिकॉर्डिंग हटाई गई</string>
-    <string name="settings_recording_chime">रिकॉर्डिंग ऑडियो टोन और कंपन</string>
-    <string name="settings_recording_chime_sub">कॉल रिकॉर्डिंग शुरू या बंद होने पर हल्का ऑडियो टोन और स्पर्श प्रतिक्रिया बजाएं</string>
-    <string name="share_recording_title">रिकॉर्डिंग साझा और निर्यात करें</string>
-    <string name="share_via_apps">ऐप्स के माध्यम से साझा करें</string>
-    <string name="share_via_apps_sub">ऑडियो फ़ाइल को मैसेजिंग, क्लाउड या अन्य ऐप्स पर भेजें</string>
-    <string name="save_to_downloads">डाउनलोड में सहेजें</string>
-    <string name="save_to_downloads_sub">डिक्रिप्टेड, चलाने योग्य प्रति सीधे डिवाइस के डाउनलोड फ़ोल्डर में निर्यात करें</string>
-    <string name="recording_details">रिकॉर्डिंग विवरण</string>
-    <string name="headset_recording_warning">हेडफ़ोन कनेक्टेड हैं: स्पीकर पर स्विच किए बिना केवल आपकी आवाज़ रिकॉर्ड होगी।</string>
-    <string name="settings_recordings_always_on">हमेशा कॉल रिकॉर्ड करें</string>
-    <string name="settings_recordings_always_on_sub">कनेक्ट होते ही हर इनकमिंग और आउटगोइंग कॉल को स्वतः रिकॉर्ड करना शुरू करें</string>
-    <string name="settings_recordings_biometric_lock">बायोमेट्रिक्स से रिकॉर्डिंग लॉक करें</string>
-    <string name="settings_recordings_biometric_lock_sub">कॉल रिकॉर्डिंग देखने और सुनने के लिए फ़िंगरप्रिंट या पिन की आवश्यकता होगी</string>
-    <string name="settings_recordings_auto_export">डाउनलोड में स्वतः निर्यात करें</string>
-    <string name="settings_recordings_auto_export_sub">हर पूरी हुई रिकॉर्डिंग को डिक्रिप्टेड फ़ाइल के रूप में Downloads/Nova Dialer में कॉपी करें</string>
-    <string name="settings_recordings_compression_title">ऑडियो संपीड़न और गुणवत्ता</string>
-    <string name="settings_recordings_compression_sub">स्टोरेज स्पेस और ऑडियो स्पष्टता में संतुलन बनाने के लिए बिटरेट को अनुकूलित करें</string>
-    <string name="settings_recordings_cleanup_empty">खाली/शांत रिकॉर्डिंग साफ़ करें</string>
-    <string name="vault_locked_title">रिकॉर्डिंग वॉल्ट लॉक है</string>
-    <string name="vault_locked_desc">गोपनीय कॉल रिकॉर्डिंग तक पहुँचने के लिए बायोमेट्रिक प्रमाणीकरण आवश्यक है।</string>
-    <string name="btn_unlock_vault">वॉल्ट अनलॉक करें</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
     <!-- Settings - Contacts, Deduplication & Storage -->
@@ -386,11 +319,6 @@
     <string name="settings_call_log_filters">कॉल लॉग त्वरित फ़िल्टर</string>
     <string name="settings_call_log_filters_sub">कॉल लॉग के ऊपर त्वरित फ़िल्टर चिप्स दिखाएं</string>
     <string name="settings_all_call_notes">कॉल नोट्स</string>
-    <string name="settings_all_call_notes_sub">सहेजे गए कॉल नोट्स देखें और प्रबंधित करें</string>
-    <string name="no_notes_title">कोई कॉल नोट नहीं</string>
-    <string name="no_notes_desc">कॉल के दौरान जोड़े गए नोट्स यहां दिखाई देंगे</string>
-    <string name="search_notes_placeholder">नोट्स या नंबर खोजें…</string>
-    <string name="note_deleted_toast">कॉल नोट हटा दिया गया</string>
     <string name="add_call_note_btn">कॉल नोट जोड़ें</string>
     <string name="call_notes_count_title">कॉल नोट्स (%1$d)</string>
     <string name="call_notes_count_badge">%1$d नोट्स</string>
@@ -400,25 +328,9 @@
     <string name="btn_save_note">नोट सहेजें</string>
 
     <!-- Settings - Recording, Notes and Reminders -->
-    <string name="duration_label">अवधि</string>
-    <string name="callback_reminders_title">कॉलबैक रिमाइंडर</string>
-    <string name="callback_reminders_stats">%1$d सक्रिय, %2$d पूर्ण</string>
-    <string name="active_reminders_title">सक्रिय रिमाइंडर</string>
-    <string name="no_active_reminders_title">कोई सक्रिय रिमाइंडर नहीं</string>
-    <string name="no_active_reminders_desc">किसी भी कॉल विवरण पृष्ठ पर, आप कॉल बैक रिमाइंडर सेट कर सकते हैं।</string>
-    <string name="history_passed_title">इतिहास (बीता हुआ)</string>
-    <string name="scheduled_prefix">शेड्यूल किया गया: %1$s</string>
-    <string name="triggered_prefix">ट्रिगर हुआ: %1$s</string>
-    <string name="schedule_callback_reminder_title">कॉलबैक रिमाइंडर शेड्यूल करें</string>
-    <string name="schedule_callback_reminder_sub">कॉल अलार्म के साथ सूचित हों</string>
-    <string name="remind_call_back_prompt">%1$s को वापस कॉल करने के लिए याद दिलाएं:</string>
-    <string name="optional_note_label">वैकल्पिक नोट</string>
-    <string name="settings_callback_reminders">कॉलबैक रिमाइंडर डैशबोर्ड</string>
-    <string name="settings_callback_reminders_sub">लंबित कॉल रिमाइंडर देखें और रद्द करें</string>
     <string name="btn_call_back">वापस कॉल करें</string>
 
     <!-- Settings - System Calling & Lock Screen Permissions -->
-    <string name="btn_grant">अनुमति दें</string>
     <string name="btn_configure">कॉन्फ़िगर करें</string>
     <string name="btn_set_default">डिफ़ॉल्ट सेट करें</string>
     <string name="feature_enable_prompt">सक्रिय करने के लिए ऊपर स्विच चालू करें</string>
@@ -447,30 +359,7 @@
     <string name="btn_delete">हटाएं</string>
     <string name="btn_edit">संपादित करें</string>
     <string name="btn_discard">हटाएं</string>
-    <string name="delete">हटाएं</string>
     <!-- Duplicate Finder -->
-    <string name="dup_finder_title">डुप्लिकेट खोजक</string>
-    <string name="dup_finder_sub">समान नंबर वाले संपर्कों को ढूंढें, फिर उन्हें मर्ज करें या अतिरिक्त हटाएं।</string>
-    <string name="dup_scanning">संपर्कों को स्कैन किया जा रहा है…</string>
-    <string name="dup_groups_found">%1$d डुप्लिकेट समूह</string>
-    <string name="dup_none_title">कोई डुप्लिकेट नहीं मिला</string>
-    <string name="dup_none_desc">आपके संपर्क साफ़ हैं — मर्ज या हटाने के लिए कुछ भी नहीं है।</string>
-    <string name="dup_permission_title">संपर्क अनुमति आवश्यक</string>
-    <string name="dup_permission_desc">संपर्कों तक पहुंच प्रदान करें ताकि Nova Dialer डुप्लिकेट को स्कैन, मर्ज और हटा सके।</string>
-    <string name="dup_rescan">पुनः स्कैन करें</string>
-    <string name="dup_merge">मर्ज करें</string>
-    <string name="dup_delete_others">अन्य हटाएं</string>
-    <string name="dup_merge_confirm_title">डुप्लिकेट मर्ज करें?</string>
-    <string name="dup_merge_confirm_desc">चयनित संपर्क अपना विवरण रखता है और अन्य प्रविष्टियां इसमें स्थायी रूप से मर्ज हो जाती हैं।</string>
-    <string name="dup_delete_confirm_title">डुप्लिकेट हटाएं?</string>
-    <string name="dup_delete_confirm_desc">गैर-चयनित डुप्लिकेट स्थायी रूप से हटा दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।</string>
-    <string name="dup_delete_one_confirm_desc">यह संपर्क स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।</string>
-    <string name="dup_merged">%1$d संपर्क मर्ज किए गए</string>
-    <string name="dup_deleted">%1$d संपर्क हटाए गए</string>
-    <string name="dup_merge_all">सभी मर्ज करें</string>
-    <string name="dup_delete_all">सभी हटाएँ</string>
-    <string name="dup_merge_all_confirm_desc">हर डुप्लिकेट समूह को मर्ज किया जाएगा और हर समूह में चयनित संपर्क रखा जाएगा। यह स्थायी रूप से सहेजा जाता है।</string>
-    <string name="dup_delete_all_confirm_desc">हर समूह के सभी बिना चयनित डुप्लिकेट स्थायी रूप से हटा दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।</string>
     <string name="close">बंद करें</string>
     <string name="add_call">कॉल जोड़ें</string>
     <string name="add_call_search_hint">संपर्क खोजें या नंबर दर्ज करें</string>
@@ -480,97 +369,8 @@
     <string name="history">इतिहास</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="header_focus_mode">फोकस मोड</string>
-    <string name="header_call_protection">कॉल सुरक्षा स्तर</string>
-    <string name="header_vip_numbers">VIP नंबर</string>
-    <string name="header_caller_announcer">कॉलर अनाउंसर</string>
-
-    <string name="screening_role_granted">कॉल स्क्रीनिंग सक्रिय</string>
-    <string name="screening_role_needed">कॉल स्क्रीनिंग अनुमति आवश्यक</string>
-    <string name="screening_role_desc">Nova Dialer को इनकमिंग कॉल स्क्रीन करने की अनुमति दें ताकि फोकस मोड, VIP नियम और ब्लॉकिंग काम कर सकें।</string>
-
-    <string name="focus_mode_title">फोकस मोड</string>
-    <string name="focus_mode_sub">चुनें कि जब आप ध्यान केंद्रित कर रहे हों तो किन कॉलों को बजने की अनुमति है।</string>
-    <string name="focus_mode_off">बंद</string>
-    <string name="focus_mode_off_sub">हर इनकमिंग कॉल सामान्य रूप से बजती है।</string>
-    <string name="focus_mode_saved">केवल सहेजे गए संपर्क</string>
-    <string name="focus_mode_saved_sub">केवल आपके संपर्कों में मौजूद लोग ही कॉल कर सकते हैं।</string>
-    <string name="focus_mode_vip">केवल VIP</string>
-    <string name="focus_mode_vip_sub">केवल आपकी VIP सूची के नंबर ही बज सकते हैं।</string>
-    <string name="focus_mode_silence_all">सभी को साइलेंट करें</string>
-    <string name="focus_mode_silence_all_sub">VIP और पसंदीदा संपर्कों को छोड़कर सब कुछ साइलेंट करें।</string>
-
-    <string name="protection_level_title">कॉल सुरक्षा स्तर</string>
-    <string name="protection_level_sub">फोकस मोड बंद होने पर अज्ञात कॉलर्स को ब्लॉक करता है।</string>
-    <string name="protection_standard">मानक</string>
-    <string name="protection_standard_sub">सभी कॉल सामान्य रूप से बजती हैं।</string>
-    <string name="protection_strict">सख्त</string>
-    <string name="protection_strict_sub">असुरक्षित नंबरों को साइलेंट करें; सहेजे गए, VIP और दोहराए गए कॉलर्स फिर भी बजते हैं।</string>
-    <string name="protection_maximum">अधिकतम</string>
-    <string name="protection_maximum_sub">VIP, पसंदीदा और दोहराए गए कॉलर्स को छोड़कर सभी को साइलेंट करें।</string>
-    <string name="protection_allow_repeat_title">दोहराए गए कॉलर्स को अनुमति दें</string>
-    <string name="protection_allow_repeat_sub">3 मिनट के भीतर उसी नंबर से दूसरी कॉल हमेशा बजती है।</string>
-    <string name="protection_disclaimer">आपातकालीन नंबर हमेशा बजते हैं। साइलेंट की गई कॉल आपकी कॉल सूची में मिस्ड कॉल के रूप में दिखाई देती हैं।</string>
-
-    <string name="vip_title">VIP कॉलर</string>
-    <string name="vip_sub">VIP नंबर हमेशा फोकस मोड और कॉल सुरक्षा को बायपास करते हैं।</string>
-    <string name="vip_empty">अभी तक कोई VIP नंबर नहीं है। उन लोगों को जोड़ें जो हमेशा आप तक पहुंच सकें।</string>
-    <string name="vip_add">VIP नंबर जोड़ें</string>
-    <string name="vip_add_sub">ऐसा नंबर चुनें जो हमेशा कॉल कर सके</string>
-    <string name="vip_remove">VIP नंबर हटाएं</string>
-
-    <string name="announcer_enable_title">कॉलर का नाम बोलें</string>
-    <string name="announcer_enable_sub">फोन बजते समय कॉलर का नाम जोर से पढ़ें।</string>
-    <string name="announcer_message_title">अनाउंसमेंट संदेश</string>
-    <string name="announcer_template_label">संदेश टेम्पलेट</string>
-    <string name="announcer_template_help">प्लेसहोल्डर के रूप में {name}, {user} और {type} का उपयोग करें।</string>
-    <string name="announcer_your_name_label">आपका नाम ({user})</string>
-    <string name="announcer_repeat_title">दोहराव गिनती</string>
-    <string name="announcer_speed_title">बोलने की गति</string>
-    <string name="announcer_pitch_title">आवाज की पिच</string>
-    <string name="announcer_volume_title">वॉल्यूम</string>
-    <string name="announcer_unknown_title">अज्ञात नंबरों की घोषणा करें</string>
-    <string name="announcer_unknown_sub">उन कॉलर्स के लिए \"एक अज्ञात नंबर\" कहें जो आपके संपर्कों में नहीं हैं।</string>
-    <string name="announcer_headphones_title">केवल हेडफ़ोन पर घोषणा करें</string>
-    <string name="announcer_headphones_sub">जब कोई हेडफ़ोन या ब्लूटूथ डिवाइस कनेक्ट न हो तो शांत रहें।</string>
-    <string name="announcer_test_title">अनाउंसमेंट टेस्ट</string>
-    <string name="announcer_test_sub">अपनी वर्तमान सेटिंग्स का उपयोग करके एक नमूना चलाएं</string>
-    <string name="announcer_voice_title">आवाज़</string>
-    <string name="announcer_voice_default">डिफ़ॉल्ट</string>
-    <string name="announcer_voice_male">पुरुष</string>
-    <string name="announcer_voice_female">महिला</string>
-    <string name="announcer_voice_note">आपके डिवाइस की टेक्स्ट-टू-स्पीच आवाज़ का उपयोग करता है। परिणाम फ़ोन में इंस्टॉल वॉइस इंजन पर निर्भर करता है।</string>
 <string name="dialpad_matches_title">Quick matches</string>
     <string name="dialpad_matches_hint">Tap a match to call</string>
-
-    <string name="spam_label">Spam</string>
-    <string name="mark_spam">Mark as spam</string>
-    <string name="remove_spam">Remove spam</string>
-    <string name="spam_marked">Marked as spam</string>
-    <string name="spam_unmarked">Removed from spam</string>
-
-    <string name="export_call_log_title">Export call log</string>
-    <string name="export_call_log_sub">Save your call history to a file on your device.</string>
-    <string name="export_call_log_csv">Export as CSV</string>
-    <string name="export_call_log_pdf">Export as PDF</string>
-    <string name="call_log_exported">Call log exported</string>
-
-    <string name="dnd_title">Do Not Disturb</string>
-    <string name="dnd_sub">Silence calls outside your quiet hours. Saved contacts and VIPs still ring.</string>
-    <string name="dnd_enabled_title">Schedule</string>
-    <string name="dnd_enabled_sub">Silence calls during the schedule below</string>
-    <string name="dnd_start_label">Start</string>
-    <string name="dnd_end_label">End</string>
-    <string name="dnd_days_label">Repeat on</string>
-    <string name="dnd_day_mon">Mon</string>
-    <string name="dnd_day_tue">Tue</string>
-    <string name="dnd_day_wed">Wed</string>
-    <string name="dnd_day_thu">Thu</string>
-    <string name="dnd_day_fri">Fri</string>
-    <string name="dnd_day_sat">Sat</string>
-    <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
-    <string name="dnd_pick_time_title">Pick a time</string>
 
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
@@ -578,10 +378,6 @@
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
     <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
     <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
-
-    <string name="widget_favorites_title">Nova Dialer Favourites</string>
-    <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">बिना एन्क्रिप्शन वाली बैकअप फ़ाइल</string>
@@ -596,19 +392,6 @@
     <string name="backup_error_invalid_payload">बैकअप खराब है या उसमें अमान्य डेटा है।</string>
 
     <!-- Call recording disclosure -->
-    <string name="recording_disclosure_title">कॉल रिकॉर्ड करने से पहले</string>
-    <string name="recording_disclosure_body">कॉल रिकॉर्ड करने पर ऑडियो इस डिवाइस पर सहेजा जाता है। नई रिकॉर्डिंग को स्टोरेज में एन्क्रिप्ट किया जाना चाहिए, लेकिन एन्क्रिप्शन विफल हो सकता है और तब Nova Dialer अपने निजी ऐप स्टोरेज में बिना एन्क्रिप्शन वाली प्रति रख सकता है। डिवाइस, Android संस्करण, नेटवर्क और निर्माता की सीमाएँ रिकॉर्डिंग रोक सकती हैं या यह सीमित कर सकती हैं कि कॉल का कौन-सा पक्ष रिकॉर्ड होता है। स्थानीय कानूनों का पालन करना और प्रतिभागियों से आवश्यक सहमति लेना आपकी ज़िम्मेदारी है।</string>
-    <string name="recording_disclosure_accept">मैं समझ गया</string>
-    <string name="recording_auto_disclosure_title">स्वचालित रिकॉर्डिंग चालू करें?</string>
-    <string name="recording_auto_disclosure_body">यह चालू रहने पर, आपकी रिकॉर्डिंग शर्तों से मेल खाने वाली कॉल स्वचालित रूप से रिकॉर्ड हो सकती हैं, हर बार आपसे पूछे बिना। ऊपर दिया गया रिकॉर्डिंग नोटिस लागू रहता है। आप इसे कभी भी बंद कर सकते हैं।</string>
-    <string name="recording_auto_disclosure_confirm">स्वचालित रिकॉर्डिंग चालू करें</string>
-    <string name="recording_export_warning_title">चलाने योग्य प्रति निर्यात करें?</string>
-    <string name="recording_export_warning_body">Downloads में लिखी गई फ़ाइल डिक्रिप्टेड होती है और अन्य ऐप्स इसे खोल सकते हैं। Nova Dialer हटाने पर भी यह डिवाइस पर रहती है और अब ऐप के एन्क्रिप्शन द्वारा सुरक्षित नहीं रहती।</string>
-    <string name="recording_export_warning_confirm">बिना एन्क्रिप्शन वाली प्रति निर्यात करें</string>
-    <string name="recording_share_warning_title">चलाने योग्य प्रति साझा करें?</string>
-    <string name="recording_share_warning_body">आपके द्वारा साझा की गई प्रति डिक्रिप्टेड है और आपके चुने हुए ऐप द्वारा खोली जा सकती है। Nova Dialer इसे उस ऐप, प्राप्तकर्ता के डिवाइस या उसके द्वारा बनाए गए किसी बैकअप से हटा नहीं सकता, और यह अब ऐप की एन्क्रिप्शन द्वारा सुरक्षित नहीं है।</string>
-    <string name="recording_share_warning_confirm">डिक्रिप्टेड प्रति साझा करें</string>
-    <string name="recording_export_all">सभी रिकॉर्डिंग निर्यात करें</string>
     <string name="default_dialer_card_title">डिफ़ॉल्ट फ़ोन ऐप के रूप में सेट करें</string>
     <string name="default_dialer_card_reason">पूर्ण कॉल प्रबंधन और इन-कॉल स्क्रीन के लिए आवश्यक।</string>
 
@@ -644,6 +427,10 @@
     <string name="background_popup_fallback">इस डिवाइस ने बैकग्राउंड पॉप-अप पृष्ठ उपलब्ध नहीं कराया। ऐप जानकारी खोली गई; अन्य अनुमतियाँ या इसी नाम की निर्माता सेटिंग जाँचें।</string>
     <string name="permission_settings_unavailable">सिस्टम सेटिंग्स पृष्ठ नहीं खोला जा सका। Android सेटिंग्स, फिर ऐप्स, फिर Nova Dialer मैन्युअल रूप से खोलें।</string>
     <string name="permission_manual_guide">मैन्युअल मार्ग: Android सेटिंग्स, फिर ऐप्स, फिर Nova Dialer। फ़ुल-स्क्रीन पहुँच के लिए विशेष ऐप पहुँच, फिर फ़ुल-स्क्रीन सूचनाएँ खोलें। बैकग्राउंड पॉप-अप के लिए अन्य अनुमतियाँ या समतुल्य निर्माता सेटिंग खोलें।</string>
+    <string name="permission_background_popup_acknowledge">मैंने इसे सक्षम कर दिया है</string>
+    <string name="permission_background_popup_acknowledged">आपने इसे सक्षम के रूप में चिह्नित किया</string>
+    <string name="permission_background_popup_ack_hint">कृपया अपने डिवाइस पर यह सेटिंग बदलने के बाद ही पुष्टि करें। Nova Dialer निर्माता की सेटिंग्स सत्यापित नहीं कर सकता।</string>
+    <string name="permission_background_popup_ack_undo">पूर्ववत करें</string>
     <string name="diagnostics_lock_screen">लॉक-स्क्रीन प्रदर्शन: %1$s</string>
     <string name="diagnostics_background_popup">बैकग्राउंड पॉप-अप: %1$s</string>
     <string name="diagnostics_notifications">सूचनाएँ सक्षम: %1$s</string>
@@ -651,4 +438,16 @@
     <string name="diagnostics_default_dialer">डिफ़ॉल्ट फ़ोन ऐप: %1$s</string>
     <string name="diagnostics_configure_lock_screen">लॉक स्क्रीन कॉन्फ़िगर करें</string>
     <string name="diagnostics_configure_background_popup">बैकग्राउंड पॉप-अप कॉन्फ़िगर करें</string>
+    <string name="loading">Loading</string>
+    <string name="loading_contacts">Loading contacts</string>
+    <string name="loading_recents">Loading recent calls</string>
+    <string name="load_error_title">Could not load your data</string>
+    <string name="load_error_message">Check the app permissions and try again.</string>
+    <string name="btn_retry">Retry</string>
+    <string name="refreshing">Refreshing</string>
+    <string name="progress_exporting_backup">Exporting backup&#8230;</string>
+    <string name="progress_importing_backup">Restoring backup&#8230;</string>
+    <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
+    <string name="progress_importing_contacts">Importing contacts&#8230;</string>
+    <string name="progress_reading_file">Reading file&#8230;</string>
 </resources>

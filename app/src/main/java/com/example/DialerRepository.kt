@@ -340,6 +340,7 @@ class DialerRepository(rawContext: Context) {
 
         try { context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops) } catch (_: Exception) {}
         syncContacts(true)
+        syncCallLogs()
     }
 
     suspend fun updateContactWithDetails(
@@ -430,9 +431,10 @@ class DialerRepository(rawContext: Context) {
 
         try { context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops) } catch (_: Exception) {}
         syncContacts(true)
+        syncCallLogs()
     }
 
-    suspend fun deleteContact(contact: Contact) {
+    suspend fun deleteContact(contact: Contact) = withContext(Dispatchers.IO) {
         try {
             if (contact.rawContactId > 0) {
                 context.contentResolver.delete(
@@ -454,9 +456,9 @@ class DialerRepository(rawContext: Context) {
         syncContacts()
     }
 
-    suspend fun deleteCallLog(id: Int) {
+    suspend fun deleteCallLog(id: Int) = withContext(Dispatchers.IO) {
         dao.deleteCallLog(id)
-        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return
+        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
         try {
             context.contentResolver.delete(
                 CallLog.Calls.CONTENT_URI,
@@ -466,9 +468,22 @@ class DialerRepository(rawContext: Context) {
         } catch (_: Exception) {}
     }
 
-    suspend fun clearAllCallLogs() {
+    /** Removes every local row for [number] in one statement, then one provider delete. */
+    suspend fun deleteCallLogsByNumber(number: String) = withContext(Dispatchers.IO) {
+        dao.deleteCallLogsByNumber(number)
+        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
+        try {
+            context.contentResolver.delete(
+                CallLog.Calls.CONTENT_URI,
+                "${CallLog.Calls.NUMBER} = ?",
+                arrayOf(number)
+            )
+        } catch (_: Exception) {}
+    }
+
+    suspend fun clearAllCallLogs() = withContext(Dispatchers.IO) {
         dao.clearCallLogs()
-        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return
+        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
         try {
             context.contentResolver.delete(CallLog.Calls.CONTENT_URI, null, null)
         } catch (_: Exception) {}
@@ -476,7 +491,7 @@ class DialerRepository(rawContext: Context) {
 
     suspend fun getCallHistoryByNumber(number: String): List<CallRecord> = dao.getCallHistoryByNumber(number)
 
-    suspend fun toggleFavorite(number: String, isFavorite: Boolean) {
+    suspend fun toggleFavorite(number: String, isFavorite: Boolean) = withContext(Dispatchers.IO) {
         try {
             getContactIdFromNumber(number)?.let { contactId ->
                 val values = ContentValues().apply { put(ContactsContract.Contacts.STARRED, if (isFavorite) 1 else 0) }

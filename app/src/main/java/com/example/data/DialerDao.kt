@@ -109,6 +109,9 @@ interface DialerDao {
     @Query("DELETE FROM call_history WHERE id = :id")
     suspend fun deleteCallLog(id: Int)
 
+    @Query("DELETE FROM call_history WHERE number = :number")
+    suspend fun deleteCallLogsByNumber(number: String)
+
     @Query("SELECT * FROM call_history WHERE number = :number ORDER BY id DESC")
     suspend fun getCallHistoryByNumber(number: String): List<CallRecord>
 
@@ -239,6 +242,9 @@ interface DialerDao {
 
     @Query("UPDATE call_recordings SET note = :note WHERE id = :id")
     suspend fun updateCallRecordingNote(id: Int, note: String)
+
+    @Query("UPDATE call_recordings SET filePath = :filePath WHERE id = :id")
+    suspend fun updateCallRecordingPath(id: Int, filePath: String)
 
     @Query("DELETE FROM call_recordings WHERE id = :id")
     suspend fun deleteCallRecording(id: Int)

@@ -89,6 +89,7 @@ fun AddToExistingContactSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .imePadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
         ) {
@@ -181,9 +182,11 @@ fun AddToExistingContactSheet(
                 }
             } else {
                 LazyColumn(
+                    // Let the sheet (not a hard 420dp cap) decide the available height. This
+                    // keeps the list reachable in landscape and while the IME is open.
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
+                        .weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(

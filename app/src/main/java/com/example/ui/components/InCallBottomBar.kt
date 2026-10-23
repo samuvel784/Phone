@@ -48,13 +48,14 @@ fun InCallBottomBar(
     onToggleQuickDeclineMenu: () -> Unit,
     avatarShapeType: String = "squircle",
     /** The lock-screen call surface offers only Answer/Decline, not private quick responses. */
-    showQuickResponseAction: Boolean = true
+    showQuickResponseAction: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val buttonShape = AppShapes.Keypad
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isIncoming && showQuickResponseAction) {

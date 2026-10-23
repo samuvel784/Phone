@@ -44,9 +44,6 @@ fun InCallControlGrid(
     onToggleBluetooth: () -> Unit,
     isAddCallDialogOpen: Boolean,
     onOpenAddCallDialog: () -> Unit,
-    recordingEnabled: Boolean,
-    isRecording: Boolean,
-    onToggleRecording: () -> Unit,
     isQuickNotesOpen: Boolean = false,
     onOpenQuickNotes: () -> Unit = {},
     avatarShapeType: String = "squircle",
@@ -190,43 +187,24 @@ fun InCallControlGrid(
             }
         }
 
-        // Row 4: Recording & Quick Notes. This whole row is omitted on the lock-screen
-        // call-only surface, where neither private destination is available.
-        if (recordingEnabled || showQuickNotes) {
+        // Row 4: Quick Notes. This row is omitted on the lock-screen call-only surface,
+        // where the private destination is unavailable.
+        if (showQuickNotes) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (recordingEnabled) {
-                    InCallButton(
-                        icon = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
-                        label = if (isRecording) stringResource(R.string.recording) else stringResource(R.string.record),
-                        isActive = isRecording,
-                        onClick = onToggleRecording,
-                        shape = btnShape,
-                        isPulsingRecording = isRecording,
-                        modifier = Modifier.weight(1f).height(buttonHeight),
-                        enabled = isCallActive
-                    )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-
-                if (showQuickNotes) {
-                    InCallButton(
-                        icon = Icons.Default.Quickreply,
-                        label = stringResource(R.string.quick_responses),
-                        isActive = isQuickNotesOpen,
-                        onClick = onOpenQuickNotes,
-                        shape = btnShape,
-                        modifier = Modifier.weight(1f).height(buttonHeight),
-                        enabled = isCallActive
-                    )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-
+                InCallButton(
+                    icon = Icons.Default.Quickreply,
+                    label = stringResource(R.string.quick_responses),
+                    isActive = isQuickNotesOpen,
+                    onClick = onOpenQuickNotes,
+                    shape = btnShape,
+                    modifier = Modifier.weight(1f).height(buttonHeight),
+                    enabled = isCallActive
+                )
+                Spacer(modifier = Modifier.weight(1f))
                 Spacer(modifier = Modifier.weight(1f))
             }
         }

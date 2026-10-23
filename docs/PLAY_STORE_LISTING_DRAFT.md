@@ -122,13 +122,13 @@ Do not add ratings, awards, user counts, "Google-approved," "military-grade," or
 | Dual-SIM selection | Source present | Device/carrier support required. `READ_PHONE_STATE` is requested only when the device reports two or more modems; denial falls back to the platform/default SIM. Verify on a physical dual-SIM device. |
 | Themes, RTL, localization | Source present | Ten locales; RTL layout supported. |
 | App lock | Source present | Uses device credential; no biometric permission. |
-| Call recording | **No** | Deferred; no `RECORD_AUDIO`; legacy files are not surfaced. |
-| SOS/location | **No** | Deferred/removed from reachable flows. |
-| Overlay/Dynamic Island | **No** | Not shipped as a reachable feature. |
-| Call screening / announcements | **No** | Service not registered; no reachable entry point. |
-| Duplicate finder | **No** | Deferred; no reachable scanner entry point. |
-| Callback reminders | **No** | Deferred; alarm receiver not registered. |
-| Home-screen widgets | **No** | No widget provider; packaged resources are not a shipped feature. |
+| Call recording | **No** | Recording UI/start paths removed; no `RECORD_AUDIO`; legacy files are not surfaced. |
+| SOS/location | **No** | Removed from the reachable flow and source audit. |
+| Overlay/Dynamic Island | **No** | Removed; no reachable feature or overlay permission. |
+| Call screening / announcements | **No** | Screening service and announcer removed; no reachable entry point. |
+| Duplicate finder | **No** | Scanner, settings entry point and startup scan removed. |
+| Callback reminders | **No** | Scheduler, receiver, dialog and settings removed. |
+| Home-screen widgets | **No** | Provider, widget activity, layouts and drawables removed. |
 
 ## 3. Permission explanations (draft for the listing/privacy review)
 

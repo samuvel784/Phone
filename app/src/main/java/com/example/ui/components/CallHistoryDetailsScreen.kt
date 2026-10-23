@@ -45,15 +45,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.R
-import com.example.ReleaseScope
 import com.example.model.CallRecord
 import com.example.model.Contact
 import com.example.model.getAvatarShape
 import com.example.ui.theme.AppShapes
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,7 +68,7 @@ fun CallHistoryDetailsScreen(
     BackHandler(enabled = true, onBack = onBack)
 
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+
     val primaryRecord = logs.firstOrNull() ?: return
 
     val blockedNumbersEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
@@ -83,13 +80,10 @@ fun CallHistoryDetailsScreen(
 
     var showNoteDialog by remember { mutableStateOf(false) }
     var editingNoteText by remember { mutableStateOf("") }
-    var showReminderDialog by remember { mutableStateOf(false) }
 
     fun deleteAllLogsWithNumber() {
         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.WARNING)
-        coroutineScope.launch(Dispatchers.IO) {
-            logs.forEach { log -> viewModel.deleteCallLog(log.id) }
-        }
+        viewModel.deleteCallLogsByNumber(number)
         onBack()
     }
 
@@ -420,7 +414,7 @@ fun CallHistoryDetailsScreen(
                                         editingNoteText = ""
                                         showNoteDialog = true
                                     },
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(48.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -507,7 +501,7 @@ fun CallHistoryDetailsScreen(
                                                             RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.WARNING)
                                                             viewModel.deleteCallNoteById(itemNote.id)
                                                         },
-                                                        modifier = Modifier.size(24.dp)
+                                                        modifier = Modifier.size(48.dp)
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Default.Delete,
@@ -532,70 +526,6 @@ fun CallHistoryDetailsScreen(
                                     Text(stringResource(R.string.close))
                                 }
                             }
-                        )
-                    }
-                }
-            }
-
-            if (ReleaseScope.CALLBACK_REMINDERS_ENABLED && viewModel.isCallbackRemindersEnabled.value) {
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                        shape = AppShapes.Card,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                    showReminderDialog = true
-                                }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Surface(
-                                shape = AppShapes.Keypad,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Alarm,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.schedule_callback_reminder_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = stringResource(R.string.schedule_callback_reminder_sub),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-
-                    if (showReminderDialog) {
-                        CallbackReminderDialog(
-                            context = context,
-                            primaryRecord = primaryRecord,
-                            viewModel = viewModel,
-                            onDismiss = { showReminderDialog = false }
                         )
                     }
                 }

@@ -66,8 +66,12 @@ fun ContactEditorScreen(
 
     val initialNumbers = remember(contactToEdit) {
         val existing = contactToEdit?.getAllNumbers() ?: emptyList()
-        if (existing.isNotEmpty()) existing.toMutableStateList()
-        else mutableListOf(LabeledNumber("", "Mobile", true)).toMutableStateList()
+        if (existing.isNotEmpty()) {
+            existing.toMutableStateList()
+        } else {
+            val prefilledNum = viewModel.newContactNumber.value
+            mutableListOf(LabeledNumber(number = prefilledNum, label = "Mobile", isPrimary = true)).toMutableStateList()
+        }
     }
     val phoneNumbers = remember { initialNumbers }
 

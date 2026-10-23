@@ -34,15 +34,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.safeState
-import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.example.security.IntentGuard
 import com.example.telecom.CallAction
 import com.example.telecom.CallActionRouter
@@ -129,7 +126,7 @@ class MainActivity : ComponentActivity() {
             }
 
             // FIXED: Prevent lock screen back-gesture from revealing private contacts or recents
-            val keyguardManager = remember { context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager }
+            val keyguardManager = remember { context.getSystemService(KEYGUARD_SERVICE) as? KeyguardManager }
             BackHandler(enabled = keyguardManager?.isKeyguardLocked == true) {
                 if (contentMode == MainContentMode.RESTRICTED_CALL || isCallActive) {
                     moveTaskToBack(true)
@@ -254,10 +251,6 @@ class MainActivity : ComponentActivity() {
         volumeControlStream = AudioManager.STREAM_VOICE_CALL
         CallManager.setAppInForeground(true)
         updateDefaultDialerStatus(this)
-        viewModel.hasRecordAudioPermission.value = ContextCompat.checkSelfPermission(
-            this,
-            android.Manifest.permission.RECORD_AUDIO
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
     override fun onStart() {

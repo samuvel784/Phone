@@ -20,7 +20,9 @@ package com.example
 import com.example.data.BackupRestoreManager
 import com.example.model.*
 import com.example.util.BlockedNumberContractManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 // Blocked Numbers
@@ -59,7 +61,20 @@ suspend fun DialerRepository.deleteQuickResponse(response: QuickResponse) =
     dao.deleteQuickResponse(response)
 
 // Telephony Settings
-suspend fun DialerRepository.getVoicemailNumber(): String = dao.getSetting("voicemail_number") ?: ""
+@android.annotation.SuppressLint("HardwareIds", "MissingPermission")
+suspend fun DialerRepository.getVoicemailNumber(): String {
+    val saved = dao.getSetting("voicemail_number")
+    if (!saved.isNullOrBlank()) return saved
+
+    return try {
+        val telephonyManager = context.getSystemService(android.content.Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+        telephonyManager?.voiceMailNumber ?: ""
+    } catch (_: SecurityException) {
+        ""
+    } catch (_: Exception) {
+        ""
+    }
+}
 suspend fun DialerRepository.saveVoicemailNumber(number: String) =
     dao.insertSetting(AppSetting("voicemail_number", number))
 
@@ -73,11 +88,11 @@ suspend fun DialerRepository.saveCallNote(number: String, note: String) =
 
 // Call Recordings
 fun DialerRepository.getAllCallRecordings(): Flow<List<CallRecording>> = dao.getAllCallRecordingsFlow()
-suspend fun DialerRepository.saveCallRecording(recording: CallRecording): Long {
-    val existing = dao.getCallRecordingByPath(recording.filePath)
-    if (existing != null) return existing.id.toLong()
-    return dao.insertCallRecording(recording)
-}
+suspend fun DialerRepository.saveCallRecording(recording: CallRecording): Long =
+    withContext(Dispatchers.IO) {
+        val existing = dao.getCallRecordingByPath(recording.filePath)
+        if (existing != null) existing.id.toLong() else dao.insertCallRecording(recording)
+    }
 suspend fun DialerRepository.deleteCallRecording(id: Int) = dao.deleteCallRecording(id)
 
 // Spam Management
@@ -88,7 +103,8 @@ suspend fun DialerRepository.deleteSpamNumber(spam: SpamNumber) = dao.deleteSpam
 suspend fun DialerRepository.clearAllSpam() = dao.clearAllSpam()
 suspend fun DialerRepository.isSpamNumber(number: String): Boolean = dao.isSpamNumber(number)
 
-suspend fun DialerRepository.importSpamNumbersFromCsv(csvContent: String): Int {
+suspend fun DialerRepository.importSpamNumbersFromCsv(csvContent: String): Int =
+    withContext(Dispatchers.IO) {
     val lines = csvContent.lines()
     val listToInsert = mutableListOf<SpamNumber>()
 
@@ -112,12 +128,12 @@ suspend fun DialerRepository.importSpamNumbersFromCsv(csvContent: String): Int {
             dao.insertSpamNumbers(chunk)
         }
     }
-    return listToInsert.size
-}
+    listToInsert.size
+    }
 
-suspend fun DialerRepository.exportSpamNumbersToCsv(): String {
+suspend fun DialerRepository.exportSpamNumbersToCsv(): String = withContext(Dispatchers.IO) {
     val list = dao.getAllSpamNumbersList()
-    return buildString {
+    buildString {
         append("# Dialer Offline Spam Database Export\n")
         append("# Format: Number,Label\n")
         for (item in list) {

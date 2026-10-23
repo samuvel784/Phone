@@ -18,12 +18,10 @@
     <string name="tab_recents">履歴</string>
     <string name="tab_contacts">連絡先</string>
     <string name="tab_dialpad">ダイヤル</string>
-    <string name="home_call_analytics">通話分析</string>
-    <string name="cat_call_analytics_sub">総通話数、不在着信、通話時間の詳細分析</string>
 
     <!-- Search & General UI -->
     <string name="search_placeholder">連絡先や番号を検索</string>
-    <string name="search_settings_placeholder">設定を検索�</string>
+    <string name="search_settings_placeholder">設定を検索？</string>
     <string name="search_clear">クリア</string>
     <string name="search_results_count">検索結果 (%1$d件)</string>
     <string name="no_matching_settings">該当する設定がありません</string>
@@ -102,9 +100,8 @@
     <string name="btn_end_call">通話を終了</string>
     <string name="btn_expand">展開</string>
     <string name="btn_collapse">折りたたむ</string>
-    <string name="btn_play">再生</string>
-    <string name="btn_pause">一時停止</string>
     <string name="in_call_spoof_warning">偽装された可能性のある番号</string>
+    <string name="in_call_spam_detected">迷惑電話を検出しました</string>
     <string name="app_locked_title">Nova Dialer ロック中</string>
     <string name="app_locked_message">このアプリはプライバシーを保護するために保護されています。続行するにはデバイスのロックで認証してください。</string>
     <string name="btn_unlock_app">ダイヤラーをロック解除</string>
@@ -115,13 +112,6 @@
     <string name="hold">保留</string>
     <string name="keypad">キーパッド</string>
     <string name="record">録音</string>
-    <string name="recording">録音中</string>
-    <string name="recording_saved">録音を安全に保存しました</string>
-    <string name="recording_started">⏺️ 通話録音を開始しました</string>
-    <string name="recording_encryption_failed">Recording saved, but encryption failed. It stays in private app storage.</string>
-    <string name="recording_save_failed">Recording could not be saved. The audio file was kept for recovery.</string>
-    <string name="recording_empty">Call recording failed or the file was empty</string>
-    <string name="recording_start_failed">Cannot start recording. Check microphone permission and audio routing.</string>
     <string name="action_call">発信</string>
     <string name="action_message">メッセージ</string>
     <string name="action_swipe_call">発信</string>
@@ -160,12 +150,10 @@
 
     <!-- Settings Headers -->
     <string name="header_sim_carrier">SIMとキャリア設定</string>
-    <string name="header_incoming_alerts">着信通知アラート</string>
     <string name="header_carrier_voicemail">キャリア留守番電話</string>
     <string name="header_contacts_management">連絡先管理</string>
     <string name="header_data_backup">データとバックアップ</string>
     <string name="header_privacy_protection">プライバシー保護</string>
-    <string name="header_call_recording">通話録音</string>
     <string name="header_app_specs">アプリの仕様</string>
     <string name="header_navigation_layout">ナビゲーションとレイアウト</string>
     <string name="header_community">コミュニティ</string>
@@ -207,10 +195,6 @@
     <string name="settings_flip_to_silence_sub">電話画面を下に伏せることで着信音を消音します</string>
     <string name="settings_swipe_actions">スワイプで発信・メッセージ送信</string>
     <string name="settings_swipe_actions_sub">履歴上で右スワイプで発信、左スワイプでメッセージ作成。</string>
-    <string name="settings_flash_alerts">着信時のフラッシュ通知</string>
-    <string name="settings_flash_alerts_sub">着信時にカメラのフラッシュを点滅させます</string>
-    <string name="settings_auto_tune_volume">録音用音量自動調整</string>
-    <string name="settings_auto_tune_volume_sub" formatted="false">録音中はスピーカー音量を自動で55%に調整し、明瞭な双方向音声を記録します。</string>
     <string name="header_theme_styling">テーマとスタイル</string>
     <string name="header_sound_haptics">音と振動</string>
 
@@ -269,66 +253,15 @@
     <string name="save_voicemail_number">留守電番号を保存</string>
 
     <!-- Settings - Call Blocking, Spam Database & Offline Protection -->
-    <string name="settings_blocked_numbers">着信拒否番号</string>
-    <string name="settings_blocked_numbers_sub">拒否リストの管理</string>
-    <string name="enter_number_to_block">ブロックする電話番号を入力</string>
-    <string name="block_this_number">この番号をブロック</string>
-    <string name="blocked_callers_header">ブロック中の着信</string>
-    <string name="no_blocked_numbers_title">ブロック中の番号はありません</string>
-    <string name="no_blocked_numbers_desc">ブロックした番号がここに表示されます。着信を拒否します。</string>
     <string name="block">ブロック</string>
     <string name="unblock">ブロック解除</string>
     <string name="block_number">番号をブロック</string>
     <string name="unblock_number">ブロック解除</string>
     <string name="call_blocked_toast">🚫 着信拒否されました</string>
-    <string name="settings_spam_protection">オフライン迷惑電話対策</string>
-    <string name="local_offline_protection">ローカルオフライン保護</string>
-    <string name="spam_entries_label">迷惑電話エントリー</string>
-    <string name="spam_numbers_blocked">%1$d 件ブロック中</string>
-    <string name="add_spam_manually_title">迷惑電話番号を手動追加</string>
-    <string name="label_phone_number_hint">電話番号</string>
-    <string name="label_spam_label_hint">ラベル</string>
-    <string name="btn_add_to_offline_db">オフラインDBに追加</string>
-    <string name="blocklist_empty_title">ブロックリストは空です</string>
-    <string name="blocklist_empty_desc">CSVをインポートするか番号を手動で追加して迷惑電話をローカルでブロックします。</string>
-    <string name="blocked_offline_numbers_title">オフラインでブロックされた番号</string>
     <string name="btn_clear_all">すべて消去</string>
-    <string name="btn_export_blocklist">拒否リストをエクスポート</string>
-    <string name="btn_import_blocklist">ファイルをインポート</string>
-    <string name="btn_export_spam_csv">CSVエクスポート</string>
-    <string name="btn_import_spam_file">ファイルをインポート</string>
-    <string name="blocklist_import_count_success">%1$d 件の拒否番号をインポートしました！</string>
-    <string name="spam_import_count_success">%1$d 件のスパム項目をインポートしました！</string>
 
     <!-- Settings - Call Recording Vault, Audio & Compression -->
-    <string name="settings_call_recording_sub">通話中の録音コントロールを有効化してローカルに保存</string>
-    <string name="settings_recordings_title">録音一覧</string>
-    <string name="no_recordings_title">録音はありません</string>
-    <string name="no_recordings_desc">通話録音を有効にし、通話中に録音ボタンをタップしてください。</string>
     <string name="share_recording">共有</string>
-    <string name="delete_recording">削除</string>
-    <string name="toast_deleted_recording">録音を削除しました</string>
-    <string name="settings_recording_chime">録音チャイム音と触覚</string>
-    <string name="settings_recording_chime_sub">通話録音の開始時と終了時に控えめな音と触覚フィードバックを再生</string>
-    <string name="share_recording_title">録音を共有・エクスポート</string>
-    <string name="share_via_apps">アプリで共有</string>
-    <string name="share_via_apps_sub">メッセージ、クラウド、または外部アプリに音声ファイルを送信</string>
-    <string name="save_to_downloads">ダウンロードに保存</string>
-    <string name="save_to_downloads_sub">復号した再生可能なコピーを端末のダウンロードフォルダに直接書き出す</string>
-    <string name="recording_details">録音の詳細</string>
-    <string name="headset_recording_warning">イヤホン接続中: スピーカーに切り替えない限り、自分の声のみ録音されます。</string>
-    <string name="settings_recordings_always_on">常に通話を録音</string>
-    <string name="settings_recordings_always_on_sub">すべての発信・着信通話の接続時に自動で録音を開始</string>
-    <string name="settings_recordings_biometric_lock">生体認証で録音を保護</string>
-    <string name="settings_recordings_biometric_lock_sub">録音の表示・再生に指紋や端末の認証情報を要求</string>
-    <string name="settings_recordings_auto_export">ダウンロードに自動エクスポート</string>
-    <string name="settings_recordings_auto_export_sub">通話終了時に録音ファイルを復号して Downloads/Nova Dialer に自動コピー</string>
-    <string name="settings_recordings_compression_title">音声圧縮と音質</string>
-    <string name="settings_recordings_compression_sub">音声ビットレートとサンプリングレートを最適化し、音質と容量を両立</string>
-    <string name="settings_recordings_cleanup_empty">無音・空の録音を削除</string>
-    <string name="vault_locked_title">録音保管庫はロックされています</string>
-    <string name="vault_locked_desc">機密通話録音にアクセスするには生体認証が必要です。</string>
-    <string name="btn_unlock_vault">保管庫のロック解除</string>
 
     <!-- Settings - Dynamic Island Call Capsule -->
     <!-- Settings - Contacts, Deduplication & Storage -->
@@ -386,11 +319,6 @@
     <string name="settings_call_log_filters">通话履歴クイックフィルター</string>
     <string name="settings_call_log_filters_sub">通話履歴の上にクイックフィルターチップを表示</string>
     <string name="settings_all_call_notes">通話メモ</string>
-    <string name="settings_all_call_notes_sub">保存された通話メモの表示と管理</string>
-    <string name="no_notes_title">通話メモはありません</string>
-    <string name="no_notes_desc">通話中に追加されたメモがここに表示されます</string>
-    <string name="search_notes_placeholder">メモまたは番号を検索…</string>
-    <string name="note_deleted_toast">通話メモを削除しました</string>
     <string name="add_call_note_btn">通話メモを追加</string>
     <string name="call_notes_count_title">通話メモ (%1$d)</string>
     <string name="call_notes_count_badge">メモ %1$d件</string>
@@ -400,25 +328,9 @@
     <string name="btn_save_note">メモを保存</string>
 
     <!-- Settings - Recording, Notes and Reminders -->
-    <string name="duration_label">時間</string>
-    <string name="callback_reminders_title">折り返しリマインダー</string>
-    <string name="callback_reminders_stats">%1$d件の有効、%2$d件の完了</string>
-    <string name="active_reminders_title">アクティブなリマインダー</string>
-    <string name="no_active_reminders_title">アクティブなリマインダーはありません</string>
-    <string name="no_active_reminders_desc">通話履歴の画面から折り返しリマインダーを設定できます。</string>
-    <string name="history_passed_title">履歴 (過去)</string>
-    <string name="scheduled_prefix">予定: %1$s</string>
-    <string name="triggered_prefix">実行済み: %1$s</string>
-    <string name="schedule_callback_reminder_title">折り返しリマインダーをスケジュール</string>
-    <string name="schedule_callback_reminder_sub">コールアラームで通知を受け取ります</string>
-    <string name="remind_call_back_prompt">%1$s への折り返しリマインダー:</string>
-    <string name="optional_note_label">メモ (任意)</string>
-    <string name="settings_callback_reminders">折り返しリマインダーダッシュボード</string>
-    <string name="settings_callback_reminders_sub">保留中の折り返しアラームの確認・キャンセル</string>
     <string name="btn_call_back">折り返し電話</string>
 
     <!-- Settings - System Calling & Lock Screen Permissions -->
-    <string name="btn_grant">許可</string>
     <string name="btn_configure">設定</string>
     <string name="btn_set_default">デフォルトに設定</string>
     <string name="feature_enable_prompt">上のスイッチを切り替えて有効化してください</string>
@@ -447,30 +359,7 @@
     <string name="btn_delete">削除</string>
     <string name="btn_edit">編集</string>
     <string name="btn_discard">破棄</string>
-    <string name="delete">削除</string>
     <!-- Duplicate Finder -->
-    <string name="dup_finder_title">重複検出</string>
-    <string name="dup_finder_sub">同じ電話番号を持つ連絡先を検出し、統合または削除します。</string>
-    <string name="dup_scanning">連絡先をスキャン中…</string>
-    <string name="dup_groups_found">%1$d件の重複グループ</string>
-    <string name="dup_none_title">重複は見つかりませんでした</string>
-    <string name="dup_none_desc">連絡先はクリーンです — 統合や削除が必要な項目はありません。</string>
-    <string name="dup_permission_title">連絡先へのアクセス権限が必要です</string>
-    <string name="dup_permission_desc">重複の検出、統合、削除を行うため連絡先へのアクセスを許可してください。</string>
-    <string name="dup_rescan">再スキャン</string>
-    <string name="dup_merge">統合</string>
-    <string name="dup_delete_others">他を削除</string>
-    <string name="dup_merge_confirm_title">重複を統合しますか？</string>
-    <string name="dup_merge_confirm_desc">選択した連絡先に情報が維持され、その他のエントリは永久に統合されます。</string>
-    <string name="dup_delete_confirm_title">重複を削除しますか？</string>
-    <string name="dup_delete_confirm_desc">選択されていない重複項目は永久に削除されます。この操作は取り消せません。</string>
-    <string name="dup_delete_one_confirm_desc">この連絡先は永久に削除されます。この操作は取り消せません。</string>
-    <string name="dup_merged">%1$d件の連絡先を統合しました</string>
-    <string name="dup_deleted">%1$d件の連絡先を削除しました</string>
-    <string name="dup_merge_all">すべて統合</string>
-    <string name="dup_delete_all">すべて削除</string>
-    <string name="dup_merge_all_confirm_desc">各重複グループを統合し、それぞれで選択した連絡先を保持します。これは永久に保存されます。</string>
-    <string name="dup_delete_all_confirm_desc">各グループの選択されていない重複はすべて永久に削除されます。この操作は取り消せません。</string>
     <string name="close">閉じる</string>
     <string name="add_call">通話を追加</string>
     <string name="add_call_search_hint">連絡先を検索または番号を入力</string>
@@ -480,97 +369,8 @@
     <string name="history">履歴</string>
 
     <!-- Settings - Focus Mode, Call Protection & Caller Announcer -->
-    <string name="header_focus_mode">集中モード</string>
-    <string name="header_call_protection">着信保護レベル</string>
-    <string name="header_vip_numbers">VIP番号</string>
-    <string name="header_caller_announcer">着信読み上げ</string>
-
-    <string name="screening_role_granted">着信フィルタリング有効</string>
-    <string name="screening_role_needed">着信フィルタリングの権限が必要です</string>
-    <string name="screening_role_desc">集中モード、VIPルール、ブロック機能を動作させるためNova Dialerにフィルタリングを許可してください。</string>
-
-    <string name="focus_mode_title">集中モード</string>
-    <string name="focus_mode_sub">集中時に着信を許可する連絡先を選択します。</string>
-    <string name="focus_mode_off">オフ</string>
-    <string name="focus_mode_off_sub">すべての着信が通常通り着信音を鳴らします。</string>
-    <string name="focus_mode_saved">登録済みの連絡先のみ</string>
-    <string name="focus_mode_saved_sub">連絡先に登録されている相手のみ着信音を鳴らします。</string>
-    <string name="focus_mode_vip">VIPのみ</string>
-    <string name="focus_mode_vip_sub">VIPリストにある番号のみ着信音を鳴らします。</string>
-    <string name="focus_mode_silence_all">すべて消音</string>
-    <string name="focus_mode_silence_all_sub">VIPとお気に入り以外のすべての着信を消音します。</string>
-
-    <string name="protection_level_title">着信保護レベル</string>
-    <string name="protection_level_sub">集中モードがオフのとき未登録の着信をブロックします。</string>
-    <string name="protection_standard">標準</string>
-    <string name="protection_standard_sub">すべての着信が通常通り鳴ります。</string>
-    <string name="protection_strict">厳格</string>
-    <string name="protection_strict_sub">未登録の番号を消音。登録済み、VIP、リピート着信は鳴ります。</string>
-    <string name="protection_maximum">最大</string>
-    <string name="protection_maximum_sub">VIP、お気に入り、リピート着信以外すべて消音します。</string>
-    <string name="protection_allow_repeat_title">リピート着信を許可</string>
-    <string name="protection_allow_repeat_sub">3分以内に同じ番号から2回目の着信があった場合は常に鳴らします。</string>
-    <string name="protection_disclaimer">緊急通報は常に鳴ります。消音された着信は履歴に不在着信として記録されます。</string>
-
-    <string name="vip_title">VIP着信者</string>
-    <string name="vip_sub">VIP番号は常に集中モードと着信保護を貫通して鳴ります。</string>
-    <string name="vip_empty">VIP番号はまだありません。常に連絡を受けたい相手を追加してください。</string>
-    <string name="vip_add">VIP番号を追加</string>
-    <string name="vip_add_sub">常に着信を許可する番号を選択します</string>
-    <string name="vip_remove">VIP番号を削除</string>
-
-    <string name="announcer_enable_title">発信者名を読み上げる</string>
-    <string name="announcer_enable_sub">着信音中に発信者名を音声で読み上げます。</string>
-    <string name="announcer_message_title">読み上げメッセージ</string>
-    <string name="announcer_template_label">メッセージテンプレート</string>
-    <string name="announcer_template_help">{name}、{user}、{type} をプレースホルダーとして使用できます。</string>
-    <string name="announcer_your_name_label">あなたの名前 ({user})</string>
-    <string name="announcer_repeat_title">繰り返し回数</string>
-    <string name="announcer_speed_title">読み上げ速度</string>
-    <string name="announcer_pitch_title">声の高さ</string>
-    <string name="announcer_volume_title">音量</string>
-    <string name="announcer_unknown_title">非通知・未知の番号を読み上げる</string>
-    <string name="announcer_unknown_sub">連絡先にない着信は「不明な電話番号」と読み上げます。</string>
-    <string name="announcer_headphones_title">イヤホン接続時のみ読み上げる</string>
-    <string name="announcer_headphones_sub">イヤホンやBluetooth機器が非接続のときは静かにします。</string>
-    <string name="announcer_test_title">読み上げテスト</string>
-    <string name="announcer_test_sub">現在の設定でサンプル音声を再生します</string>
-    <string name="announcer_voice_title">音声</string>
-    <string name="announcer_voice_default">デフォルト</string>
-    <string name="announcer_voice_male">男性</string>
-    <string name="announcer_voice_female">女性</string>
-    <string name="announcer_voice_note">デバイスの音声合成を使用します。結果はインストールされている音声エンジンによって異なります。</string>
 <string name="dialpad_matches_title">Quick matches</string>
     <string name="dialpad_matches_hint">Tap a match to call</string>
-
-    <string name="spam_label">Spam</string>
-    <string name="mark_spam">Mark as spam</string>
-    <string name="remove_spam">Remove spam</string>
-    <string name="spam_marked">Marked as spam</string>
-    <string name="spam_unmarked">Removed from spam</string>
-
-    <string name="export_call_log_title">Export call log</string>
-    <string name="export_call_log_sub">Save your call history to a file on your device.</string>
-    <string name="export_call_log_csv">Export as CSV</string>
-    <string name="export_call_log_pdf">Export as PDF</string>
-    <string name="call_log_exported">Call log exported</string>
-
-    <string name="dnd_title">Do Not Disturb</string>
-    <string name="dnd_sub">Silence calls outside your quiet hours. Saved contacts and VIPs still ring.</string>
-    <string name="dnd_enabled_title">Schedule</string>
-    <string name="dnd_enabled_sub">Silence calls during the schedule below</string>
-    <string name="dnd_start_label">Start</string>
-    <string name="dnd_end_label">End</string>
-    <string name="dnd_days_label">Repeat on</string>
-    <string name="dnd_day_mon">Mon</string>
-    <string name="dnd_day_tue">Tue</string>
-    <string name="dnd_day_wed">Wed</string>
-    <string name="dnd_day_thu">Thu</string>
-    <string name="dnd_day_fri">Fri</string>
-    <string name="dnd_day_sat">Sat</string>
-    <string name="dnd_day_sun">Sun</string>
-    <string name="dnd_active_now">Quiet hours active now–unknown callers will be silenced</string>
-    <string name="dnd_pick_time_title">Pick a time</string>
 
     <string name="ringtone_assigned_toast">Ringtone assigned</string>
     <string name="ringtone_cleared_toast">Ringtone cleared</string>
@@ -578,10 +378,6 @@
     <string name="quick_reply_direct_sms_title">Send as SMS</string>
     <string name="quick_reply_direct_sms_sub">Hand the decline message to your SMS app for confirmation (no SMS permission required)</string>
     <string name="quick_reply_sms_handoff_toast">Decline replies will open your SMS app</string>
-
-    <string name="widget_favorites_title">Nova Dialer Favourites</string>
-    <string name="widget_tap_hint">Tap a favourite to call</string>
-    <string name="widget_no_favourites">No favourites yet–open Nova Dialer to add some</string>
     <!-- Emergency SOS -->
     <!-- Backup restore safety -->
     <string name="backup_plaintext_warning_title">暗号化されていないバックアップ</string>
@@ -596,19 +392,6 @@
     <string name="backup_error_invalid_payload">バックアップが破損しているか、無効なデータが含まれています。</string>
 
     <!-- Call recording disclosure -->
-    <string name="recording_disclosure_title">通話を録音する前に</string>
-    <string name="recording_disclosure_body">通話を録音すると音声がこの端末に保存されます。新しい録音は保存時に暗号化される想定ですが、暗号化に失敗することがあり、その場合 Nova Dialer はアプリ専用ストレージ内に暗号化されていないコピーを残すことがあります。端末、Android のバージョン、通信事業者、メーカーの制限により、録音できない、または通話のどちら側が録音されるかが制限される場合があります。現地の法律を守り、参加者に必要な同意を得るのはあなたの責任です。</string>
-    <string name="recording_disclosure_accept">理解しました</string>
-    <string name="recording_auto_disclosure_title">自動録音を有効にしますか？</string>
-    <string name="recording_auto_disclosure_body">これが有効な間、録音条件に一致する通話は毎回確認することなく自動的に録音される場合があります。上記の録音に関する注意は引き続き適用されます。いつでもオフにできます。</string>
-    <string name="recording_auto_disclosure_confirm">自動録音を有効にする</string>
-    <string name="recording_export_warning_title">再生可能なコピーを書き出しますか？</string>
-    <string name="recording_export_warning_body">Downloads に書き出されるファイルは復号されており、他のアプリで開くことができます。Nova Dialer をアンインストールしても端末に残り、アプリの暗号化による保護もなくなります。</string>
-    <string name="recording_export_warning_confirm">暗号化されていないコピーを書き出す</string>
-    <string name="recording_share_warning_title">再生可能なコピーを共有しますか？</string>
-    <string name="recording_share_warning_body">共有するコピーは復号化されており、選択したアプリで開くことができます。Nova Dialer は、そのアプリ、受信者の端末、またはそこで作成されたバックアップからこのコピーを削除することはできません。また、アプリの暗号化による保護も失われます。</string>
-    <string name="recording_share_warning_confirm">暗号化されていないコピーを共有</string>
-    <string name="recording_export_all">すべての録音をエクスポート</string>
     <string name="default_dialer_card_title">デフォルトの電話アプリに設定</string>
     <string name="default_dialer_card_reason">通話の完全な処理と通話画面に必要です。</string>
 
@@ -644,6 +427,10 @@
     <string name="background_popup_fallback">この端末はバックグラウンド ポップアップのページを公開していません。アプリ情報を開きました。「その他の権限」または同様の名前のメーカー設定を確認してください。</string>
     <string name="permission_settings_unavailable">システム設定ページを開けませんでした。Android の設定、アプリ、Nova Dialer の順に手動で開いてください。</string>
     <string name="permission_manual_guide">手動の手順: Android の設定、アプリ、Nova Dialer の順に開きます。全画面アクセスは「特別なアプリ アクセス」→「全画面通知」を開きます。バックグラウンド ポップアップは「その他の権限」または同等のメーカー設定を開きます。</string>
+    <string name="permission_background_popup_acknowledge">有効にしました</string>
+    <string name="permission_background_popup_acknowledged">有効として記録済み</string>
+    <string name="permission_background_popup_ack_hint">端末でこの設定を変更した後にのみ確認してください。Nova Dialer はメーカー固有の設定を確認できません。</string>
+    <string name="permission_background_popup_ack_undo">元に戻す</string>
     <string name="diagnostics_lock_screen">ロック画面の表示: %1$s</string>
     <string name="diagnostics_background_popup">バックグラウンド ポップアップ: %1$s</string>
     <string name="diagnostics_notifications">通知が有効: %1$s</string>
@@ -651,4 +438,16 @@
     <string name="diagnostics_default_dialer">既定の電話アプリ: %1$s</string>
     <string name="diagnostics_configure_lock_screen">ロック画面を設定</string>
     <string name="diagnostics_configure_background_popup">バックグラウンド ポップアップを設定</string>
+    <string name="loading">Loading</string>
+    <string name="loading_contacts">Loading contacts</string>
+    <string name="loading_recents">Loading recent calls</string>
+    <string name="load_error_title">Could not load your data</string>
+    <string name="load_error_message">Check the app permissions and try again.</string>
+    <string name="btn_retry">Retry</string>
+    <string name="refreshing">Refreshing</string>
+    <string name="progress_exporting_backup">Exporting backup&#8230;</string>
+    <string name="progress_importing_backup">Restoring backup&#8230;</string>
+    <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
+    <string name="progress_importing_contacts">Importing contacts&#8230;</string>
+    <string name="progress_reading_file">Reading file&#8230;</string>
 </resources>

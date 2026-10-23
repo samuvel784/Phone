@@ -64,12 +64,17 @@ fun ContactsAndDataSettings(
     // Legacy plaintext JSON backups are held here until the user confirms the warning dialog.
     var pendingPlaintextRestoreContent by remember { mutableStateOf<String?>(null) }
     var showPlaintextWarningDialog by remember { mutableStateOf(false) }
+    // Backup/restore/import are long enough to look frozen on a large address book. Show a
+    // blocking Nova overlay with the actual operation name instead of leaving the screen inert.
+    var busyMessage by remember { mutableStateOf<String?>(null) }
 
     val saveBackupFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
         if (uri != null && pendingBackupData != null) {
+            busyMessage = context.getString(R.string.progress_exporting_backup)
             viewModel.writeTextToUri(uri, pendingBackupData!!) { success ->
+                busyMessage = null
                 if (success) {
                     Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_LONG).show()
                 } else {
@@ -84,7 +89,9 @@ fun ContactsAndDataSettings(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
+            busyMessage = context.getString(R.string.progress_reading_file)
             viewModel.readTextFromUri(uri, BackupRestoreManager.TextImportKind.BACKUP) { result ->
+                busyMessage = null
                 when (result) {
                     is BackupRestoreManager.TextReadResult.Success -> {
                         val content = result.text
@@ -142,8 +149,10 @@ fun ContactsAndDataSettings(
         contract = ActivityResultContracts.CreateDocument("text/x-vcard")
     ) { uri: Uri? ->
         if (uri != null) {
+            busyMessage = context.getString(R.string.progress_exporting_contacts)
             viewModel.exportContactsVcf { vcfData ->
                 viewModel.writeTextToUri(uri, vcfData) { success ->
+                    busyMessage = null
                     if (success) {
                         Toast.makeText(context, context.getString(R.string.file_saved_success), Toast.LENGTH_LONG).show()
                     } else {
@@ -158,11 +167,15 @@ fun ContactsAndDataSettings(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
+            busyMessage = context.getString(R.string.progress_reading_file)
             viewModel.readTextFromUri(uri, BackupRestoreManager.TextImportKind.CONTACTS_VCF) { result ->
+                busyMessage = null
                 when (result) {
                     is BackupRestoreManager.TextReadResult.Success -> {
                         if (result.text.isNotBlank()) {
+                            busyMessage = context.getString(R.string.progress_importing_contacts)
                             viewModel.importContactsVcf(result.text) { success ->
+                                busyMessage = null
                                 if (success) {
                                     Toast.makeText(context, context.getString(R.string.vcf_import_count_success), Toast.LENGTH_LONG).show()
                                 } else {
@@ -193,6 +206,7 @@ fun ContactsAndDataSettings(
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
@@ -403,7 +417,9 @@ fun ContactsAndDataSettings(
                     onClick = {
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.SUCCESS)
                         showExportPasswordDialog = false
+                        busyMessage = context.getString(R.string.progress_exporting_backup)
                         viewModel.exportBackup(exportPasswordInput) { data ->
+                            busyMessage = null
                             if (data.isBlank()) {
                                 Toast.makeText(
                                     context,
@@ -543,26 +559,43 @@ fun ContactsAndDataSettings(
             title = { Text(stringResource(R.string.backup_password_label)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.backup_restore_desc),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = restorePasswordInput,
-                        onValueChange = { restorePasswordInput = it },
-                        label = { Text(stringResource(R.string.backup_password_label)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small
-                    )
+                    if (busyMessage != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            NovaOrbitIndicator(size = 36.dp, contentDescription = busyMessage)
+                            Text(
+                                text = busyMessage ?: "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.backup_restore_desc),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedTextField(
+                            value = restorePasswordInput,
+                            onValueChange = { restorePasswordInput = it },
+                            label = { Text(stringResource(R.string.backup_password_label)) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.small
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
+                    enabled = busyMessage == null,
                     onClick = {
                         val content = pendingEncryptedRestoreContent ?: ""
+                        busyMessage = context.getString(R.string.progress_importing_backup)
                         viewModel.importBackupResult(content, restorePasswordInput) { result ->
+                            busyMessage = null
                             when (result) {
                                 is BackupRestoreManager.ImportResult.Success -> {
                                     Toast.makeText(context, context.getString(R.string.backup_restored_success_toast), Toast.LENGTH_LONG).show()
@@ -618,7 +651,9 @@ fun ContactsAndDataSettings(
                     onClick = {
                         val content = pendingPlaintextRestoreContent ?: ""
                         // Only reachable after the user pressed "Restore anyway".
+                        busyMessage = context.getString(R.string.progress_importing_backup)
                         viewModel.importBackupResult(content, "") { result ->
+                            busyMessage = null
                             showPlaintextWarningDialog = false
                             pendingPlaintextRestoreContent = null
                             val messageRes = when (result) {
@@ -643,6 +678,11 @@ fun ContactsAndDataSettings(
                 }
             }
         )
+    }
+
+    busyMessage?.let { message ->
+        NovaLoadingOverlay(message = message)
+    }
     }
 }
 

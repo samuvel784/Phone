@@ -105,7 +105,9 @@ fun MainScreen(
         MultiSimManager.getCallableSims(context)
     }
     val blockedNumbersEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
-    val blockedNumbers = remember(blockedNumbersEntities) { blockedNumbersEntities.map { it.number } }
+    val blockedNumbers = remember(blockedNumbersEntities) {
+        blockedNumbersEntities.mapTo(HashSet(blockedNumbersEntities.size)) { it.number }
+    }
 
     var selectedTab by viewModel.selectedTab
     val searchQuery by viewModel.searchQuery
@@ -119,7 +121,6 @@ fun MainScreen(
     var settingsInitialTab by remember { mutableIntStateOf(0) }
 
     val favoriteContacts by viewModel.favoriteContacts.collectAsStateWithLifecycle()
-    val dialpadMatches by viewModel.dialpadMatches.collectAsStateWithLifecycle()
 
     LaunchedEffect(selectedTab) {
         focusManager.clearFocus()
@@ -160,6 +161,12 @@ fun MainScreen(
     var hasCallLogPermission by viewModel.hasCallLogPermission
     var hasNotificationPermission by viewModel.hasNotificationPermission
     var isLoadingPermissions by viewModel.isLoadingPermissions
+    val contactsLoading by viewModel.contactsLoading.collectAsStateWithLifecycle()
+    val contactsRefreshing by viewModel.contactsRefreshing.collectAsStateWithLifecycle()
+    val contactsLoadFailed by viewModel.contactsLoadFailed.collectAsStateWithLifecycle()
+    val callLogLoading by viewModel.callLogLoading.collectAsStateWithLifecycle()
+    val callLogRefreshing by viewModel.callLogRefreshing.collectAsStateWithLifecycle()
+    val callLogLoadFailed by viewModel.callLogLoadFailed.collectAsStateWithLifecycle()
     var showProminentDisclosure by remember { mutableStateOf(false) }
     var showCallLogDisclosure by remember { mutableStateOf(false) }
     var pendingPermissionsAfterRole by remember { mutableStateOf(false) }
@@ -409,15 +416,18 @@ fun MainScreen(
     ) { paddingValues ->
         val tabSlots = listOf("HOME", "RECENTS", "FAVORITES")
 
-        BackHandler(enabled = isDialpadVisible || isSettingsVisible || (isCallActive && !isCallMinimized) || selectedTab != 0) {
+        val defaultTabKey = viewModel.defaultStartupTabKey.value
+        val defaultTabIndex = listOf("HOME", "RECENTS", "FAVORITES").indexOf(defaultTabKey).coerceAtLeast(0)
+
+        BackHandler(enabled = isDialpadVisible || isSettingsVisible || (isCallActive && !isCallMinimized) || selectedTab != defaultTabIndex) {
             if (isDialpadVisible) {
                 isDialpadVisible = false
             } else if (isSettingsVisible) {
                 isSettingsVisible = false
             } else if (isCallActive && !isCallMinimized) {
                 isCallMinimized = true
-            } else if (selectedTab != 0) {
-                selectedTab = 0
+            } else if (selectedTab != defaultTabIndex) {
+                selectedTab = defaultTabIndex
             }
         }
 
@@ -560,7 +570,9 @@ fun MainScreen(
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
-                        beyondViewportPageCount = 1,
+                        // Keep only the visible page composed. The pager has three heavy tabs and
+                        // pre-composing a neighbour doubled contact/call-log collection work.
+                        beyondViewportPageCount = 0,
                         userScrollEnabled = !isRowSwipeEnabled || currentSlot != "RECENTS"
                     ) { page ->
                         Box(
@@ -586,7 +598,10 @@ fun MainScreen(
                                     onAddContactClick = { isAddContactDialogVisible = true },
                                     onToggleFavorite = { contact -> viewModel.toggleFavorite(contact.number, !contact.favorite) },
                                     hasPermission = hasContactsPermission,
-                                    isLoading = isLoadingPermissions,
+                                    isLoading = isLoadingPermissions || (hasContactsPermission && contactsLoading),
+                                    hasError = hasContactsPermission && contactsLoadFailed,
+                                    isRefreshing = hasContactsPermission && contactsRefreshing,
+                                    onRetry = viewModel::retryDataSync,
                                     onRequestPermission = { showProminentDisclosure = true },
                                     onEditContact = {
                                         oldContactToEdit = it
@@ -606,12 +621,14 @@ fun MainScreen(
                                     onCallClick = { initiateCall(it.name, it.number, it.label) },
                                     onDeleteRecord = { id -> viewModel.deleteCallLog(id) },
                                     hasPermission = hasCallLogPermission,
-                                    isLoading = isLoadingPermissions,
+                                    isLoading = isLoadingPermissions || (hasCallLogPermission && callLogLoading),
+                                    hasError = hasCallLogPermission && callLogLoadFailed,
+                                    isRefreshing = hasCallLogPermission && callLogRefreshing,
+                                    onRetry = viewModel::retryDataSync,
                                     onRequestPermission = { showProminentDisclosure = true }
                                 )
                             }
                             "CONTACTS" -> {
-                                val favoriteContacts by viewModel.favoriteContacts.collectAsStateWithLifecycle()
                                 ContactsTabContent(
                                     viewModel = viewModel,
                                     favoriteContacts = favoriteContacts,
@@ -620,7 +637,10 @@ fun MainScreen(
                                     onAddContactClick = { isAddContactDialogVisible = true },
                                     onToggleFavorite = { contact -> viewModel.toggleFavorite(contact.number, !contact.favorite) },
                                     hasPermission = hasContactsPermission,
-                                    isLoading = isLoadingPermissions,
+                                    isLoading = isLoadingPermissions || (hasContactsPermission && contactsLoading),
+                                    hasError = hasContactsPermission && contactsLoadFailed,
+                                    isRefreshing = hasContactsPermission && contactsRefreshing,
+                                    onRetry = viewModel::retryDataSync,
                                     onRequestPermission = { showProminentDisclosure = true },
                                     onEditContact = {
                                         oldContactToEdit = it
@@ -633,7 +653,6 @@ fun MainScreen(
                                 )
                             }
                             "FAVORITES" -> {
-                                val favoriteContacts by viewModel.favoriteContacts.collectAsStateWithLifecycle()
                                 ContactsTabContent(
                                     viewModel = viewModel,
                                     favoriteContacts = favoriteContacts,
@@ -642,7 +661,10 @@ fun MainScreen(
                                     onAddContactClick = { isAddContactDialogVisible = true },
                                     onToggleFavorite = { contact -> viewModel.toggleFavorite(contact.number, !contact.favorite) },
                                     hasPermission = hasContactsPermission,
-                                    isLoading = isLoadingPermissions,
+                                    isLoading = isLoadingPermissions || (hasContactsPermission && contactsLoading),
+                                    hasError = hasContactsPermission && contactsLoadFailed,
+                                    isRefreshing = hasContactsPermission && contactsRefreshing,
+                                    onRetry = viewModel::retryDataSync,
                                     onRequestPermission = { showProminentDisclosure = true },
                                     onEditContact = {
                                         oldContactToEdit = it
@@ -762,10 +784,6 @@ fun MainScreen(
                     isIncoming = systemCallState == android.telecom.Call.STATE_RINGING,
                     contacts = allContacts,
                     callState = systemCallState,
-                    recordingEnabled = false,
-                    autoTuneVolume = false,
-                    recordingChimeEnabled = false,
-                    alwaysRecordEnabled = false,
                     callNotesEnabled = viewModel.isCallNotesEnabled.value,
                     onSaveNote = { content -> viewModel.saveCallNote(callingContactNumber, content) },
                     onMinimize = { isCallMinimized = true },
@@ -815,6 +833,9 @@ fun MainScreen(
                 val voicemailNumber by viewModel.voicemailNumber
                 val speedDialEntities by viewModel.speedDialFlow.collectAsStateWithLifecycle()
                 val speedDialMap = remember(speedDialEntities) { speedDialEntities.associate { it.key to it.number } }
+                // Subscribed only while the sheet is composed. Keeping this at screen scope made
+                // the contacts + call-history streams live for the entire session.
+                val dialpadMatches by viewModel.dialpadMatches.collectAsStateWithLifecycle()
 
                 DialpadOverlay(
                     inputValue = dialpadInput,

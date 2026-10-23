@@ -76,7 +76,9 @@ fun CallLogSummaryDashboard(
     var isExpanded by remember { mutableStateOf(true) }
     var selectedRange by remember { mutableStateOf(SummaryTimeRange.TODAY) }
 
-    val now = System.currentTimeMillis()
+    // Read the clock once per composition lifetime. Using System.currentTimeMillis() directly
+    // here made every recomposition (including animation ticks) invalidate all range filters.
+    val now = remember { System.currentTimeMillis() }
     val startOfWeek = remember(now) { now - 7L * 24 * 60 * 60 * 1000 }
     val startOfMonth = remember(now) { now - 30L * 24 * 60 * 60 * 1000 }
     val startOfYear = remember(now) { now - 365L * 24 * 60 * 60 * 1000 }

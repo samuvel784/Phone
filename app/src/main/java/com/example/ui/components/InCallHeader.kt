@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -111,7 +114,6 @@ fun InCallHeader(
     secondaryNumber: String = "",
     onEndSecondary: (() -> Unit)? = null,
     isConference: Boolean = false,
-    isRecording: Boolean = false,
     activeStartTimestamp: Long = 0L,
     isFake: Boolean = false,
     fakeState: String = "RINGING",
@@ -153,7 +155,12 @@ fun InCallHeader(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text("👥", fontSize = 14.sp)
+                    Icon(
+                        imageVector = Icons.Default.Group,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = stringResource(R.string.call_status_conference),
@@ -284,7 +291,7 @@ fun InCallHeader(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "⚠️ SPAM CALLER DETECTED",
+                        text = stringResource(R.string.in_call_spam_detected),
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.Red,
                         fontWeight = FontWeight.Bold
@@ -299,10 +306,6 @@ fun InCallHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            if (isRecording) {
-                RecordingBadge()
-            }
-
             CallDurationText(
                 activeStartTimestamp = activeStartTimestamp,
                 callState = callState,
@@ -346,9 +349,11 @@ fun InCallHeader(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Text(
-                            if (otherState == Call.STATE_HOLDING) "⏸️" else "📞",
-                            fontSize = 18.sp
+                        Icon(
+                            imageVector = if (otherState == Call.STATE_HOLDING) Icons.Default.Pause else Icons.Default.Phone,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
@@ -380,7 +385,7 @@ fun InCallHeader(
                     if (onEndSecondary != null) {
                         IconButton(
                             onClick = onEndSecondary,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CallEnd,
@@ -392,64 +397,6 @@ fun InCallHeader(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun RecordingBadge() {
-    val infiniteTransition = rememberInfiniteTransition(label = "header_rec_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "header_rec_scale"
-    )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 0.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "header_rec_alpha"
-    )
-
-    Surface(
-        shape = AppShapes.Chip,
-        color = Color(0xFFB71C1C).copy(alpha = 0.15f),
-        modifier = Modifier.padding(end = 8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(12.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .scale(pulseScale)
-                        .clip(AppShapes.Small)
-                        .background(Color(0xFFE53935).copy(alpha = pulseAlpha))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(AppShapes.Small)
-                        .background(Color(0xFFE53935))
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "REC",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFE53935),
-                fontSize = 11.sp
-            )
         }
     }
 }

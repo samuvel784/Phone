@@ -8,7 +8,4 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-
-    <!-- Invisible, non-exported activity used by the favourites widget to place a call -->
-    <style name="Theme.MyApplication.Translucent" parent="android:Theme.Translucent.NoTitleBar" />
 </resources>

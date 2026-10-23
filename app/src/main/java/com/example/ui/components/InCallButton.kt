@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -32,9 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -53,7 +49,6 @@ fun InCallButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = AppShapes.Keypad,
-    isPulsingRecording: Boolean = false,
     /**
      * When false the control is visibly dimmed and does nothing. Used for actions the current
      * Telecom state / platform does not support (e.g. Bluetooth with no call-audio endpoint).
@@ -65,13 +60,11 @@ fun InCallButton(
     // Off: soft tonal tile. On: solid accent colour with its contrasting icon, so the state is obvious at a glance.
     val targetColor = when {
         !enabled -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-        isActive && isPulsingRecording -> Color(0xFFB71C1C).copy(alpha = 0.22f)
         isActive -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val targetContent = when {
         !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        isActive && isPulsingRecording -> Color(0xFFE53935)
         isActive -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -127,9 +120,6 @@ fun InCallButton(
                 .padding(4.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                if (isPulsingRecording) {
-                    RecordingPulseHalo()
-                }
                 Icon(
                     imageVector = icon,
                     // The always-visible label below already carries the name; leaving the icon
@@ -146,15 +136,6 @@ fun InCallButton(
                     .fillMaxWidth()
                     .padding(horizontal = 2.dp)
             ) {
-                if (isPulsingRecording) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(AppShapes.Small)
-                            .background(Color(0xFFE53935))
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                }
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
@@ -166,35 +147,4 @@ fun InCallButton(
             }
         }
     }
-}
-
-@Composable
-private fun RecordingPulseHalo() {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse_recording_transition")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_recording_scale"
-    )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 0.25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_recording_alpha"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(26.dp)
-            .scale(pulseScale)
-            .clip(AppShapes.Keypad)
-            .background(Color(0xFFE53935).copy(alpha = pulseAlpha))
-    )
 }

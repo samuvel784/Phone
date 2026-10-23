@@ -95,6 +95,9 @@ fun ContactsTabContent(
     onToggleFavorite: (Contact) -> Unit,
     hasPermission: Boolean = true,
     isLoading: Boolean = false,
+    hasError: Boolean = false,
+    isRefreshing: Boolean = false,
+    onRetry: () -> Unit = {},
     onRequestPermission: () -> Unit = {},
     onEditContact: (Contact) -> Unit = {},
     onDeleteContact: (Contact) -> Unit = {},
@@ -254,18 +257,29 @@ fun ContactsTabContent(
                 }
             }
 
+            if (isRefreshing && !isLoading && hasPermission && !hasError) {
+                NovaRefreshingBar(modifier = Modifier.padding(bottom = 4.dp))
+            }
+
             if (isLoading) {
-                Box(
+                NovaContactsSkeleton(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(30.dp),
-                        strokeWidth = 3.dp
-                    )
-                }
+                    favoritesOnly = startWithFavoritesOnly || cardStyle == ContactCardStyle.FAVORITES
+                )
+            } else if (hasError) {
+                NovaErrorState(
+                    onRetry = onRetry,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            } else if (!hasPermission) {
+                // The permission card above is the whole state. Do not stack an "empty contacts"
+                // illustration underneath it: denied access and a genuinely empty address book
+                // must stay visually distinct.
+                Spacer(modifier = Modifier.weight(1f))
             } else if (contacts.isEmpty()) {
                 Box(
                     modifier = Modifier

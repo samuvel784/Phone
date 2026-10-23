@@ -210,13 +210,6 @@ fun GeneralSettings(
             )
         }
 
-        if (searchQuery.isBlank()) {
-            // Permanent entry point. Dismissing the top banner must never remove this.
-            item {
-                FullScreenCallPermissionCard()
-            }
-        }
-
         if (searchQuery.isNotBlank()) {
             item {
                 Text(

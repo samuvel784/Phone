@@ -56,10 +56,8 @@ class DialerViewModelTest {
         viewModel.updateFlipToSilenceEnabled(true)
         viewModel.updateCallWaitingEnabled(false)
         viewModel.updateRecordingEnabled(true)
-        viewModel.updateFlashAlertsEnabled(true)
         viewModel.updateBiometricLockEnabled(true)
         viewModel.updatePocketProtectionEnabled(true)
-        viewModel.updateCallbackRemindersEnabled(false)
         viewModel.updateCallNotesEnabled(false)
         viewModel.onAccountFilterChange("Google:test@gmail.com")
         viewModel.updateDefaultContactAccount("Google:test@gmail.com", "com.google")
@@ -69,10 +67,8 @@ class DialerViewModelTest {
         assertTrue(viewModel.flipToSilenceEnabled.value)
         assertFalse(viewModel.callWaitingEnabled.value)
         assertTrue(viewModel.recordingEnabled.value)
-        assertTrue(viewModel.flashAlertsEnabled.value)
         assertTrue(viewModel.isBiometricLockEnabled.value)
         assertTrue(viewModel.isPocketProtectionEnabled.value)
-        assertFalse(viewModel.isCallbackRemindersEnabled.value)
         assertFalse(viewModel.isCallNotesEnabled.value)
         assertEquals("Google:test@gmail.com", viewModel.selectedAccountFilter.value)
         assertEquals("Google:test@gmail.com", viewModel.defaultContactAccountName.value)
@@ -84,10 +80,8 @@ class DialerViewModelTest {
         assertTrue(newViewModel.flipToSilenceEnabled.value)
         assertFalse(newViewModel.callWaitingEnabled.value)
         assertTrue(newViewModel.recordingEnabled.value)
-        assertTrue(newViewModel.flashAlertsEnabled.value)
         assertTrue(newViewModel.isBiometricLockEnabled.value)
         assertTrue(newViewModel.isPocketProtectionEnabled.value)
-        assertFalse(newViewModel.isCallbackRemindersEnabled.value)
         assertFalse(newViewModel.isCallNotesEnabled.value)
         assertEquals("Google:test@gmail.com", newViewModel.selectedAccountFilter.value)
         assertEquals("Google:test@gmail.com", newViewModel.defaultContactAccountName.value)
@@ -156,6 +150,13 @@ class DialerViewModelTest {
         assertTrue(viewModel.isAddContactDialogVisible.value)
         assertEquals("+15551234567", viewModel.newContactNumber.value)
         assertEquals("", viewModel.newContactName.value)
+    }
+
+    @Test
+    fun `openAddContactWithNumber preserves international prefix like +91`() {
+        viewModel.openAddContactWithNumber("+919876543210")
+        assertTrue(viewModel.isAddContactDialogVisible.value)
+        assertEquals("+919876543210", viewModel.newContactNumber.value)
     }
 
     @Test

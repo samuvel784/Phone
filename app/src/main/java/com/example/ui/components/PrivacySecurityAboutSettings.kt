@@ -17,6 +17,7 @@
 
 package com.example.ui.components
 
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,19 +26,21 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ScreenLockPortrait
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
 import androidx.core.net.toUri
+import kotlinx.coroutines.*
 
 @Composable
 fun PrivacySecurityAboutSettings(
@@ -114,97 +117,6 @@ fun PrivacySecurityAboutSettings(
                     iconBgColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                     iconTint = MaterialTheme.colorScheme.secondary
                 )
-            }
-        }
-
-        // [Header] INCOMING CALL DIAGNOSTICS
-        item {
-            Spacer(modifier = Modifier.height(12.dp))
-            PreferenceHeader("Incoming Call Diagnostics")
-        }
-
-        item {
-            val permissions = com.example.util.CallPresentationPermissionsReader.read(
-                context,
-                com.example.MyInCallService.CHANNEL_INCOMING
-            )
-            val isDefaultDialer = com.example.util.CallScreenPermissionHelper.isDefaultDialer(context)
-            val fullScreenValue = when {
-                !permissions.fullScreenPermissionSupported -> "Not required on this Android version"
-                permissions.fullScreenPermissionCheckFailed -> "Android could not report access"
-                permissions.fullScreenIntentAllowed -> "Allowed"
-                else -> "Restricted"
-            }
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.full_screen_features_title),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.diagnostics_lock_screen,
-                            permissionStatusLabel(permissions.lockScreenStatus)
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.diagnostics_background_popup,
-                            permissionStatusLabel(permissions.backgroundPopupStatus)
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text("Full-screen intent: $fullScreenValue", style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        text = stringResource(
-                            R.string.diagnostics_notifications,
-                            if (permissions.notificationsEnabled) "Yes" else "No"
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.diagnostics_channel,
-                            permissions.channelImportance
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.diagnostics_default_dialer,
-                            if (isDefaultDialer) "Yes" else "No"
-                        ),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = {
-                                com.example.util.CallScreenPermissionHelper.openLockScreenSettings(context)
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.diagnostics_configure_lock_screen))
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                com.example.util.CallScreenPermissionHelper.openBackgroundPopupSettings(context)
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.diagnostics_configure_background_popup))
-                        }
-                    }
-                }
             }
         }
 
@@ -289,6 +201,85 @@ fun PrivacySecurityAboutSettings(
                     icon = Icons.Default.Code,
                     iconBgColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                     iconTint = MaterialTheme.colorScheme.tertiary
+                )
+            }
+        }
+
+        // [Header] FACTORY RESET
+        item {
+            Spacer(modifier = Modifier.height(12.dp))
+            PreferenceHeader("APP RESET")
+        }
+
+        item {
+            var showResetDialog by remember { mutableStateOf(false) }
+            var isResetting by remember { mutableStateOf(false) }
+            val coroutineScope = rememberCoroutineScope()
+
+            HighlightableCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                cardBgColor = cardBgColor,
+                isHighlighted = isMatchTitle("Reset App", highlightedTitle),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                SettingsRowNav(
+                    title = "Reset App",
+                    subtitle = "Clear all data and reset app like a fresh install",
+                    onClick = { if (!isResetting) showResetDialog = true },
+                    icon = Icons.Default.Refresh,
+                    iconBgColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                    iconTint = MaterialTheme.colorScheme.error
+                )
+            }
+
+            if (showResetDialog) {
+                AlertDialog(
+                    onDismissRequest = { if (!isResetting) showResetDialog = false },
+                    title = { Text("Reset Nova Dialer?") },
+                    text = {
+                        if (isResetting) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator()
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("Resetting app...")
+                            }
+                        } else {
+                            Text("This will clear Nova Dialer's saved settings, local app data, and cached information and return it to the initial setup state. Exported contact files and backup files on your device will be preserved so you can restore your contacts later. Your Android contacts and system call history will not be deleted. This action cannot be undone for app data.")
+                        }
+                    },
+                    confirmButton = {
+                        if (!isResetting) {
+                            TextButton(
+                                onClick = {
+                                    isResetting = true
+                                    coroutineScope.launch {
+                                        val success = com.example.util.AppResetManager.resetApp(context)
+                                        if (!success) {
+                                            isResetting = false
+                                            showResetDialog = false
+                                            android.widget.Toast.makeText(context, "Cannot reset app while a call is active", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Reset App")
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        if (!isResetting) {
+                            TextButton(onClick = { showResetDialog = false }) {
+                                Text(stringResource(R.string.btn_cancel))
+                            }
+                        }
+                    }
                 )
             }
         }

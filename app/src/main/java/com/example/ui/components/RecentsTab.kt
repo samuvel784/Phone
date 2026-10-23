@@ -69,6 +69,9 @@ fun RecentsTabContent(
     onDeleteRecord: (Int) -> Unit,
     hasPermission: Boolean = true,
     isLoading: Boolean = false,
+    hasError: Boolean = false,
+    isRefreshing: Boolean = false,
+    onRetry: () -> Unit = {},
     onRequestPermission: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -139,8 +142,27 @@ fun RecentsTabContent(
                     }
                 }
 
+                if (isRefreshing && !isLoading && hasPermission && !hasError) {
+                    NovaRefreshingBar(modifier = Modifier.padding(bottom = 4.dp))
+                }
+
                 if (isLoading) {
-                    RecentsSkeleton()
+                    NovaRecentsSkeleton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                } else if (hasError) {
+                    NovaErrorState(
+                        onRetry = onRetry,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                } else if (!hasPermission) {
+                    // The call-log permission card above is the state; don't also render the
+                    // "no recent calls" empty view for a denied permission.
+                    Spacer(modifier = Modifier.weight(1f))
                 } else {
                     val isFiltersEnabled by viewModel.isCallLogFiltersEnabled
 
@@ -249,7 +271,7 @@ fun RecentsTabContent(
                                     RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                                     showClearConfirmDialog = true
                                 },
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(48.dp),
                                 colors = IconButtonDefaults.iconButtonColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
                                     contentColor = MaterialTheme.colorScheme.error
@@ -295,11 +317,19 @@ fun RecentsTabContent(
                                 )
                             }
                         } else {
-                            // One shared index for every row (recordings, spam numbers, SIM count)
-                            val allRecordings by viewModel.recordingsFlow.collectAsStateWithLifecycle()
-                            val spamNumbers by viewModel.spamFlow.collectAsStateWithLifecycle()
-                            val recentsLookup = remember(allRecordings, spamNumbers, context) {
-                                RecentsLookup(allRecordings, spamNumbers, MultiSimManager.getPhysicalSimCount(context))
+                            // The shipped row only needs the SIM count; do not collect the legacy
+                            // recording or spam tables here.
+                            val physicalSimCount = remember(context) {
+                                MultiSimManager.getPhysicalSimCount(context)
+                            }
+                            // Collect once for the whole list; RecentCallRow used to collect this
+                            // flow once per visible row.
+                            val blockedNumberEntities by viewModel.blockedNumbersFlow.collectAsStateWithLifecycle()
+                            val blockedNumbers = remember(blockedNumberEntities) {
+                                blockedNumberEntities.mapTo(HashSet(blockedNumberEntities.size)) { it.number }
+                            }
+                            val recentsLookup = remember(physicalSimCount) {
+                                RecentsLookup(physicalSimCount)
                             }
                             val listState = androidx.compose.runtime.saveable.rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) {
                                 androidx.compose.foundation.lazy.LazyListState()
@@ -348,7 +378,8 @@ fun RecentsTabContent(
                                                     onDeleteRecord = { id -> onDeleteRecord(id) },
                                                     getHistory = { viewModel.getCallHistoryByNumber(it) },
                                                     viewModel = viewModel,
-                                                    onHistoryClick = { selectedHistoryNumber = it }
+                                                    onHistoryClick = { selectedHistoryNumber = it },
+                                                    blockedNumbers = blockedNumbers
                                                 )
                                             }
                                         }

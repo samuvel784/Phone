@@ -5,52 +5,116 @@
 
 package com.example.ui
 
-import com.example.model.CallRecording
-import com.example.model.SpamNumber
+import com.example.model.CallRecord
+import com.example.model.CallType
+import com.example.ui.components.RecentsFilter
 import com.example.ui.components.RecentsLookup
+import com.example.ui.components.groupCallRecords
+import com.example.ui.components.isBlockedNumber
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Retained Recents behaviours only. Recording and spam indexes were removed from the shipped row,
+ * so their old tests are gone; the legacy tables themselves are still covered by the backup and
+ * schema tests.
+ */
 class RecentsLookupTest {
-    private fun rec(id: Int, number: String, name: String) =
-        CallRecording(id = id, number = number, name = name, timestamp = "t", duration = 10, filePath = "/f$id.m4a")
 
-    private val lookup = RecentsLookup(
-        recordings = listOf(
-            rec(1, "+91 98765 43210", "Amma"),
-            rec(2, "9876543210", "Amma"),
-            rec(3, "044-2345678", "Office"),
-            rec(4, "", "Ghost")
-        ),
-        spamNumbers = listOf(SpamNumber("+14155550100", "Scam"), SpamNumber("+14155550100", "Duplicate")),
-        physicalSimCount = 2
+    private var nextId = 1
+
+    private fun record(
+        number: String,
+        name: String = "",
+        type: CallType = CallType.INCOMING,
+        timestampMs: Long = 1_700_000_000_000L
+    ) = CallRecord(
+        id = nextId++,
+        name = name,
+        number = number,
+        label = "Mobile",
+        timestamp = "10:00",
+        type = type,
+        avatarText = "A",
+        avatarBgValue = 0L,
+        avatarTextColorValue = 0L,
+        duration = 10L,
+        hasVoicemail = false,
+        timestampMs = timestampMs
     )
 
-    @Test fun sameNumberWithAndWithoutCountryCodeMatches() =
-        assertEquals(listOf(1, 2), lookup.recordingsFor("09876543210", "").map { it.id }.sorted())
-
-    @Test fun nameAloneFindsTheContactsRecordings() =
-        assertEquals(listOf(1, 2), lookup.recordingsFor("", "amma").map { it.id }.sorted())
-
-    @Test fun numberAndNameTogetherDoNotDuplicate() =
-        assertEquals(2, lookup.recordingsFor("+919876543210", "Amma").size)
-
-    @Test fun landlineMatchesByLastSevenDigits() =
-        assertEquals(listOf(3), lookup.recordingsFor("2345678", "").map { it.id })
-
-    @Test fun unknownNumberAndTheNameUnknownMatchNothing() {
-        assertEquals(0, lookup.recordingsFor("5550001", "Unknown").size)
-        assertEquals(0, lookup.recordingsFor("", "Unknown").size)
-        assertEquals(0, lookup.recordingsFor("", "").size)
+    @Test
+    fun simCountIsPassedThrough() {
+        assertEquals(2, RecentsLookup(physicalSimCount = 2).physicalSimCount)
     }
 
-    @Test fun spamLookupKeepsTheFirstEntry() {
-        assertEquals("Scam", lookup.spamFor("+14155550100")?.label)
-        assertNull(lookup.spamFor("+14155550101"))
+    @Test
+    fun emptyLookupUsesASingleSim() {
+        assertEquals(1, RecentsLookup.Empty.physicalSimCount)
     }
 
-    @Test fun simCountIsPassedThrough() = assertEquals(2, lookup.physicalSimCount)
+    @Test
+    fun filterKeepsOnlyTheRequestedCallType() {
+        val records = listOf(
+            record("111", type = CallType.MISSED),
+            record("222", type = CallType.OUTGOING),
+            record("333", type = CallType.INCOMING)
+        )
 
-    @Test fun emptyIndexIsSafe() = assertEquals(0, RecentsLookup.Empty.recordingsFor("123", "x").size)
+        assertEquals(1, groupCallRecords(records, RecentsFilter.MISSED, "").size)
+        assertEquals(1, groupCallRecords(records, RecentsFilter.DIALED, "").size)
+        assertEquals(1, groupCallRecords(records, RecentsFilter.RECEIVED, "").size)
+        assertEquals(3, groupCallRecords(records, RecentsFilter.ALL, "").size)
+    }
+
+    @Test
+    fun searchMatchesNameAndNumberIgnoringCase() {
+        val records = listOf(
+            record("9876543210", name = "Amma"),
+            record("5550001", name = "Office")
+        )
+
+        assertEquals("Amma", groupCallRecords(records, RecentsFilter.ALL, "amma").single().primary.name)
+        assertEquals("Office", groupCallRecords(records, RecentsFilter.ALL, "555").single().primary.name)
+        assertTrue(groupCallRecords(records, RecentsFilter.ALL, "missing").isEmpty())
+    }
+
+    @Test
+    fun sameContactCallsAreGroupedTogether() {
+        val records = listOf(
+            record("9876543210", name = "Amma", timestampMs = 1_700_000_000_000L),
+            record("09876543210", name = "Amma", timestampMs = 1_699_000_000_000L)
+        )
+
+        val group = groupCallRecords(records, RecentsFilter.ALL, "").single()
+        assertEquals(2, group.calls.size)
+        assertEquals(1_700_000_000_000L, group.primary.timestampMs)
+    }
+
+    @Test
+    fun differentNamesOnTheSameNumberStaySeparate() {
+        val records = listOf(
+            record("9876543210", name = "Amma"),
+            record("9876543210", name = "Office")
+        )
+
+        assertEquals(2, groupCallRecords(records, RecentsFilter.ALL, "").size)
+    }
+
+    @Test
+    fun blockedNumberStateRequiresAnExactMatch() {
+        val blocked = setOf("+14155550100")
+
+        assertTrue(isBlockedNumber("+14155550100", blocked))
+        assertFalse(isBlockedNumber("+1 415 555 0100", blocked))
+        assertFalse(isBlockedNumber("+14155550101", blocked))
+        assertFalse(isBlockedNumber("+14155550100", emptySet()))
+    }
+
+    @Test
+    fun emptyInputProducesNoGroups() {
+        assertTrue(groupCallRecords(emptyList(), RecentsFilter.ALL, "anything").isEmpty())
+    }
 }

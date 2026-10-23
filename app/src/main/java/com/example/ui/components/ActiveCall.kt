@@ -17,15 +17,11 @@
 
 package com.example.ui.components
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.PowerManager
 import android.telecom.Call
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -36,9 +32,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.CallManager
 import com.example.R
@@ -62,11 +58,8 @@ import com.example.model.Contact
 import com.example.telecom.AudioRoute
 import com.example.ui.theme.LocalAmoledMode
 import com.example.util.CallAudioHelper
-import com.example.util.CallAudioRecorder
 import com.example.util.CallGestureSensorManager
 import com.example.util.MultiSimManager
-import com.example.util.RecordingDisclosure
-import com.example.util.RecordingFeedbackHelper
 import com.example.util.RichHapticEngine
 import kotlinx.coroutines.delay
 
@@ -82,10 +75,6 @@ fun ActiveCallScreen(
     contacts: List<Contact> = emptyList(),
     onAnswer: () -> Unit = {},
     callState: Int = Call.STATE_DISCONNECTED,
-    recordingEnabled: Boolean = false,
-    autoTuneVolume: Boolean = true,
-    recordingChimeEnabled: Boolean = false,
-    alwaysRecordEnabled: Boolean = false,
     callNotesEnabled: Boolean = true,
     onSaveNote: (String) -> Unit = {},
     onMinimize: (() -> Unit)? = null,
@@ -117,7 +106,6 @@ fun ActiveCallScreen(
     val waitingCall by CallManager.waitingCall.collectAsStateWithLifecycle()
     val allCalls by CallManager.calls.collectAsStateWithLifecycle()
     val currentCall by CallManager.currentCall.collectAsStateWithLifecycle()
-    val recorderIsActive by CallAudioRecorder.isRecording.collectAsStateWithLifecycle()
 
     // Single source of truth for call audio: what Telecom reports as available and selected —
     // never the last button the user tapped.
@@ -201,8 +189,6 @@ fun ActiveCallScreen(
     val isBluetoothAvailable = routeState.hasBluetooth
     val isHeadsetOn = routeState.isWiredHeadsetActive
 
-    val isRecording = recorderIsActive
-
     // The in-call UI is on screen: record that for the incoming-call timing trace.
     LaunchedEffect(Unit) {
         com.example.telecom.CallTimingLogger.markActive(com.example.telecom.CallTimingLogger.Event.FIRST_FRAME)
@@ -217,34 +203,21 @@ fun ActiveCallScreen(
 
     val isOnHold = currentCallState == Call.STATE_HOLDING
 
-    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            Toast.makeText(context, "Microphone permission granted. Tap Record to start.", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Microphone permission required for call recording", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     DisposableEffect(Unit) {
         onDispose {
-            // Leaving the screen (minimise, tab switch, rotation) must NEVER stop recording.
-            // The recording session belongs to the call/service; only call-end, an explicit
-            // stop, or service teardown finalise it. Restore audio only when nothing is recording.
-            if (!CallAudioRecorder.isRecording.value) {
-                CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
-            }
+            CallAudioHelper.restoreAudioState(context, CallManager.inCallService)
         }
     }
 
     LaunchedEffect(isFake, fakeState) {
         if (isFake && fakeState == "ACTIVE") {
             fakeActiveStartTimestamp = System.currentTimeMillis()
-            if (alwaysRecordEnabled && !CallAudioRecorder.isRecording.value) {
-                RecordingFeedbackHelper.triggerRecordingStartFeedback(context, recordingChimeEnabled)
-                CallAudioRecorder.startRecording(context, contactNumber)
-            }
+        }
+    }
+
+    LaunchedEffect(currentCallState) {
+        if (currentCallState == Call.STATE_ACTIVE) {
+            CallManager.setSpeaker(true)
         }
     }
 
@@ -262,8 +235,6 @@ fun ActiveCallScreen(
     }
 
     var isQuickDeclineMenuOpen by remember { mutableStateOf(false) }
-    // Shown once, before the first manual recording, until the user accepts the notice.
-    var showRecordingDisclosure by remember { mutableStateOf(false) }
 
     var fakeParticipants by remember(contactName, contactNumber) {
         mutableStateOf(listOf(Pair(contactName, contactNumber)))
@@ -450,260 +421,187 @@ fun ActiveCallScreen(
                         .fillMaxSize()
                         .graphicsLayer { alpha = shellAlpha }
                         .statusBarsPadding()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .navigationBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    InCallHeader(
-                        isOnHold = isOnHold,
-                        callState = currentCallState,
-                        participants = participants,
-                        preferredSim = preferredSim,
-                        contactName = contactName,
-                        contactNumber = contactNumber,
-                        contacts = uiContacts,
-                        secondaryCall = if (isFake) null else secondaryCall,
-                        secondaryNumber = if (isFake) "" else secondaryCall?.details?.handle?.schemeSpecificPart ?: "",
-                        onEndSecondary = if (isFake || secondaryCall == null) null else {
-                            { CallManager.disconnect(secondaryCall) }
-                        },
-                        isConference = isConference,
-                        isRecording = isRecording,
-                        activeStartTimestamp = activeStartTimestamp,
-                        isFake = isFake,
-                        fakeState = fakeState,
-                        fakeActiveStartTimestamp = fakeActiveStartTimestamp,
-                        isSpam = isSpam
-                    )
+                    // Scrollable top/middle area (Header, Waiting dialog, Avatar / Dialpad / Decline sheet)
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        InCallHeader(
+                            isOnHold = isOnHold,
+                            callState = currentCallState,
+                            participants = participants,
+                            preferredSim = preferredSim,
+                            contactName = contactName,
+                            contactNumber = contactNumber,
+                            contacts = uiContacts,
+                            secondaryCall = if (isFake) null else secondaryCall,
+                            secondaryNumber = if (isFake) "" else secondaryCall?.details?.handle?.schemeSpecificPart ?: "",
+                            onEndSecondary = if (isFake || secondaryCall == null) null else {
+                                { CallManager.disconnect(secondaryCall) }
+                            },
+                            isConference = isConference,
+                            activeStartTimestamp = activeStartTimestamp,
+                            isFake = isFake,
+                            fakeState = fakeState,
+                            fakeActiveStartTimestamp = fakeActiveStartTimestamp,
+                            isSpam = isSpam
+                        )
 
-                    if (!callOnlyMode) {
-                        waitingCall?.let { call ->
-                            InCallWaitingCallDialog(
-                                waitingCall = call,
+                        if (!callOnlyMode) {
+                            waitingCall?.let { call ->
+                                InCallWaitingCallDialog(
+                                    waitingCall = call,
+                                    contacts = uiContacts,
+                                    avatarShapeType = avatarShapeType
+                                )
+                            }
+                        }
+
+                        if (isQuickDeclineMenuOpen && !callOnlyMode) {
+                            InCallQuickDeclineSheet(
+                                contactNumber = contactNumber,
+                                quickResponses = quickResponses,
+                                onClose = { isQuickDeclineMenuOpen = false },
+                                onQuickDecline = onQuickDecline
+                            )
+                        } else if (isInCallDialpadOpen) {
+                            InCallKeypad(
+                                onClose = { isInCallDialpadOpen = false },
+                                avatarShapeType = avatarShapeType,
                                 contacts = uiContacts,
+                                isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
+                                onAddCall = { name, number -> beginAddCall(name, number) }
+                            )
+                        } else {
+                            InCallAvatarDisplay(
+                                participants = participants,
+                                contactName = contactName,
+                                contactNumber = contactNumber,
+                                contacts = uiContacts,
+                                avatarShapeType = avatarShapeType,
+                                isConference = isConference,
+                                isSpam = isSpam
+                            )
+                        }
+
+                        if (isAddCallDialogOpen && !callOnlyMode) {
+                            InCallAddCallDialog(
+                                contacts = uiContacts,
+                                onDismiss = { isAddCallDialogOpen = false },
+                                onAddCall = { finalName, number ->
+                                    if (isFake) {
+                                        fakeParticipants = fakeParticipants + Pair(finalName, number)
+                                    } else {
+                                        beginAddCall(finalName, number)
+                                    }
+                                },
                                 avatarShapeType = avatarShapeType
+                            )
+                        }
+
+                        if (showAddCallSimDialog && pendingAddCallNumber.isNotBlank() && callableSims.size >= 2) {
+                            SimSelectDialog(
+                                context = context,
+                                pendingCallNumber = pendingAddCallNumber,
+                                sims = callableSims,
+                                onDismiss = {
+                                    showAddCallSimDialog = false
+                                    pendingAddCallName = ""
+                                    pendingAddCallNumber = ""
+                                },
+                                onSimSelected = { simLabel ->
+                                    showAddCallSimDialog = false
+                                    finishAddCall(pendingAddCallName, pendingAddCallNumber, simLabel)
+                                }
                             )
                         }
                     }
 
-                    if (isQuickDeclineMenuOpen && !callOnlyMode) {
-                        InCallQuickDeclineSheet(
-                            contactNumber = contactNumber,
-                            quickResponses = quickResponses,
-                            onClose = { isQuickDeclineMenuOpen = false },
-                            onQuickDecline = onQuickDecline
-                        )
-                    } else if (isInCallDialpadOpen) {
-                        InCallKeypad(
-                            onClose = { isInCallDialpadOpen = false },
-                            avatarShapeType = avatarShapeType,
-                            contacts = uiContacts,
-                            isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
-                            onAddCall = { name, number -> beginAddCall(name, number) }
-                        )
-                    } else {
-                        InCallAvatarDisplay(
-                            participants = participants,
-                            contactName = contactName,
-                            contactNumber = contactNumber,
-                            contacts = uiContacts,
-                            avatarShapeType = avatarShapeType,
-                            isConference = isConference,
-                            isSpam = isSpam
-                        )
-                    }
+                    // Pinned bottom controls area (Control grid + Bottom bar perfectly aligned down)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.Transparent
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            InCallControlGrid(
+                                isInCallDialpadOpen = isInCallDialpadOpen,
+                                onToggleDialpad = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
+                                    isInCallDialpadOpen = !isInCallDialpadOpen
+                                },
+                                isCallActive = (currentCallState == Call.STATE_ACTIVE),
+                                isMuted = isMuted,
+                                onToggleMute = {
+                                    val next = !isMuted
+                                    RichHapticEngine.performHaptic(context, if (next) RichHapticEngine.HapticStyle.WARNING else RichHapticEngine.HapticStyle.CLICK)
+                                    CallManager.setMuted(next)
+                                },
+                                isSpeakerOn = isSpeakerOn,
+                                onToggleSpeaker = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                    CallManager.toggleSpeaker()
+                                },
+                                isOnHold = isOnHold,
+                                onToggleHold = {
+                                    RichHapticEngine.performHaptic(context, if (isOnHold) RichHapticEngine.HapticStyle.CLICK else RichHapticEngine.HapticStyle.WARNING)
+                                    CallManager.setHold(!isOnHold)
+                                },
+                                isBluetoothOn = isBluetoothOn,
+                                isBluetoothAvailable = isBluetoothAvailable,
+                                onToggleBluetooth = {
+                                    RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                    CallManager.toggleBluetooth()
+                                },
+                                isAddCallDialogOpen = isAddCallDialogOpen,
+                                isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
+                                showAddCall = !callOnlyMode,
+                                onOpenAddCallDialog = {
+                                    if (!callOnlyMode) {
+                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                        isAddCallDialogOpen = true
+                                    }
+                                },
+                                isHoldEnabled = multiCallState.canHoldPrimary || multiCallState.canUnholdPrimary,
+                                isSwapVisible = multiCallState.canSwap,
+                                onSwap = { CallManager.swapCalls() },
+                                isMergeVisible = multiCallState.canMerge,
+                                onMerge = { CallManager.mergeCalls() },
+                                isQuickNotesOpen = isQuickDeclineMenuOpen,
+                                showQuickNotes = !callOnlyMode,
+                                onOpenQuickNotes = {
+                                    if (!callOnlyMode) {
+                                        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
+                                        isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen
+                                    }
+                                },
+                                avatarShapeType = avatarShapeType
+                            )
 
-                    if (isAddCallDialogOpen && !callOnlyMode) {
-                        InCallAddCallDialog(
-                            contacts = uiContacts,
-                            onDismiss = { isAddCallDialogOpen = false },
-                            onAddCall = { finalName, number ->
-                                if (isFake) {
-                                    fakeParticipants = fakeParticipants + Pair(finalName, number)
-                                } else {
-                                    // Reuses CallManager.placeCall(), including its duplicate guard,
-                                    // multi-SIM routing and Telecom fallback. The callback returns
-                                    // false only when the request could not be dispatched.
-                                    beginAddCall(finalName, number)
-                                }
-                            },
-                            avatarShapeType = avatarShapeType
-                        )
-                    }
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                    if (showAddCallSimDialog && pendingAddCallNumber.isNotBlank() && callableSims.size >= 2) {
-                        SimSelectDialog(
-                            context = context,
-                            pendingCallNumber = pendingAddCallNumber,
-                            sims = callableSims,
-                            onDismiss = {
-                                showAddCallSimDialog = false
-                                pendingAddCallName = ""
-                                pendingAddCallNumber = ""
-                            },
-                            onSimSelected = { simLabel ->
-                                showAddCallSimDialog = false
-                                finishAddCall(pendingAddCallName, pendingAddCallNumber, simLabel)
-                            }
-                        )
-                    }
-
-                    // Starting a manual recording is gated by the one-time notice below.
-                    val startManualRecording: () -> Unit = {
-                        // "Hands-free" detection uses the route Telecom actually reports.
-                        val isHeadset = isBluetoothOn || isHeadsetOn
-                        if (CallManager.startCallRecording(context)) {
-                            if (isHeadset) {
-                                Toast.makeText(context, context.getString(R.string.headset_recording_warning), Toast.LENGTH_LONG).show()
-                            } else if (autoTuneVolume) {
-                                Toast.makeText(context, "⏺️ Recording started. Speaker tuned for balanced audio.", Toast.LENGTH_SHORT).show()
-                            } else if (!isSpeakerOn) {
-                                Toast.makeText(context, "⏺️ Recording started. Tip: Turn ON Speakerphone.", Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.recording_started), Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(context, context.getString(R.string.recording_start_failed), Toast.LENGTH_LONG).show()
+                            InCallBottomBar(
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                                isIncoming = if (isFake) (fakeState == "RINGING") else isIncoming,
+                                onAnswer = if (isFake) onFakeAnswer else onAnswer,
+                                onHangUp = if (isFake) onFakeHangUp else onHangUp,
+                                onToggleQuickDeclineMenu = { isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen },
+                                avatarShapeType = avatarShapeType,
+                                showQuickResponseAction = !callOnlyMode
+                            )
                         }
                     }
-
-                    if (showRecordingDisclosure) {
-                        AlertDialog(
-                            onDismissRequest = { showRecordingDisclosure = false },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            title = { Text(stringResource(R.string.recording_disclosure_title)) },
-                            text = { Text(stringResource(R.string.recording_disclosure_body)) },
-                            confirmButton = {
-                                Button(
-                                    onClick = {
-                                        RecordingDisclosure.acknowledgeManual(context)
-                                        showRecordingDisclosure = false
-                                        startManualRecording()
-                                    }
-                                ) {
-                                    Text(stringResource(R.string.recording_disclosure_accept))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showRecordingDisclosure = false }) {
-                                    Text(stringResource(R.string.btn_cancel))
-                                }
-                            }
-                        )
-                    }
-
-                    InCallControlGrid(
-                        isInCallDialpadOpen = isInCallDialpadOpen,
-                        onToggleDialpad = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                            isInCallDialpadOpen = !isInCallDialpadOpen
-                        },
-                        isCallActive = (currentCallState == Call.STATE_ACTIVE),
-                        isMuted = isMuted,
-                        onToggleMute = {
-                            val next = !isMuted
-                            RichHapticEngine.performHaptic(context, if (next) RichHapticEngine.HapticStyle.WARNING else RichHapticEngine.HapticStyle.CLICK)
-                            CallManager.setMuted(next)
-                        },
-                        isSpeakerOn = isSpeakerOn,
-                        onToggleSpeaker = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                            // Requests the real speaker endpoint; the UI is driven by the route
-                            // Telecom reports back, so a refused request simply changes nothing.
-                            CallManager.toggleSpeaker()
-                        },
-                        isOnHold = isOnHold,
-                        onToggleHold = {
-                            RichHapticEngine.performHaptic(context, if (isOnHold) RichHapticEngine.HapticStyle.CLICK else RichHapticEngine.HapticStyle.WARNING)
-                            CallManager.setHold(!isOnHold)
-                        },
-                        isBluetoothOn = isBluetoothOn,
-                        isBluetoothAvailable = isBluetoothAvailable,
-                        onToggleBluetooth = {
-                            RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                            // Only dispatches when a Bluetooth call endpoint exists; turning it off
-                            // falls back to a wired headset when present, else the earpiece.
-                            CallManager.toggleBluetooth()
-                        },
-                        isAddCallDialogOpen = isAddCallDialogOpen,
-                        isAddCallEnabled = !callOnlyMode && multiCallState.canAddCall,
-                        showAddCall = !callOnlyMode,
-                        onOpenAddCallDialog = {
-                            if (!callOnlyMode) {
-                                RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                                isAddCallDialogOpen = true
-                            }
-                        },
-                        isHoldEnabled = multiCallState.canHoldPrimary || multiCallState.canUnholdPrimary,
-                        // Swap/Merge are derived solely from the Telecom call list + capabilities;
-                        // they never appear because a contact was selected or Add Call was tapped.
-                        isSwapVisible = multiCallState.canSwap,
-                        onSwap = { CallManager.swapCalls() },
-                        isMergeVisible = multiCallState.canMerge,
-                        onMerge = { CallManager.mergeCalls() },
-                        recordingEnabled = recordingEnabled && !callOnlyMode,
-                        isRecording = isRecording,
-                        onToggleRecording = {
-                            if (isRecording || CallAudioRecorder.isRecording.value) {
-                                CallManager.stopCallRecording(
-                                    context = context,
-                                    playFeedback = true
-                                ) { result ->
-                                    val message = when (result.status) {
-                                        CallManager.RecordingSaveStatus.SAVED_ENCRYPTED ->
-                                            R.string.recording_saved
-                                        CallManager.RecordingSaveStatus.SAVED_UNENCRYPTED ->
-                                            R.string.recording_encryption_failed
-                                        CallManager.RecordingSaveStatus.FAILED ->
-                                            R.string.recording_save_failed
-                                        CallManager.RecordingSaveStatus.NO_AUDIO ->
-                                            R.string.recording_empty
-                                    }
-                                    Toast.makeText(context, context.getString(message), Toast.LENGTH_LONG).show()
-                                }
-                            } else {
-                                val hasAudioPermission = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.RECORD_AUDIO
-                                ) == PackageManager.PERMISSION_GRANTED
-
-                                if (!hasAudioPermission) {
-                                    Toast.makeText(context, "Microphone permission required for call recording", Toast.LENGTH_SHORT).show()
-                                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                } else if (!RecordingDisclosure.isManualAcknowledged(context)) {
-                                    // First manual recording: show the notice before any audio is captured.
-                                    showRecordingDisclosure = true
-                                } else {
-                                    startManualRecording()
-                                }
-                            }
-                        },
-                        isQuickNotesOpen = isQuickDeclineMenuOpen,
-                        showQuickNotes = !callOnlyMode,
-                        onOpenQuickNotes = {
-                            if (!callOnlyMode) {
-                                RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.CLICK)
-                                isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen
-                            }
-                        },
-                        avatarShapeType = avatarShapeType
-                    )
-
-                    InCallBottomBar(
-                        isIncoming = if (isFake) (fakeState == "RINGING") else isIncoming,
-                        onAnswer = if (isFake) onFakeAnswer else onAnswer,
-                        onHangUp = if (isFake) onFakeHangUp else onHangUp,
-                        onToggleQuickDeclineMenu = { isQuickDeclineMenuOpen = !isQuickDeclineMenuOpen },
-                        avatarShapeType = avatarShapeType,
-                        showQuickResponseAction = !callOnlyMode
-                    )
                 }
 
             }

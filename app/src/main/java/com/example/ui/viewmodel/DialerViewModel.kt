@@ -25,15 +25,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.*
-import androidx.paging.*
 import com.example.*
 import com.example.model.*
 import com.example.util.CallAudioRecorder
-import com.example.util.DuplicateFinder
-import com.example.util.DuplicateGroup
 import com.example.util.RecordingCompressionProfile
 import com.example.util.RecordingCrypto
-import com.example.util.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -46,6 +42,11 @@ import kotlin.time.Duration.Companion.seconds
 import com.example.ui.theme.ThemeMode
 
 class DialerViewModel(application: Application) : AndroidViewModel(application) {
+    private companion object {
+        // Compiled once instead of once per contact/record inside the dialpad match loop.
+        val COMBINING_MARKS = Regex("\\p{InCombiningDiacriticalMarks}+")
+    }
+
     private val repository = DialerRepository(application)
     private val prefs = repository.context.getSharedPreferences("dialer_prefs", Context.MODE_PRIVATE)
 
@@ -67,39 +68,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     // Details Screen state
     var isCallHistoryDetailsOpen = mutableStateOf(false)
-
-    // Duplicate detection
-    var duplicateGroups = mutableStateOf<List<DuplicateGroup>>(emptyList())
-    var showDuplicatePrompt = mutableStateOf(false)
-
-    init {
-        checkDuplicates(application)
-    }
-
-    /**
-     * Looks for duplicate contacts. At start-up it waits a few seconds, so the first screen can finish drawing before
-     * every contact is read, and it asks the user at most once a week (it used to prompt on every launch).
-     * Pass [force] = true for a button the user pressed on purpose.
-     */
-    fun checkDuplicates(context: Context, force: Boolean = false) {
-        if (!ReleaseScope.DUPLICATE_FINDER_ENABLED) return
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                if (!force) kotlinx.coroutines.delay(3.seconds)
-                val groups = DuplicateFinder.findDuplicates(context)
-                withContext(Dispatchers.Main) {
-                    duplicateGroups.value = groups
-                    val now = System.currentTimeMillis()
-                    val lastPrompt = prefs.getLong("last_duplicate_prompt", 0L)
-                    val askAgain = now - lastPrompt > 7L * 24 * 60 * 60 * 1000
-                    if (groups.isNotEmpty() && (force || askAgain)) {
-                        showDuplicatePrompt.value = true
-                        prefs.edit { putLong("last_duplicate_prompt", now) }
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-    }
 
     fun onSearchQueryChange(newQuery: String) {
         searchQuery.value = newQuery
@@ -192,13 +160,30 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         isEditContactDialogVisible.value = true
     }
 
+    private val _contactsLoading = MutableStateFlow(true)
+    val contactsLoading: StateFlow<Boolean> = _contactsLoading.asStateFlow()
+    private val _contactsRefreshing = MutableStateFlow(false)
+    val contactsRefreshing: StateFlow<Boolean> = _contactsRefreshing.asStateFlow()
+    private val _contactsLoadFailed = MutableStateFlow(false)
+    val contactsLoadFailed: StateFlow<Boolean> = _contactsLoadFailed.asStateFlow()
+
+    private val _callLogLoading = MutableStateFlow(true)
+    val callLogLoading: StateFlow<Boolean> = _callLogLoading.asStateFlow()
+    private val _callLogRefreshing = MutableStateFlow(false)
+    val callLogRefreshing: StateFlow<Boolean> = _callLogRefreshing.asStateFlow()
+    private val _callLogLoadFailed = MutableStateFlow(false)
+    val callLogLoadFailed: StateFlow<Boolean> = _callLogLoadFailed.asStateFlow()
+
     val favoriteContacts: StateFlow<List<Contact>> = repository.getFavoriteContacts()
+        .onEach { if (it.isNotEmpty()) _contactsLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
 
     val allContactsFlow: StateFlow<List<Contact>> = repository.getAllContactsFlow()
+        .onEach { if (it.isNotEmpty()) _contactsLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
 
     val allCallHistoryFlow: StateFlow<List<CallRecord>> = repository.getAllCallHistoryFlow()
+        .onEach { if (it.isNotEmpty()) _callLogLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
 
     @OptIn(FlowPreview::class)
@@ -213,7 +198,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
             val cleanQuery = query.trim()
             val cleanQueryDigits = cleanQuery.filter { it.isDigit() || it == '+' }
             val normalizedQuery = java.text.Normalizer.normalize(cleanQuery, java.text.Normalizer.Form.NFD)
-                .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                .replace(COMBINING_MARKS, "")
                 .lowercase(java.util.Locale.ROOT)
 
             val matchedContacts = com.example.util.DialpadSearch.findContactMatches(
@@ -230,7 +215,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
                     if (record.number.isBlank() || record.number in contactNumbers) return@filter false
 
                     val normalizedName = java.text.Normalizer.normalize(record.name, java.text.Normalizer.Form.NFD)
-                        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                        .replace(COMBINING_MARKS, "")
                         .lowercase(java.util.Locale.ROOT)
                     val cleanRecNumber = record.number.filter { it.isDigit() || it == '+' }
                     val t9 = com.example.util.T9HighlightHelper.nameToT9(record.name)
@@ -284,27 +269,25 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     )
     var useDynamicColor = mutableStateOf(prefs.getBoolean("use_dynamic_color", Build.VERSION.SDK_INT >= Build.VERSION_CODES.S))
     var callWaitingEnabled = mutableStateOf(prefs.getBoolean("call_waiting_enabled", true))
-    var recordingEnabled = mutableStateOf(prefs.getBoolean("recording_enabled", false))
-    var autoTuneRecordingVolume = mutableStateOf(prefs.getBoolean("auto_tune_recording_volume", true))
-    var recordingChimeEnabled = mutableStateOf(prefs.getBoolean("recording_chime_enabled", false))
-    var isAutoRecordCallsEnabled = mutableStateOf(prefs.getBoolean("is_auto_record_calls_enabled", false))
     var isBiometricLockEnabled = mutableStateOf(prefs.getBoolean("is_biometric_lock_enabled", false))
-    var isRecordingsBiometricLockEnabled = mutableStateOf(prefs.getBoolean("is_recordings_biometric_lock_enabled", false))
-    var isAutoExportRecordingsEnabled = mutableStateOf(prefs.getBoolean("is_auto_export_recordings_enabled", false))
-    var recordingCompressionProfile = mutableStateOf(
-        RecordingCompressionProfile.fromKey(
-            prefs.getString("recording_compression_profile", RecordingCompressionProfile.BALANCED.key)
-        )
-    )
     var isPocketProtectionEnabled = mutableStateOf(prefs.getBoolean("is_pocket_protection_enabled", false))
     var defaultStartupTabKey = mutableStateOf(prefs.getString("default_startup_tab_key", "RECENTS") ?: "RECENTS")
     var selectedTab = mutableIntStateOf(
         listOf("HOME", "RECENTS", "FAVORITES")
             .indexOf(prefs.getString("default_startup_tab_key", "RECENTS") ?: "RECENTS").coerceAtLeast(0)
     )
-    var flashAlertsEnabled = mutableStateOf(prefs.getBoolean("flash_alerts_enabled", false))
-    var isCallbackRemindersEnabled = mutableStateOf(prefs.getBoolean("is_callback_reminders_enabled", true))
     var isCallNotesEnabled = mutableStateOf(prefs.getBoolean("is_call_notes_enabled", true))
+
+    // Recording Preferences
+    var recordingEnabled = mutableStateOf(prefs.getBoolean("recording_enabled", false))
+    var autoTuneRecordingVolume = mutableStateOf(prefs.getBoolean("auto_tune_recording_volume", true))
+    var recordingChimeEnabled = mutableStateOf(prefs.getBoolean("recording_chime_enabled", false))
+    var isRecordingsBiometricLockEnabled = mutableStateOf(prefs.getBoolean("is_recordings_biometric_lock_enabled", false))
+    var isAutoRecordCallsEnabled = mutableStateOf(prefs.getBoolean("is_auto_record_calls_enabled", false))
+    var isAutoExportRecordingsEnabled = mutableStateOf(prefs.getBoolean("is_auto_export_recordings_enabled", false))
+    var recordingCompressionProfile = mutableStateOf(
+        RecordingCompressionProfile.fromKey(prefs.getString("recording_compression_profile", RecordingCompressionProfile.BALANCED.key))
+    )
     var pendingPostCallRecordingNote = mutableStateOf<CallRecording?>(null)
 
     // Dashboard & Tab Layout & Swipe Preferences
@@ -319,12 +302,11 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     // DUAL SIM FIX: Default to "Ask" on first launch so user is never locked out of SIM 2
     var preferredSim = mutableStateOf(prefs.getString("preferred_sim", "Ask") ?: "Ask")
-    var voicemailNumber = mutableStateOf("+1 (555) 011-9988")
+    var voicemailNumber = mutableStateOf("")
 
     var hasContactsPermission = mutableStateOf(false)
     var hasCallLogPermission = mutableStateOf(false)
     var hasNotificationPermission = mutableStateOf(false)
-    var hasRecordAudioPermission = mutableStateOf(false)
     var isLoadingPermissions = mutableStateOf(true)
 
     var isCallActive = mutableStateOf(false)
@@ -348,12 +330,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
 
     val notesFlow: StateFlow<List<CallNote>> = repository.getAllCallNotes()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
-
-    val spamFlow: StateFlow<List<SpamNumber>> = repository.getAllSpamNumbers()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
-
-    val remindersFlow: StateFlow<List<CallReminder>> = repository.getAllReminders()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000.milliseconds), emptyList())
 
     init {
@@ -382,49 +358,17 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
                     callWaitingEnabled.value = it
                     putBoolean("call_waiting_enabled", it)
                 }
-                settings["recording_enabled"]?.toBooleanStrictOrNull()?.let {
-                    recordingEnabled.value = it
-                    putBoolean("recording_enabled", it)
-                }
-                settings["auto_tune_recording_volume"]?.toBooleanStrictOrNull()?.let {
-                    autoTuneRecordingVolume.value = it
-                    putBoolean("auto_tune_recording_volume", it)
-                }
-                settings["recording_chime_enabled"]?.toBooleanStrictOrNull()?.let {
-                    recordingChimeEnabled.value = it
-                    putBoolean("recording_chime_enabled", it)
-                }
-                settings["is_auto_record_calls_enabled"]?.toBooleanStrictOrNull()?.let {
-                    isAutoRecordCallsEnabled.value = it
-                    putBoolean("is_auto_record_calls_enabled", it)
-                }
                 settings["is_biometric_lock_enabled"]?.toBooleanStrictOrNull()?.let {
                     isBiometricLockEnabled.value = it
                     putBoolean("is_biometric_lock_enabled", it)
-                }
-                settings["is_recordings_biometric_lock_enabled"]?.toBooleanStrictOrNull()?.let {
-                    isRecordingsBiometricLockEnabled.value = it
-                    putBoolean("is_recordings_biometric_lock_enabled", it)
-                }
-                settings["is_auto_export_recordings_enabled"]?.toBooleanStrictOrNull()?.let {
-                    isAutoExportRecordingsEnabled.value = it
-                    putBoolean("is_auto_export_recordings_enabled", it)
                 }
                 settings["is_pocket_protection_enabled"]?.toBooleanStrictOrNull()?.let {
                     isPocketProtectionEnabled.value = it
                     putBoolean("is_pocket_protection_enabled", it)
                 }
-                settings["is_callback_reminders_enabled"]?.toBooleanStrictOrNull()?.let {
-                    isCallbackRemindersEnabled.value = it
-                    putBoolean("is_callback_reminders_enabled", it)
-                }
                 settings["is_call_notes_enabled"]?.toBooleanStrictOrNull()?.let {
                     isCallNotesEnabled.value = it
                     putBoolean("is_call_notes_enabled", it)
-                }
-                settings["flash_alerts_enabled"]?.toBooleanStrictOrNull()?.let {
-                    flashAlertsEnabled.value = it
-                    putBoolean("flash_alerts_enabled", it)
                 }
                 settings["is_hide_caller_id_enabled"]?.toBooleanStrictOrNull()?.let {
                     isHideCallerIdEnabled.value = it
@@ -450,6 +394,30 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
                 settings["default_contact_account_name"]?.let {
                     defaultContactAccountName.value = it
                     putString("default_contact_account_name", it)
+                }
+                settings["recording_enabled"]?.toBooleanStrictOrNull()?.let {
+                    recordingEnabled.value = it
+                    putBoolean("recording_enabled", it)
+                }
+                settings["auto_tune_recording_volume"]?.toBooleanStrictOrNull()?.let {
+                    autoTuneRecordingVolume.value = it
+                    putBoolean("auto_tune_recording_volume", it)
+                }
+                settings["recording_chime_enabled"]?.toBooleanStrictOrNull()?.let {
+                    recordingChimeEnabled.value = it
+                    putBoolean("recording_chime_enabled", it)
+                }
+                settings["is_recordings_biometric_lock_enabled"]?.toBooleanStrictOrNull()?.let {
+                    isRecordingsBiometricLockEnabled.value = it
+                    putBoolean("is_recordings_biometric_lock_enabled", it)
+                }
+                settings["is_auto_record_calls_enabled"]?.toBooleanStrictOrNull()?.let {
+                    isAutoRecordCallsEnabled.value = it
+                    putBoolean("is_auto_record_calls_enabled", it)
+                }
+                settings["is_auto_export_recordings_enabled"]?.toBooleanStrictOrNull()?.let {
+                    isAutoExportRecordingsEnabled.value = it
+                    putBoolean("is_auto_export_recordings_enabled", it)
                 }
 
                 }
@@ -689,16 +657,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun updateCallbackRemindersEnabled(enabled: Boolean) {
-        isCallbackRemindersEnabled.value = enabled
-        prefs.edit { putBoolean("is_callback_reminders_enabled", enabled) }
-        viewModelScope.launch {
-            try {
-                repository.dao.insertSetting(AppSetting("is_callback_reminders_enabled", enabled.toString()))
-            } catch (_: Exception) {}
-        }
-    }
-
     fun updateCallNotesEnabled(enabled: Boolean) {
         isCallNotesEnabled.value = enabled
         prefs.edit { putBoolean("is_call_notes_enabled", enabled) }
@@ -760,13 +718,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
             onResult(success)
         }
     }
-
-    fun exportCallLogCsv(onResult: (String) -> Unit) {
-        onResult(com.example.util.CallLogExport.buildCallLogCsv(allCallHistoryFlow.value))
-    }
-
-    fun buildCallLogPdf(title: String, exportedAt: String): ByteArray =
-        com.example.util.CallLogExport.buildCallLogPdf(allCallHistoryFlow.value, title, exportedAt)
 
     fun readTextFromUri(
         uri: Uri,
@@ -892,7 +843,9 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         // Idempotent: re-evaluates the default-Phone role so a CallLog observer is added
         // after the user grants the role, or removed if it is revoked.
         repository.startObservingChanges {
-            syncData()
+            // A provider change is already the signal that something moved. Do not force a full
+            // address-book rebuild for every call-log tick; the incremental check is enough.
+            syncData(force = false)
             refreshAvailableAccounts()
         }
     }
@@ -909,11 +862,36 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun syncData(force: Boolean = true) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (!_contactsLoading.value) _contactsRefreshing.value = true
+            if (force) _contactsLoadFailed.value = false
             try {
                 repository.syncContacts(force)
+                _contactsLoadFailed.value = false
+            } catch (_: Exception) {
+                // A denial is rendered as the permission prompt, not as an error card. Keep the
+                // failure flag so a genuine provider failure can still offer a retry.
+                _contactsLoadFailed.value = true
+            } finally {
+                _contactsLoading.value = false
+                _contactsRefreshing.value = false
+            }
+
+            if (!_callLogLoading.value) _callLogRefreshing.value = true
+            if (force) _callLogLoadFailed.value = false
+            try {
                 repository.syncCallLogs()
-            } catch (_: Exception) {}
+                _callLogLoadFailed.value = false
+            } catch (_: Exception) {
+                _callLogLoadFailed.value = true
+            } finally {
+                _callLogLoading.value = false
+                _callLogRefreshing.value = false
+            }
         }
+    }
+
+    fun retryDataSync() {
+        syncData(force = true)
     }
 
     fun addContactWithDetails(
@@ -1061,6 +1039,10 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { repository.deleteCallLog(id) }
     }
 
+    fun deleteCallLogsByNumber(number: String) {
+        viewModelScope.launch { repository.deleteCallLogsByNumber(number) }
+    }
+
     fun clearAllCallLogs() {
         viewModelScope.launch { repository.clearAllCallLogs() }
     }
@@ -1070,69 +1052,6 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     suspend fun getCallHistoryByNumber(number: String): List<CallRecord> = repository.getCallHistoryByNumber(number)
-
-    fun updateFlashAlertsEnabled(enabled: Boolean) {
-        flashAlertsEnabled.value = enabled
-        prefs.edit { putBoolean("flash_alerts_enabled", enabled) }
-        viewModelScope.launch {
-            try {
-                repository.dao.insertSetting(AppSetting("flash_alerts_enabled", enabled.toString()))
-            } catch (_: Exception) {}
-        }
-    }
-
-    fun addSpamNumber(number: String, label: String = "Spam") {
-        viewModelScope.launch { repository.addSpamNumber(number, label) }
-    }
-
-    fun deleteSpamNumber(spam: SpamNumber) {
-        viewModelScope.launch { repository.deleteSpamNumber(spam) }
-    }
-
-    fun clearAllSpam() {
-        viewModelScope.launch { repository.clearAllSpam() }
-    }
-
-    fun importSpamNumbersFromCsv(csvContent: String, onResult: (Int) -> Unit) {
-        viewModelScope.launch {
-            val count = repository.importSpamNumbersFromCsv(csvContent)
-            onResult(count)
-        }
-    }
-
-    fun exportSpamNumbersToCsv(onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val data = repository.exportSpamNumbersToCsv()
-            onResult(data)
-        }
-    }
-
-    fun addReminder(number: String, name: String, triggerTime: Long, note: String = "", onResult: (Long) -> Unit = {}) {
-        viewModelScope.launch {
-            // Callback reminders are deferred; the rest of the record is kept for restore compatibility.
-            if (!ReleaseScope.CALLBACK_REMINDERS_ENABLED) {
-                onResult(-1L)
-                return@launch
-            }
-            val reminder = CallReminder(
-                number = number,
-                name = name,
-                reminderTime = triggerTime,
-                isCompleted = false,
-                note = note
-            )
-            val id = repository.saveReminder(reminder)
-            ReminderScheduler.schedule(getApplication(), id.toInt(), triggerTime)
-            onResult(id)
-        }
-    }
-
-    fun deleteReminder(reminder: CallReminder) {
-        viewModelScope.launch {
-            repository.deleteReminder(reminder)
-            ReminderScheduler.cancel(getApplication(), reminder.id)
-        }
-    }
 
     fun logCall(name: String, number: String, type: CallType, durationSeconds: Long, simSlot: Int = 1) {
         viewModelScope.launch {

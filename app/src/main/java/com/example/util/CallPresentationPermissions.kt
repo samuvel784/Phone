@@ -60,6 +60,7 @@ object CallPresentationPermissionsReader {
 
     fun read(context: Context, channelId: String): CallPresentationPermissions {
         val access = IncomingCallAccessReader.read(context, channelId)
+        val acknowledged = CallPermissionAcknowledgement.isAcknowledged(context)
         return evaluate(
             sdkInt = Build.VERSION.SDK_INT,
             notificationsEnabled = access.notificationsEnabled,
@@ -68,7 +69,8 @@ object CallPresentationPermissionsReader {
             fullScreenIntentAllowed = access.fullScreenIntentAllowed,
             fullScreenPermissionCheckFailed = access.fullScreenPermissionCheckFailed,
             backgroundPopupSettingAvailable =
-                CallScreenPermissionHelper.isBackgroundPopupSettingLikely(context)
+                CallScreenPermissionHelper.isBackgroundPopupSettingLikely(context),
+            backgroundPopupAcknowledged = acknowledged
         )
     }
 
@@ -84,7 +86,8 @@ object CallPresentationPermissionsReader {
         channelImportance: Int,
         fullScreenIntentAllowed: Boolean,
         fullScreenPermissionCheckFailed: Boolean = false,
-        backgroundPopupSettingAvailable: Boolean = false
+        backgroundPopupSettingAvailable: Boolean = false,
+        backgroundPopupAcknowledged: Boolean = false
     ): CallPresentationPermissions {
         val fullScreenSupported = sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
         val channelCheckSupported = sdkInt >= Build.VERSION_CODES.O
@@ -99,9 +102,15 @@ object CallPresentationPermissionsReader {
             else -> CallPermissionStatus.ENABLED
         }
 
+        val backgroundPopupStatus = if (backgroundPopupAcknowledged) {
+            CallPermissionStatus.ENABLED
+        } else {
+            CallPermissionStatus.UNABLE_TO_VERIFY
+        }
+
         return CallPresentationPermissions(
             lockScreenStatus = lockScreenStatus,
-            backgroundPopupStatus = CallPermissionStatus.UNABLE_TO_VERIFY,
+            backgroundPopupStatus = backgroundPopupStatus,
             backgroundPopupSettingAvailable = backgroundPopupSettingAvailable,
             fullScreenPermissionSupported = fullScreenSupported,
             fullScreenIntentAllowed = if (fullScreenSupported) fullScreenIntentAllowed else true,

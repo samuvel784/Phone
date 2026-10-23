@@ -1,13 +1,14 @@
 # Nova Dialer 2.1 — Porting Plan, Release Scope & Change Log
 
-**Current status (22 October 2026):** release candidate for the simplified v1 build,
-`2.1.0` (versionCode 4). The automated build, unit-test, lint, AAB-validation and signing
-results are recorded in §5. No physical-device test has been performed in this environment.
+**Current status (23 October 2026):** release candidate for the simplified v1 build,
+`2.1.0` (versionCode 4). The automated build, unit-test, lint, manifest/signing and packaging
+results are recorded in §5. No physical-device test or instrumentation run has been performed
+for this build in this environment.
 
 This document started as the porting log for Nova Dialer 2.0. It now also records what the
-2.1 release actually ships and which older, deferred features remain in the source tree but
-are deliberately unreachable. Historical 2.0 material is kept in §5 so the derivation and the
-decisions behind it remain auditable.
+2.1 release actually ships and which older, unreachable features were removed in the 23 October
+source audit, together with the data/backup compatibility retained for them. Historical 2.0
+material is kept in §5 so the derivation and the decisions behind it remain auditable.
 
 - **Foundation / upstream:** Secure Dialer (`com.example`, GPL-3.0-or-later)
 - **Target:** Nova Dialer (`com.aistudio.novadial.kpxm`), GPL-3.0-or-later
@@ -33,16 +34,16 @@ below; the "current status" column reflects the simplified 2.1 release, not the 
 | 1 | `BorderStroke.copy(...)` compile errors in `EmergencyAlertActivity.kt` | **Removed** | The broken SOS screen is not compiled; the remaining SOS-era classes were deleted in the 2.1 scope cleanup. |
 | 2 | Invalid manifest attribute `android:showOnLockScreen` | **Fixed** | The invalid attribute was removed. The incoming-call activity uses the valid `showWhenLocked` / `turnScreenOn` attributes. |
 | 3 | `FloatingCallWidgetService` started a foreground service without `startForeground()` | **Removed** | The Dynamic Island/overlay implementation was deleted in 2.1; no overlay permission or overlay UI remains. |
-| 4 | Dead `GestureControlManager` / partially wired `FlashAlertManager` | **Not in the release path** | The in-call gesture helper used by `ActiveCall` is the upstream implementation. The standalone flashlight helper is retained but not referenced. Neither is a deferred feature with a hidden trigger. |
+| 4 | Dead `GestureControlManager` / partially wired `FlashAlertManager` | **Removed from the release path** | The in-call gesture helper used by `ActiveCall` is the upstream implementation. The standalone flashlight helper was removed in the 23 October source audit. Neither is a deferred feature with a hidden trigger. |
 | 5 | `verifyPin` / `verifyPattern` always returned `false` | **Replaced** | App lock is enforced with the device screen-lock credential (`KeyguardManager`). The biometric-only pre-prompt helper was removed; this build does not declare `USE_BIOMETRIC`. |
 | 6 | Fake "Google Sync" | **Removed** | Contacts come from Android's Contacts Provider. |
 | 7 | Invented spam database with made-up numbers | **Removed** | No seed data or fake threat feed. The local spam table remains only for legacy backup compatibility; spam labelling is hidden and no screening service is registered. |
 | 8 | Destructive / data-losing Room migrations | **Fixed** | SQLCipher Room database, non-destructive migrations, fail-closed key handling. |
 | 9 | Unused Firebase / OkHttp / Retrofit dependencies | **Fixed** | No Firebase or Retrofit dependency is packaged. Coil contributes its own OkHttp/Okio transport as a transitive library; the app has no `INTERNET` permission and defines no remote endpoint. |
-| 10 | Call blocking / Focus mode / protection rules did nothing | **Blocking: implemented; Focus/protection: deferred** | Android system blocking plus a local blocked-number list are reachable. Focus Mode, call protection and the screening service are retained as deferred code and are **not** registered in the manifest. |
-| 11 | Caller announcer was not present in a working form | **Deferred** | `CallerAnnouncerManager` and `AnnouncerScript` remain in the tree, but nothing instantiates the announcer in the 2.1 `MyInCallService`. |
+| 10 | Call blocking / Focus mode / protection rules did nothing | **Blocking: implemented; Focus/protection: removed** | Android system blocking plus a local blocked-number list are reachable. Focus Mode, call-protection policy/preferences and the screening service were removed in the 23 October source audit; no screening component is registered. |
+| 11 | Caller announcer was not present in a working form | **Removed** | `CallerAnnouncerManager`, `AnnouncerScript` and the unreachable announcer settings path were removed in the 23 October source audit. |
 | 12 | Emergency SOS (Nova Dialer-only) | **Removed** | The five `EmergencySos*` classes, settings card and triggers were deleted in the 2.1 scope cleanup. |
-| 13 | Analytics / call-stats dashboard | **Deferred** | The upstream `CallLogSummaryDashboard` remains. A separate analytics settings screen exists only as unreachable code. |
+| 13 | Analytics / call-stats dashboard | **Dashboard kept; settings removed** | The upstream `CallLogSummaryDashboard` remains. The separate analytics settings screen was removed in the 23 October source audit. |
 
 ---
 
@@ -86,22 +87,31 @@ user entry point in this build. **Removed** means the implementation was deleted
 | Device-credential app lock | `MainActivity`, `PrivacySecurityAboutSettings` | Implemented — physical verification outstanding |
 | Themes, localization, baseline profile | `ui/theme`, `res/values*`, `baseline-prof.txt` | Implemented — automated build verification only |
 
-### 3.2 Deferred features — retained code, no ordinary user flow
+### 3.2 Compatibility code and data retained after the source audit
 
-| Feature | Retained implementation | Why it cannot be reached in 2.1 |
-|---------|-------------------------|----------------------------------|
-| Call recording | `CallAudioRecorder`, `RecordingCrypto`, `RecordingDisclosureActivity`, `CallRecordingsSettings`, record controls in `ActiveCall`/`InCallControlGrid` | No `RECORD_AUDIO` permission is declared. The only `ActiveCallScreen` call sites pass `recordingEnabled = false`; the advanced settings screen that contains the recording card is not referenced by `SettingsPanel`. `ReleaseScope.CALL_RECORDING_ENABLED` is `false`, so manual and automatic start paths return early. |
-| Callback reminders | `ReminderScheduler`, `ReminderAlarmReceiver`, `CallbackReminderDialog`, `ScheduledRemindersSettings` | The call-detail reminder card is gated by `ReleaseScope.CALLBACK_REMINDERS_ENABLED` (`false`). `ReminderAlarmReceiver` is not declared in the manifest and scheduling is disabled, so no alarm can fire. Existing reminder rows are still preserved/merged by backup restore. |
-| Focus Mode / call protection | `CallProtectionPolicy`, `CallProtectionPrefs`, `CallDecisionStore`, `NovaDialCallScreeningService`, `FocusAndProtectionSettings` | The screening service has no manifest declaration. The settings composable has no navigation entry point. `MyInCallService` only consults the generic silent-ringing flag/decision store; it does not register a screening service. |
-| Caller announcer | `CallerAnnouncerManager`, `AnnouncerScript` | Nothing in `MyInCallService` creates or calls the announcer. The only UI reference is inside the unreachable Focus/Protection settings screen. |
-| Offline spam database / spam labelling | `spam_numbers` table, `SpamDatabaseSettings`, `CallBlockingSettings`, spam action in `RecentCallRow` | No screening service is registered. The spam action is gated by `ReleaseScope.SPAM_LABELS_ENABLED` (`false`); the spam settings screen is unreachable. Existing rows are retained and restored with backups, but there is no management or screening flow in this build. |
-| Duplicate-contact finder | `DuplicateFinder`, `DuplicateFinderSettings` | No navigation entry point. The startup scan is gated by `ReleaseScope.DUPLICATE_FINDER_ENABLED` (`false`), so it no longer runs invisibly. |
-| Home-screen widget | `FavoritesWidgetProvider`, `WidgetCallActivity` | Neither component is declared in the manifest. Favourites updates call a refresh helper, but Android has no registered provider to update. |
-| Analytics settings screen | `CallAnalyticsSettings` | No navigation entry point; the supported Recents dashboard remains. |
-| Biometric-only recording vault / app-lock pre-prompt | Former `VaultBiometricAuthHelper` and related UI | Removed. App lock uses the device screen-lock credential and declares no biometric permission. |
+The 23 October 2026 audit removed reachable-entry-point code that could never run. These
+compatibility surfaces remain deliberately so older installs, backups and recording files keep
+working; none of them exposes a shipped screen or starts a deferred feature.
+
+| Area | Retained compatibility | Current state |
+|---------|-------------------------|------------------|
+| Call recording | `CallAudioRecorder`, `RecordingCrypto`, recording entity/DAO and backup/recovery fields | No `RECORD_AUDIO` permission and no recording UI/start path. Existing recording files and rows are untouched; automatic recording cannot start even if an older preference is restored. |
+| Callback reminders | `call_reminders` table and backup merge fields; `ReleaseScope.CALLBACK_REMINDERS_ENABLED = false` | Scheduler, alarm receiver, dialog and settings screen were removed. No alarm can be scheduled or delivered. |
+| Focus/screening | Legacy `CallDecisionStore` state and `ReleaseScope` flags | Policy, preference, screening-service and settings code was removed; no screening service is declared or registered. |
+| Caller announcer | None | `CallerAnnouncerManager`, `AnnouncerScript` and its settings entry point were removed. |
+| Offline spam | `spam_numbers` table and backup/restore handling | Spam settings, labelling action and screening hook were removed; existing rows survive backup/restore but there is no management flow. |
+| Duplicate-contact finder | `ReleaseScope.DUPLICATE_FINDER_ENABLED = false` | Scanner, settings screen and startup scan were removed. |
+| Home-screen widget | Legacy `com.aistudio.novadial.widget.*` action strings | Provider, widget activity, layouts and drawables were removed; no component is declared. |
+| Analytics | None | Settings screen was removed; the supported Recents dashboard remains. |
+| Biometric-only recording vault / app-lock pre-prompt | None | Removed. App lock uses the device screen-lock credential and declares no biometric permission. |
 
 ### 3.3 Removed features / code
 
+- **Source audit (23 October 2026):** 31 unreachable main-source files and 8 dead test files,
+  including recording UI/start and notification paths, caller announcer, call screening,
+  callback reminders, duplicate finder, spam CSV settings, flash alerts, analytics, focus/VIP,
+  block-list management, call-log exporters and the home-screen widget. 206 orphaned string
+  resources were removed from all 10 locales.
 - Emergency SOS: `EmergencySosService`, `EmergencySosBootReceiver`, `EmergencySosManager`,
   `EmergencySosPrefs`, `EmergencySosSettings` and all live triggers.
 - Dynamic Island / overlay: `DynamicIslandOverlayManager`, `DynamicIslandPill`, overlay
@@ -142,23 +152,25 @@ later deferred to keep the 2.1 release small.
 - The legacy preferences file `secure_dialer_prefs` is referenced only by the deferred recording
   implementation; the shipped settings use `dialer_prefs`. This is not a general settings migration.
 
-### 4.2 Focus/protection/announcer work (2.0 history, now deferred)
+### 4.2 Focus/protection/announcer work (2.0 history, removed in the source audit)
 
 The 2.0 port added a pure `CallProtectionPolicy` rule engine, `CallProtectionPrefs`,
 `CallDecisionStore`, a `NovaDialCallScreeningService`, `AnnouncerScript` and
-`CallerAnnouncerManager`, plus the `FocusAndProtectionSettings` screen. Those files still
-exist and have unit coverage for the pure logic, but the screening service is no longer
-registered and the settings screen is not reachable in 2.1. Their presence is **not** evidence
-that Focus Mode or caller announcements work in the release candidate.
+`CallerAnnouncerManager`, plus the `FocusAndProtectionSettings` screen. In the 23 October 2026
+source audit the policy, preferences, screening service, announcer and settings screen were
+removed because no shipped route could reach them. `CallDecisionStore` remains only as legacy
+call-decision state. Nothing in the release candidate implements Focus Mode, call screening or
+caller announcements.
 
-### 4.3 Recording work (2.0 history, now deferred)
+### 4.3 Recording work (2.0 history, compatibility only)
 
 The upstream recording pipeline was adapted for Nova Dialer (voice-communication source,
-encrypted-at-rest recordings, disclosure notice). It is retained so existing recording files and
-database rows from earlier builds are not deleted, but the simplified 2.1 release neither creates
-nor surfaces them: no microphone permission is declared, the reachable UI never enables the
-record button, and the Recents playback/management actions are gated by
-`ReleaseScope.CALL_RECORDING_ENABLED` (`false`).
+encrypted-at-rest recordings, disclosure notice). `CallAudioRecorder` and `RecordingCrypto` are
+retained so existing recording files and database rows from earlier builds are not deleted or
+made unreadable, but the simplified 2.1 release neither creates nor surfaces them: no microphone
+permission is declared, the recording UI/start/notification paths were removed in the 23 October
+source audit, and recording backup fields remain for compatibility. The
+`ReleaseScope.CALL_RECORDING_ENABLED` flag stays `false`.
 
 ### 4.4 Deferred SOS and analytics (2.0 history)
 
@@ -171,8 +183,9 @@ supported summary.
 
 The genuine local parts of the old spam feature (CSV import, manual entries, offline matching)
 were carried over with the upstream spam table. The invented seed data, community feed and
-`RealtimeSpamDetector` were deliberately not ported. In 2.1 the screening service and spam
-management UI are deferred, and the spam-labelling action is hidden.
+`RealtimeSpamDetector` were deliberately not ported. In the 23 October 2026 source audit the
+unreachable spam settings, labelling action and screening hook were removed; the `spam_numbers`
+table and its backup/restore handling remain so older data is not lost.
 
 ---
 
@@ -191,24 +204,24 @@ The commands are:
 git diff --check
 ```
 
-Results from the 22 October 2026 verification: **323 JVM unit tests** (0 failures, 0 errors,
-0 skipped), **8 instrumentation tests** on an API 37 emulator (0 failures), and
-`lintDebug`/`lintRelease` **0 errors / 36 warnings**; successful `assembleRelease` and
-`bundleRelease`. The release APK is deliberately a single universal APK
-(`app-release.apk`, 11,239,878 bytes, SHA-256
-`75CE428767D72488E26B163E5F11716CFC46AE92AC63464E8E0F2FC12E82CD22`) so its output does not
+Results from the 23 October 2026 verification: **335 JVM unit tests in 46 classes** (0 failures,
+0 errors, 0 skipped); instrumentation was **NOT RUN** because no emulator or device was attached.
+`lintDebug` completed with **0 errors / 27 warnings** and `lintRelease` with **0 errors / 28
+warnings**; `assembleDebug`, `validateReleaseSigning`, `assembleRelease` and `bundleRelease`
+completed successfully. The release APK is deliberately a single universal APK
+(`app-release.apk`, 11,169,577 bytes, SHA-256
+`B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`) so its output does not
 depend on which Gradle task is invoked; Play's ABI splitting comes from the AAB
-(`app-release.aab`, 10,598,691 bytes, SHA-256
-`27EC416A1D5C1536CAB03585CABE9731E229CF372228D181D4062628B40405DE`). Its mapping is
-`mapping.txt` (51,347,886 bytes, SHA-256
-`D0589AFB85131709922FE36EDAECF630C3350747AECA13BD495548A371A24098`). `apksigner` verified the
+(`app-release.aab`, 10,563,556 bytes, SHA-256
+`0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`). Its mapping is
+`mapping.txt` (51,336,168 bytes, SHA-256
+`1C6E1245A4CE35BF59858F1208F6C9C0C68037835377C4E557E547864403F685`). `apksigner` verified the
 APK with APK Signature Scheme v2; `jarsigner -verify -verbose -certs` returned exit 0 and reported
 `jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency
-warnings; `bundletool 1.18.3 validate` returned exit 0. The local AAB has not been uploaded. This
-porting plan does not claim a physical-device pass: Telecom, full-screen intents, multi-call
-transitions, OEM background
-restrictions and upgrade/backup behaviour still need the matrix in
-[`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
+warnings; the AAB and merged release manifests contain no `INTERNET` permission. The local AAB has
+not been uploaded. This porting plan does not claim a physical-device pass: Telecom, full-screen
+intents, multi-call transitions, OEM background restrictions and upgrade/backup behaviour still
+need the matrix in [`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
 
 ---
 

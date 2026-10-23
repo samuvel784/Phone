@@ -26,8 +26,6 @@ import com.example.model.CallRecording
 import com.example.ui.components.exportRecordingToDownloads
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.CallAudioRecorder
-import com.example.util.RecordingFeedbackHelper
-import com.example.util.RichHapticEngine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -154,21 +152,6 @@ class CallRecordingComprehensiveTest {
 
         CallAudioRecorder.stopRecording()
         assertFalse(CallAudioRecorder.isRecording.value)
-    }
-
-    @Test
-    fun testRecordingFeedbackHelperToneAndHaptics() {
-        // Verify start feedback with chime enabled and disabled
-        RecordingFeedbackHelper.triggerRecordingStartFeedback(context, chimeEnabled = true)
-        RecordingFeedbackHelper.triggerRecordingStartFeedback(context, chimeEnabled = false)
-
-        // Verify stop feedback with chime enabled and disabled
-        RecordingFeedbackHelper.triggerRecordingStopFeedback(context, chimeEnabled = true)
-        RecordingFeedbackHelper.triggerRecordingStopFeedback(context, chimeEnabled = false)
-
-        // Verify new HapticStyle variants execute without exceptions
-        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.RECORDING_START)
-        RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.RECORDING_STOP)
     }
 
     @Test

@@ -145,7 +145,7 @@ fun MinimizedCallBanner(
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                         onExpand()
                     },
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
@@ -161,7 +161,7 @@ fun MinimizedCallBanner(
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.WARNING)
                         onHangUp()
                     },
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
