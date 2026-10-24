@@ -294,7 +294,13 @@ fun ContactsTabContent(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(if (cardStyle == ContactCardStyle.FAVORITES) 2 else 1),
+                    // Favourites flow into as many columns as the readable content width allows
+                    // (2 on a phone, 3+ on a tablet) instead of staying locked to two.
+                    columns = if (cardStyle == ContactCardStyle.FAVORITES) {
+                        GridCells.Adaptive(minSize = 160.dp)
+                    } else {
+                        GridCells.Fixed(1)
+                    },
                     state = gridState,
                     modifier = Modifier
                         .fillMaxSize()

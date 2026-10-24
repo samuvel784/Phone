@@ -565,7 +565,10 @@ fun MainScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    // Floats stay aligned with the centred content column on tablets instead of
+                    // drifting to the far window edge.
+                    val contentInset = contentSideInset(this.maxWidth)
                     val currentSlot = tabSlots.getOrElse(pagerState.currentPage) { "RECENTS" }
                     HorizontalPager(
                         state = pagerState,
@@ -588,6 +591,7 @@ fun MainScreen(
                                     scaleY = sc
                                 }
                         ) {
+                            NovaContentFrame(modifier = Modifier.fillMaxSize()) {
                             when (tabSlots.getOrElse(page) { "HOME" }) {
                             "HOME" -> {
                                 ContactsTabContent(
@@ -679,6 +683,7 @@ fun MainScreen(
                             }
                         }
                         }
+                        }
                     }
                     // Floating keypad button.
                     // It lives in the content area (the space between the search bar and the bottom navigation), so it
@@ -700,7 +705,7 @@ fun MainScreen(
                             },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(end = 20.dp, bottom = 28.dp)
+                                .padding(end = contentInset + 20.dp, bottom = 28.dp)
                                 .graphicsLayer {
                                     val sc = fabScale.value
                                     scaleX = sc

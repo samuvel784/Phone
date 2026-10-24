@@ -33,7 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +49,7 @@ import com.example.R
 import com.example.model.Contact
 import com.example.model.DialpadMatch
 import com.example.model.getAvatarShape
+import com.example.ui.isCompactHeight
 import com.example.ui.theme.LocalAmoledMode
 import com.example.ui.theme.LocalM3Expressive
 import com.example.util.DialpadSearch
@@ -133,11 +136,14 @@ fun InCallKeypad(
     }
 
     val isAmoled = LocalAmoledMode.current
+    val compactHeight = isCompactHeight(LocalConfiguration.current.screenHeightDp.dp)
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)
+    val keyHeight = 58.dp * fontScale
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(if (compactHeight) 8.dp else 16.dp),
         shape = MaterialTheme.shapes.large,
         border = if (isAmoled) BorderStroke(1.dp, Color(0xFF222222)) else null,
         colors = CardDefaults.cardColors(
@@ -356,7 +362,7 @@ fun InCallKeypad(
                                 avatarShapeType = avatarShapeType,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(58.dp)
+                                    .height(keyHeight)
                                     .testTag("in_call_key_${item.digit}")
                             )
                         }

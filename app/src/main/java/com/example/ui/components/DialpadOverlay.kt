@@ -32,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -43,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import com.example.ContactCache
 import com.example.R
 import com.example.model.DialpadMatch
+import com.example.ui.NovaBreakpoints
+import com.example.ui.isCompactHeight
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.DialerViewModel
 import com.example.util.RichHapticEngine
@@ -214,6 +218,15 @@ fun DialpadOverlay(
     val context = LocalContext.current
     val isExpressive = LocalM3Expressive.current
     val isAmoled = LocalAmoledMode.current
+    // Large font scales and short landscape windows need a taller keypad row and tighter
+    // vertical rhythm. Both values stay bounded so the whole sheet remains scrollable instead
+    // of clipping the last row.
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)
+    val compactHeight = isCompactHeight(LocalConfiguration.current.screenHeightDp.dp)
+    val keyHeight = (if (compactHeight) 52f else 60f).times(fontScale).dp
+    val numberRowHeight = (if (compactHeight) 48f else 56f).times(fontScale).dp
+    val matchAreaHeight = (if (compactHeight) 120f else 180f).times(fontScale).dp
+    val sheetPadding = if (compactHeight) 4.dp else 12.dp
 
     val dialKeyColor = if (isAmoled) {
         Color(0xFF141414)
@@ -225,12 +238,16 @@ fun DialpadOverlay(
 
     Surface(
         modifier = Modifier
+            // Keep the keypad a comfortable thumb width on tablets instead of stretching it
+            // across a 1280 dp Chromebook window.
+            .widthIn(max = NovaBreakpoints.DIALPAD_MAX_WIDTH)
             .fillMaxWidth()
             // Cap the sheet on tall screens but let it shrink and scroll on short/landscape
             // windows, where a fixed 600dp+ keypad would otherwise be clipped off-screen.
             .heightIn(max = 680.dp)
             .fillMaxHeight(0.92f)
-            .clip(AppShapes.BottomSheet),
+            .clip(AppShapes.BottomSheet)
+            .testTag("dialpad_sheet"),
         color = if (isAmoled) Color.Black else MaterialTheme.colorScheme.surface,
         border = if (isAmoled) BorderStroke(1.dp, Color(0xFF222222)) else null,
         tonalElevation = if (isAmoled) 0.dp else 8.dp
@@ -239,8 +256,9 @@ fun DialpadOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = sheetPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -255,12 +273,12 @@ fun DialpadOverlay(
                     }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 4.dp else 8.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .heightIn(min = matchAreaHeight, max = matchAreaHeight * 1.4f),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -343,7 +361,7 @@ fun DialpadOverlay(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
+                        .height(numberRowHeight),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     val formattedText = remember(inputValue) {
@@ -402,7 +420,7 @@ fun DialpadOverlay(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(if (compactHeight) 6.dp else 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -431,7 +449,7 @@ fun DialpadOverlay(
                                 interactionSource = interactionSource,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(60.dp)
+                                    .height(keyHeight)
                                     .scale(scale)
                                     .testTag("dialpad_key_$digit"),
                                 shape = AppShapes.Card,
@@ -467,7 +485,7 @@ fun DialpadOverlay(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 8.dp else 16.dp))
 
             // Action row (Call, etc.)
             Row(
@@ -484,7 +502,9 @@ fun DialpadOverlay(
                             onCallClick(inputValue)
                         }
                     },
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier
+                        .size(64.dp)
+                        .testTag("dialpad_call_button"),
                     shape = CircleShape,
                     containerColor = getCallGreenColor(),
                     contentColor = getOnCallGreenColor()

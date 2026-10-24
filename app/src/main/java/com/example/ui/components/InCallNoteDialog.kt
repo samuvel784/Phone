@@ -81,7 +81,7 @@ fun InCallNoteDialog(
                 label = { Text(stringResource(R.string.note_placeholder)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp),
+                    .heightIn(min = 130.dp),
                 maxLines = 5
             )
         },

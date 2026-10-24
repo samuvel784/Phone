@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.R
+import com.example.ui.NovaBreakpoints
+import com.example.ui.NovaContentFrame
 import com.example.ui.theme.AppShapes
 import com.example.ui.theme.LocalM3Expressive
 import com.example.ui.viewmodel.DialerViewModel
@@ -93,7 +95,9 @@ fun SettingsPanel(
                             else -> stringResource(R.string.settings_title)
                         },
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
@@ -133,6 +137,10 @@ fun SettingsPanel(
                 label = "settings_tab_animation",
                 modifier = Modifier.fillMaxSize()
             ) { targetTab ->
+                NovaContentFrame(
+                    modifier = Modifier.fillMaxSize(),
+                    maxWidth = NovaBreakpoints.SETTINGS_MAX_WIDTH
+                ) {
                 when (targetTab) {
                     0 -> GeneralSettings(
                         viewModel = viewModel,
@@ -186,6 +194,7 @@ fun SettingsPanel(
                             activeTab = tab
                         }
                     )
+                }
                 }
             }
         }

@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -246,41 +247,90 @@ fun CallLogSummaryDashboard(
                         Spacer(modifier = Modifier.height(4.dp))
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        SummaryBox(
-                            value = totalCallsCount.toString(),
-                            label = stringResource(R.string.filter_all),
-                            icon = Icons.Default.Call,
-                            iconColor = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f)
-                        )
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val fontScale = LocalDensity.current.fontScale
+                        val stackStats = maxWidth < 420.dp || fontScale > 1.3f
+                        if (stackStats) {
+                            // Two-by-two keeps every label readable on a narrow phone or with a
+                            // large accessibility font instead of squeezing four columns.
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    SummaryBox(
+                                        value = totalCallsCount.toString(),
+                                        label = stringResource(R.string.filter_all),
+                                        icon = Icons.Default.Call,
+                                        iconColor = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    SummaryBox(
+                                        value = missedCallsCount.toString(),
+                                        label = stringResource(R.string.filter_missed),
+                                        icon = Icons.AutoMirrored.Filled.CallMissed,
+                                        iconColor = getMissedCallColor(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    SummaryBox(
+                                        value = outgoingCallsCount.toString(),
+                                        label = stringResource(R.string.filter_dialed),
+                                        icon = Icons.AutoMirrored.Filled.CallMade,
+                                        iconColor = getDialedCallColor(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    SummaryBox(
+                                        value = receivedCallsCount.toString(),
+                                        label = stringResource(R.string.filter_received),
+                                        icon = Icons.AutoMirrored.Filled.CallReceived,
+                                        iconColor = getReceivedCallColor(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                SummaryBox(
+                                    value = totalCallsCount.toString(),
+                                    label = stringResource(R.string.filter_all),
+                                    icon = Icons.Default.Call,
+                                    iconColor = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f)
+                                )
 
-                        SummaryBox(
-                            value = missedCallsCount.toString(),
-                            label = stringResource(R.string.filter_missed),
-                            icon = Icons.AutoMirrored.Filled.CallMissed,
-                            iconColor = getMissedCallColor(),
-                            modifier = Modifier.weight(1f)
-                        )
+                                SummaryBox(
+                                    value = missedCallsCount.toString(),
+                                    label = stringResource(R.string.filter_missed),
+                                    icon = Icons.AutoMirrored.Filled.CallMissed,
+                                    iconColor = getMissedCallColor(),
+                                    modifier = Modifier.weight(1f)
+                                )
 
-                        SummaryBox(
-                            value = outgoingCallsCount.toString(),
-                            label = stringResource(R.string.filter_dialed),
-                            icon = Icons.AutoMirrored.Filled.CallMade,
-                            iconColor = getDialedCallColor(),
-                            modifier = Modifier.weight(1f)
-                        )
+                                SummaryBox(
+                                    value = outgoingCallsCount.toString(),
+                                    label = stringResource(R.string.filter_dialed),
+                                    icon = Icons.AutoMirrored.Filled.CallMade,
+                                    iconColor = getDialedCallColor(),
+                                    modifier = Modifier.weight(1f)
+                                )
 
-                        SummaryBox(
-                            value = receivedCallsCount.toString(),
-                            label = stringResource(R.string.filter_received),
-                            icon = Icons.AutoMirrored.Filled.CallReceived,
-                            iconColor = getReceivedCallColor(),
-                            modifier = Modifier.weight(1f)
-                        )
+                                SummaryBox(
+                                    value = receivedCallsCount.toString(),
+                                    label = stringResource(R.string.filter_received),
+                                    icon = Icons.AutoMirrored.Filled.CallReceived,
+                                    iconColor = getReceivedCallColor(),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
                     }
 
                     if (dashboardMode == "FULL") {

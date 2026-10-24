@@ -122,7 +122,7 @@ fun SimSelectDialog(
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(100.dp)
+                                    .heightIn(min = 100.dp)
                                     .clip(AppShapes.Keypad)
                                     .clickable {
                                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
@@ -143,7 +143,7 @@ fun SimSelectDialog(
                             ) {
                                 Column(
                                     modifier = Modifier
-                                        .fillMaxSize()
+                                        .fillMaxWidth()
                                         .padding(8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center

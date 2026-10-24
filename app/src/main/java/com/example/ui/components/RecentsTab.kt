@@ -24,9 +24,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
@@ -207,7 +209,9 @@ fun RecentsTabContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -235,33 +239,39 @@ fun RecentsTabContent(
 
                                     val iconTint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else item.iconColor
 
-                                    Row(
+                                    Box(
                                         modifier = Modifier
-                                            .weight(1f)
+                                            .heightIn(min = 48.dp)
                                             .clip(AppShapes.Chip)
-                                            .background(containerColor)
                                             .clickable {
                                                 RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                                                 currentFilter = item.filter
-                                            }
-                                            .padding(horizontal = 4.dp, vertical = 7.dp),
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
+                                            },
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            imageVector = item.icon,
-                                            contentDescription = item.label,
-                                            tint = iconTint,
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text(
-                                            text = item.label,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = contentColor,
-                                            maxLines = 1
-                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .clip(AppShapes.Chip)
+                                                .background(containerColor)
+                                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = item.icon,
+                                                contentDescription = item.label,
+                                                tint = iconTint,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(
+                                                text = item.label,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = contentColor,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
                                 }
                             }

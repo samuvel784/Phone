@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,14 +58,18 @@ fun CallTypeDonutChart(
     val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     val centerColor = MaterialTheme.colorScheme.onSurface
     val subColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.5f)
+
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    val donutSize = (104f * fontScale).dp.coerceAtMost(maxWidth * 0.45f)
 
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.size(104.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(donutSize), contentAlignment = Alignment.Center) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val stroke = 14.dp.toPx()
                 val arcSize = Size(size.width - stroke, size.height - stroke)
@@ -114,11 +119,12 @@ fun CallTypeDonutChart(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ChartLegendRow(received, stringResource(R.string.filter_received), receivedColor)
             ChartLegendRow(outgoing, stringResource(R.string.filter_dialed), outgoingColor)
             ChartLegendRow(missed, stringResource(R.string.filter_missed), missedColor)
         }
+    }
     }
 }
 
@@ -136,8 +142,9 @@ private fun ChartLegendRow(count: Int, label: String, color: Color) {
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(64.dp)
+            modifier = Modifier.weight(1f)
         )
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = count.toString(),
             style = MaterialTheme.typography.bodySmall,

@@ -25,9 +25,12 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.ui.isCompactHeight
 import com.example.ui.theme.AppShapes
 
 @Composable
@@ -67,18 +70,25 @@ fun InCallControlGrid(
     isCallActive: Boolean = true
 ) {
     val btnShape = AppShapes.Keypad
-    val buttonHeight = 68.dp
+    // In landscape/split-screen the pinned control block must not eat the whole call screen.
+    // The height still scales with the user's font so two-line labels never clip.
+    val compactHeight = isCompactHeight(LocalConfiguration.current.screenHeightDp.dp)
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)
+    val buttonHeight = (if (compactHeight) 56f else 68f).times(fontScale).dp
+    val rowSpacing = if (compactHeight) 8.dp else 12.dp
+    val horizontalPadding = if (compactHeight) 16.dp else 24.dp
 
     Column(
         modifier = Modifier
+            .widthIn(max = 640.dp)
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = horizontalPadding, vertical = if (compactHeight) 4.dp else 8.dp),
+        verticalArrangement = Arrangement.spacedBy(rowSpacing)
     ) {
         // Row 1: Keypad, Mute, Speaker
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(rowSpacing),
             verticalAlignment = Alignment.CenterVertically
         ) {
             InCallButton(
@@ -113,7 +123,7 @@ fun InCallControlGrid(
         // Row 2: Hold/Unhold, Bluetooth, Add Call
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(rowSpacing),
             verticalAlignment = Alignment.CenterVertically
         ) {
             InCallButton(
@@ -154,7 +164,7 @@ fun InCallControlGrid(
         if ((isSwapVisible || isMergeVisible) && isCallActive) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(rowSpacing),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isSwapVisible) {
@@ -192,7 +202,7 @@ fun InCallControlGrid(
         if (showQuickNotes) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(rowSpacing),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 InCallButton(

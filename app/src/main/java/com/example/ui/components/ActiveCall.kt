@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +57,7 @@ import com.example.R
 import com.example.safeState
 import com.example.model.Contact
 import com.example.telecom.AudioRoute
+import com.example.ui.isCompactHeight
 import com.example.ui.theme.LocalAmoledMode
 import com.example.util.CallAudioHelper
 import com.example.util.CallGestureSensorManager
@@ -222,6 +224,7 @@ fun ActiveCallScreen(
     }
 
     val isAmoled = LocalAmoledMode.current
+    val isCompactWindow = isCompactHeight(LocalConfiguration.current.screenHeightDp.dp)
     val surfaceColor = if (isAmoled) Color.Black else MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
 
     // The other live call, when two calls exist, resolved from the Telecom-driven multi-call state
@@ -428,9 +431,13 @@ fun ActiveCallScreen(
                     Column(
                         modifier = Modifier
                             .weight(1f)
+                            .widthIn(max = 640.dp)
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                            .padding(
+                                horizontal = if (isCompactWindow) 16.dp else 20.dp,
+                                vertical = if (isCompactWindow) 6.dp else 16.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         InCallHeader(

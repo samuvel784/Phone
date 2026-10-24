@@ -32,11 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.ui.isCompactHeight
 import com.example.ui.theme.*
 import com.example.util.RichHapticEngine
 
@@ -53,9 +55,12 @@ fun InCallBottomBar(
 ) {
     val context = LocalContext.current
     val buttonShape = AppShapes.Keypad
+    val compactHeight = isCompactHeight(LocalConfiguration.current.screenHeightDp.dp)
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .widthIn(max = 640.dp)
+            .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isIncoming && showQuickResponseAction) {
@@ -77,7 +82,10 @@ fun InCallBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(
+                    horizontal = 24.dp,
+                    vertical = if (compactHeight) 8.dp else 16.dp
+                ),
             horizontalArrangement = if (isIncoming) Arrangement.SpaceBetween else Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

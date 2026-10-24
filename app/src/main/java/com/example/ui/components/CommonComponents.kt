@@ -191,13 +191,20 @@ fun BottomNavBar(
                     .windowInsetsPadding(
                         WindowInsets.navigationBars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
                     )
-                    .height(70.dp)
+                    // A minimum height keeps the bar finger-sized on phones, but the bar is allowed
+                    // to grow with the label at large font scales instead of clipping it.
+                    .heightIn(min = 64.dp)
             ) {
                 val slotCount = tabSlots.size.coerceAtLeast(1)
                 // Explicit receiver makes the BoxWithConstraints scope use visible to
                 // both the compiler and Android Studio's inspection.
                 val availableWidth = this@BoxWithConstraints.maxWidth
-                val itemWidth = availableWidth / slotCount
+                // On tablets/Chromebooks the tabs stay grouped in a readable strip instead of
+                // stretching across the whole window.
+                val navMaxWidth = 720.dp
+                val navWidth = minOf(availableWidth, navMaxWidth)
+                val sideInset = (availableWidth - navWidth) / 2
+                val itemWidth = navWidth / slotCount
                 val pillWidth = 64.dp
                 val indicatorX = animateDpAsState(
                     targetValue = itemWidth * selectedTab.coerceIn(0, slotCount - 1),
@@ -210,7 +217,7 @@ fun BottomNavBar(
                     modifier = Modifier
                         .offset {
                             IntOffset(
-                                x = (indicatorX.value + (itemWidth - pillWidth) / 2).roundToPx(),
+                                x = (sideInset + indicatorX.value + (itemWidth - pillWidth) / 2).roundToPx(),
                                 y = 9.dp.roundToPx()
                             )
                         }
@@ -219,7 +226,12 @@ fun BottomNavBar(
                         .background(MaterialTheme.colorScheme.primaryContainer)
                 )
 
-                Row(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .width(navWidth)
+                        .fillMaxHeight()
+                        .align(Alignment.Center)
+                ) {
                     tabSlots.forEachIndexed { index, slotKey ->
                         val selected = selectedTab == index
                         val label = stringResource(
@@ -253,7 +265,6 @@ fun BottomNavBar(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight()
                                 .selectable(
                                     selected = selected,
                                     interactionSource = source,
@@ -268,7 +279,7 @@ fun BottomNavBar(
                                 ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(9.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Box(modifier = Modifier.height(32.dp), contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = icon,
@@ -289,9 +300,12 @@ fun BottomNavBar(
                                 color = tint,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 2.dp)
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
                     }
                 }

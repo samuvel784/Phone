@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,7 +110,10 @@ fun AppLockedScreen(onUnlock: () -> Unit) {
                 Spacer(modifier = Modifier.size(36.dp))
                 Button(
                     onClick = onUnlock,
-                    modifier = Modifier.fillMaxWidth(0.7f).height(52.dp),
+                    modifier = Modifier
+                        .widthIn(max = 320.dp)
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp),
                     shape = AppShapes.Keypad
                 ) {
                     Text(
@@ -229,7 +234,7 @@ fun RestrictedCallSurface(
                                     CallManager.rejectCallById(callId)
                                 }
                             },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Text(stringResource(R.string.btn_decline))
@@ -240,7 +245,7 @@ fun RestrictedCallSurface(
                                     CallManager.answerCallById(callId)
                                 }
                             },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Text(stringResource(R.string.btn_answer))
@@ -253,14 +258,14 @@ fun RestrictedCallSurface(
                     ) {
                         OutlinedButton(
                             onClick = { CallManager.setMuted(!audioState.isMuted) },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Text(stringResource(R.string.mute))
                         }
                         OutlinedButton(
                             onClick = { CallManager.toggleSpeaker() },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Text(stringResource(R.string.speaker))
@@ -273,7 +278,7 @@ fun RestrictedCallSurface(
                                 CallManager.disconnectById(callId)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(stringResource(R.string.btn_end_call))
