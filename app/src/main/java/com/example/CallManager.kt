@@ -25,6 +25,7 @@ import com.example.telecom.AudioRoute
 import com.example.telecom.AudioRoutePolicy
 import com.example.telecom.CallAudioRouteState
 import com.example.telecom.CallSnapshot
+import com.example.telecom.CallerIdentityGuard
 import com.example.telecom.MultiCallStateMachine
 import com.example.telecom.MultiCallUiState
 import com.example.ui.components.getCurrentLocale
@@ -194,6 +195,25 @@ object CallManager {
         if (name.isNotBlank()) {
             _callerName.value = name
         }
+    }
+
+    /**
+     * Applies an asynchronously resolved contact name only to the call that is still on screen.
+     *
+     * A lookup that finishes after its call ended (or after the user swapped to another call)
+     * must not rewrite the current caller identity. Returns true only when the name was applied.
+     */
+    fun setCallerNameForCall(call: Call?, name: String): Boolean {
+        if (call == null || name.isBlank()) return false
+        val current = _currentCall.value ?: return false
+        val applied = CallerIdentityGuard.canApplyResolvedName(
+            resolvedCallId = callId(call),
+            currentCallId = callId(current),
+            currentCallState = current.safeState
+        ) && call.safeState != Call.STATE_DISCONNECTED
+        if (!applied) return false
+        _callerName.value = name
+        return true
     }
 
     fun setCallerDetails(name: String, photoUri: String = "", label: String = "") {

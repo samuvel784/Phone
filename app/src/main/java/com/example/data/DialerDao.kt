@@ -104,6 +104,9 @@ interface DialerDao {
     @Query("DELETE FROM call_history WHERE id = :id")
     suspend fun deleteCallLog(id: Int)
 
+    @Update
+    suspend fun updateCallRecords(records: List<CallRecord>)
+
     @Query("DELETE FROM call_history WHERE number = :number")
     suspend fun deleteCallLogsByNumber(number: String)
 

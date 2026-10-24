@@ -34,20 +34,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.data.DatabaseRecoveryRequiredException
 import com.example.security.IntentGuard
 import com.example.telecom.CallAction
 import com.example.telecom.CallActionRouter
 import com.example.ui.MainScreen
 import com.example.ui.components.AppLockedScreen
+import com.example.ui.components.DatabaseRecoveryRequiredScreen
 import com.example.ui.components.RestrictedCallSurface
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.DialerViewModel
+import com.example.util.AppResetManager
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -56,6 +61,7 @@ class MainActivity : ComponentActivity() {
     private var isAuthenticating = false
     private var isAppStopped = false
     private var isLaunchedForCall = false
+    private var databaseRecoveryReason: String? = null
 
     private val authLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -76,6 +82,37 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
+
+        // The database opens fail-closed when key material or files are inconsistent. That must
+        // never turn into a launch crash (the user would only see "Nova Dialer keeps stopping").
+        // Resolve the ViewModel here, catch the explicit recovery signal, and show the recovery
+        // screen instead of the dialer.
+        val startupViewModel = try {
+            viewModel
+        } catch (recovery: DatabaseRecoveryRequiredException) {
+            databaseRecoveryReason = recovery.message
+                ?: "The dialer database needs recovery before it can be opened."
+            null
+        } catch (keyFailure: IllegalStateException) {
+            databaseRecoveryReason = keyFailure.message
+                ?: "The dialer database key could not be unlocked."
+            null
+        }
+        if (startupViewModel == null) {
+            setContent {
+                MyApplicationTheme {
+                    DatabaseRecoveryRequiredScreen(
+                        errorMessage = databaseRecoveryReason,
+                        onResetApp = {
+                            lifecycleScope.launch {
+                                AppResetManager.resetApp(this@MainActivity)
+                            }
+                        }
+                    )
+                }
+            }
+            return
+        }
 
         if (savedInstanceState != null && !viewModel.isBiometricLockEnabled.value) {
             isAppAuthenticated.value = savedInstanceState.getBoolean("is_authenticated", false)
@@ -228,6 +265,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        if (databaseRecoveryReason != null) return
         // Only preserve authentication in state if biometric lock is turned off
         if (!viewModel.isBiometricLockEnabled.value) {
             outState.putBoolean("is_authenticated", isAppAuthenticated.value)
@@ -250,13 +288,16 @@ class MainActivity : ComponentActivity() {
         com.example.telecom.CallTimingLogger.markActive(com.example.telecom.CallTimingLogger.Event.ACTIVITY_RESUMED)
         volumeControlStream = AudioManager.STREAM_VOICE_CALL
         CallManager.setAppInForeground(true)
-        updateDefaultDialerStatus(this)
+        if (databaseRecoveryReason == null) {
+            updateDefaultDialerStatus(this)
+        }
     }
 
     override fun onStart() {
         super.onStart()
         volumeControlStream = AudioManager.STREAM_VOICE_CALL
         CallManager.setAppInForeground(true)
+        if (databaseRecoveryReason != null) return
         val hasRealCall = CallManager.currentCall.value != null ||
                 CallManager.calls.value.isNotEmpty()
         if (hasRealCall && isAppAuthenticated.value) {
@@ -341,11 +382,13 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIntent(intent)
+        if (databaseRecoveryReason == null) {
+            handleIntent(intent)
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
-        if (intent == null) return
+        if (intent == null || databaseRecoveryReason != null) return
 
         // Only intents carrying our private per-install token may perform sensitive
         // actions. MainActivity is exported, so any app can send it an explicit intent.

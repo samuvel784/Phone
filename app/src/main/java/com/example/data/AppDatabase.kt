@@ -187,6 +187,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Closes and forgets the open instance before its files are moved or archived.
+         * Used by the explicit "Reset App" flow so Windows/Android can rename the database
+         * files without an open handle blocking the move.
+         */
+        @Synchronized
+        fun closeInstance() {
+            try {
+                INSTANCE?.close()
+            } catch (_: Exception) {}
+            INSTANCE = null
+        }
+
         fun warmUpAsync(context: Context) {
             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                 try {

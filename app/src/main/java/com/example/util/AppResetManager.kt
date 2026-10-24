@@ -12,7 +12,10 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import com.example.CallManager
+import com.example.ContactCache
 import com.example.data.AppDatabase
+import com.example.data.DatabaseFileFamily
+import com.example.data.DatabaseKeyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -26,38 +29,24 @@ object AppResetManager {
         }
 
         try {
-            // Close and clear Room database tables safely
-            try {
-                val db = AppDatabase.getDatabase(context)
-                db.clearAllTables()
-                db.close()
-            } catch (_: Exception) {}
+            // Close the instance so the files can be moved while no handle is open.
+            AppDatabase.closeInstance()
 
-            // Clear database key material so next launch generates a fresh key
-            try {
-                com.example.data.DatabaseKeyManager.clearKey(context)
-            } catch (_: Exception) {}
+            // Archive the active database and every recovery artifact *before* deleting key
+            // material. A later recovery attempt (or support request) can still inspect them;
+            // an explicit reset must never silently destroy the only copy of user data.
+            if (!archiveDatabaseFiles(context)) {
+                // Could not preserve the data safely: leave the key and database untouched so
+                // the user can retry instead of losing the database permanently.
+                return@withContext false
+            }
 
-            // Delete database file, WAL/SHM sidecars, and recovery artifacts
-            try {
-                val dbFile = context.getDatabasePath(AppDatabase.DATABASE_NAME)
-                if (dbFile.exists()) dbFile.delete()
-                val parent = dbFile.parentFile ?: File(".")
-                val name = dbFile.name
-                val artifactsToDelete = listOf(
-                    "-wal", "-shm", "-journal",
-                    "_encrypted_temp.db", "_swap_original.db",
-                    "_plaintext_bak.db", "_unreadable_bak.db"
-                )
-                artifactsToDelete.forEach { suffix ->
-                    val f = if (suffix.startsWith("-")) File("${dbFile.absolutePath}$suffix") else File(parent, "${name}$suffix")
-                    if (f.exists()) try { f.delete() } catch (_: Exception) {}
-                }
-            } catch (_: Exception) {}
+            // Files are archived, so clearing the key now cannot strand recoverable data.
+            DatabaseKeyManager.clearKey(context)
 
             // Clear in-memory ContactCache
             try {
-                com.example.ContactCache.init(emptyList(), emptyList())
+                ContactCache.init(emptyList(), emptyList())
             } catch (_: Exception) {}
 
             // Clear SharedPreferences
@@ -83,6 +72,52 @@ object AppResetManager {
             // (which is exactly how the unit-test suite used to hang for hours).
             restartApp(context)
             true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Moves the active database, its WAL/SHM sidecars and all recovery artifacts into a
+     * timestamped `recovery_archive` directory beside the database.
+     *
+     * Returns true only when every existing file was moved. If any move fails the already
+     * moved files are put back, so a failed reset leaves the installation exactly as it was.
+     */
+    internal fun archiveDatabaseFiles(context: Context): Boolean {
+        val dbFile = context.getDatabasePath(AppDatabase.DATABASE_NAME)
+        val existing = (listOf(dbFile) + DatabaseFileFamily.from(dbFile).recoveryArtifacts)
+            .filter { it.exists() }
+        if (existing.isEmpty()) return true
+
+        val parent = dbFile.parentFile ?: return false
+        val archiveDir = File(parent, "recovery_archive/${System.currentTimeMillis()}")
+        if (!archiveDir.isDirectory && !archiveDir.mkdirs()) return false
+
+        val moved = ArrayList<Pair<File, File>>()
+        for (source in existing) {
+            val destination = File(archiveDir, source.name)
+            if (!moveFile(source, destination)) {
+                // Roll back so a failed archive does not leave a half-reset installation.
+                for ((original, archived) in moved.asReversed()) {
+                    if (!original.exists() && archived.exists()) {
+                        try { archived.renameTo(original) } catch (_: Exception) {}
+                    }
+                }
+                return false
+            }
+            moved.add(source to destination)
+        }
+        return existing.none { it.exists() }
+    }
+
+    private fun moveFile(source: File, destination: File): Boolean {
+        if (!source.exists()) return true
+        if (source.absolutePath == destination.absolutePath) return true
+        if (source.renameTo(destination)) return true
+        return try {
+            source.copyTo(destination, overwrite = true)
+            source.delete()
         } catch (_: Exception) {
             false
         }

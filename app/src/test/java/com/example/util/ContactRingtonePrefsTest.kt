@@ -28,6 +28,14 @@ class ContactRingtonePrefsTest {
     }
 
     @Test
+    fun doesNotMatchNumbersThatOnlyShareAShortSuffix() {
+        // Same 10-digit tail shape but a different subscriber/country.
+        assertFalse(ContactRingtonePrefs.numbersMatch("+14155551234", "+442075551234"))
+        // A 7-digit local number must not inherit a longer number's assignment by suffix.
+        assertFalse(ContactRingtonePrefs.numbersMatch("5551234", "987655551234"))
+    }
+
+    @Test
     fun patternTimingsCoverEveryNamedPattern() {
         assertNull(ContactRingtonePrefs.patternTimings(ContactRingtonePrefs.PATTERN_DEFAULT))
         assertArrayEquals(longArrayOf(0), ContactRingtonePrefs.patternTimings(ContactRingtonePrefs.PATTERN_NONE))

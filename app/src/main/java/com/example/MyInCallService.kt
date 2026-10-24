@@ -54,6 +54,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import java.util.concurrent.ConcurrentHashMap
 
 class MyInCallService : InCallService(), CallAudioRouteController {
 
@@ -64,6 +65,13 @@ class MyInCallService : InCallService(), CallAudioRouteController {
     private var vibrator: Vibrator? = null
     private var callWaitingToneGenerator: ToneGenerator? = null
     private var ringingCallId: Long? = null
+
+    /**
+     * Names resolved from the ContactsProvider for a specific call id. Keeps the incoming
+     * notification, the call-only screen and the active-call UI on the same identity even when
+     * the contact is not yet present in the Room-backed [ContactCache].
+     */
+    private val resolvedCallerNames = ConcurrentHashMap<Long, String>()
 
     private val notificationLock = Any()
 
@@ -387,10 +395,17 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
         resolveCallerDisplayNameAsync(call, num) { resolved ->
             trace.mark(CallTimingLogger.Event.CONTACT_RESOLVED)
-            if (resolved.isNotBlank() && resolved != num && resolved != "Unknown") {
-                CallManager.setCallerName(resolved)
+            val live = CallManager.calls.value.any { it === call } &&
+                call.safeState != Call.STATE_DISCONNECTED
+            if (live && resolved.isNotBlank() && resolved != num && resolved != "Unknown") {
+                // Remember the result for this exact call so every surface that renders the
+                // incoming notification uses the same name, even for a waiting call.
+                resolvedCallerNames[CallManager.callId(call)] = resolved
+                // Only the call currently shown may rewrite the global caller identity; a
+                // result for an ended or waiting call must not leak onto a different caller.
+                CallManager.setCallerNameForCall(call, resolved)
             }
-            if (call.safeState == Call.STATE_RINGING) {
+            if (live && call.safeState == Call.STATE_RINGING) {
                 showIncomingCallNotification(call, isCallWaiting = CallManager.waitingCall.value == call)
             }
         }
@@ -423,17 +438,21 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     private fun cachedCallerDisplayName(call: Call, number: String): String? {
         if (number.isBlank()) {
-            return call.details?.callerDisplayName?.takeIf { it.isNotBlank() } ?: "Unknown"
+            return call.details?.callerDisplayName?.takeIf { it.isNotBlank() }
+                ?: resolvedCallerNames[CallManager.callId(call)]?.takeIf { it.isNotBlank() }
+                ?: "Unknown"
         }
         val contactName = ContactCache.getContact(number)?.name
         if (!contactName.isNullOrBlank()) return contactName
         val cnapName = call.details?.callerDisplayName
         if (!cnapName.isNullOrBlank()) return cnapName
-        return ContactCache.getCnapName(number)
+        ContactCache.getCnapName(number)?.takeIf { it.isNotBlank() }?.let { return it }
+        return resolvedCallerNames[CallManager.callId(call)]?.takeIf { it.isNotBlank() }
     }
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
+        resolvedCallerNames.remove(CallManager.callId(call))
         CallManager.removeCall(call)
         refreshIncomingPresentation()
 

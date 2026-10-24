@@ -38,6 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import java.text.SimpleDateFormat
@@ -50,14 +52,17 @@ class DialerRepository(rawContext: Context) {
     val db: AppDatabase = AppDatabase.getDatabase(context)
     val dao = db.dialerDao()
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val contactCacheLock = Mutex()
 
     init {
         repositoryScope.launch {
-            // Room Flow immediately emits initial dataset; eliminates redundant dual-query startup lag
             try {
-                dao.getAllContactsFlow().collect { contacts ->
-                    val settings = dao.getAllSettingsList()
-                    ContactCache.init(contacts, settings)
+                dao.getAllContactsFlow().collect {
+                    // Re-read inside the lock instead of using the flow's payload: an emission
+                    // can be in flight while a sync commits, and an older payload applied last
+                    // would restore stale names. Querying under the same lock as the explicit
+                    // refresh means the last writer always applies a fresh snapshot.
+                    refreshContactCacheFromDatabase()
                 }
             } catch (_: Exception) {}
         }
@@ -172,6 +177,11 @@ class DialerRepository(rawContext: Context) {
                 }
             }
 
+            // Refresh the identity cache synchronously. The Room flow collector is asynchronous,
+            // so a call-log rebuild started right after this sync could otherwise resolve names
+            // from the previous contact snapshot (stale names in Recents).
+            refreshContactCacheFromDatabase()
+
             prefs.edit {
                 putInt("last_synced_contacts_count", systemContactsCount)
                 putLong("last_synced_contacts_timestamp", maxTimestamp)
@@ -184,12 +194,67 @@ class DialerRepository(rawContext: Context) {
                         dao.clearContacts()
                         dao.insertContacts(systemContacts)
                     }
+                    refreshContactCacheFromDatabase()
                 }
             } catch (_: Exception) {}
         }
     }
 
-    suspend fun syncCallLogs() = withContext(Dispatchers.IO) {
+    /**
+     * Rebuilds [ContactCache] from the committed Room rows. Kept as a single entry point so the
+     * background flow collector, the sync pipeline and the tests all observe the same snapshot.
+     */
+    internal suspend fun refreshContactCacheFromDatabase() {
+        try {
+            contactCacheLock.withLock {
+                ContactCache.init(dao.getAllContactsList(), dao.getAllSettingsList())
+            }
+        } catch (_: Exception) {
+            // A closed/recovering database must not crash name resolution; the next sync retries.
+        }
+    }
+
+    /**
+     * Re-resolves names of locally stored call records after a contact add/rename/delete.
+     *
+     * The system CallLog is only readable while Nova Dialer is the default phone handler, so
+     * local records (outgoing calls placed from this app) are refreshed here directly. Records
+     * that no longer resolve to a contact and still carry [previousName] are reset to their
+     * number instead of keeping a stale name.
+     */
+    internal suspend fun refreshLocalCallHistoryIdentity(previousName: String? = null) {
+        try {
+            val updates = ArrayList<CallRecord>()
+            for (record in dao.getAllCallHistoryList()) {
+                val contact = if (record.number.isNotBlank()) {
+                    ContactCache.getContact(record.number)
+                } else null
+
+                val updated = when {
+                    contact != null && contact.name.isNotBlank() -> record.copy(
+                        name = contact.name,
+                        label = contact.label,
+                        avatarText = getInitials(contact.name),
+                        avatarBgValue = contact.avatarBgValue,
+                        avatarTextColorValue = contact.avatarTextColorValue,
+                        photoUri = contact.photoUri,
+                        isVerified = false
+                    )
+                    previousName != null && record.name == previousName -> record.copy(
+                        name = record.number.ifBlank { "Unknown" },
+                        label = "",
+                        avatarText = getInitials(record.number),
+                        photoUri = ""
+                    )
+                    else -> record
+                }
+                if (updated != record) updates.add(updated)
+            }
+            if (updates.isNotEmpty()) dao.updateCallRecords(updates)
+        } catch (_: Exception) {}
+    }
+
+    suspend fun syncCallLogs(force: Boolean = false) = withContext(Dispatchers.IO) {
         // Google Play permits READ_CALL_LOG/WRITE_CALL_LOG only for the default Phone
         // handler (or an explicit exception). Never touch the system CallLog otherwise.
         if (!CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
@@ -218,7 +283,7 @@ class DialerRepository(rawContext: Context) {
             val lastSyncedLang = prefs.getString("last_synced_locale_lang", "")
             val localeChanged = currentLang != lastSyncedLang
 
-            if (localCount > 0 && localCount == systemCount && systemMaxId == lastSyncedMaxId && systemCount == lastSyncedCount && !localeChanged) {
+            if (!force && localCount > 0 && localCount == systemCount && systemMaxId == lastSyncedMaxId && systemCount == lastSyncedCount && !localeChanged) {
                 return@withContext
             }
 
@@ -340,7 +405,8 @@ class DialerRepository(rawContext: Context) {
 
         try { context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops) } catch (_: Exception) {}
         syncContacts(true)
-        syncCallLogs()
+        refreshLocalCallHistoryIdentity()
+        syncCallLogs(force = true)
     }
 
     suspend fun updateContactWithDetails(
@@ -350,6 +416,7 @@ class DialerRepository(rawContext: Context) {
         emails: List<LabeledEmail> = emptyList(),
         addresses: List<LabeledAddress> = emptyList()
     ) {
+        val previousName = contact.name
         val rawId = contact.rawContactId
         if (rawId <= 0L) {
             addContactWithDetails(name, numbers, emails, addresses, contact.accountName, contact.accountType)
@@ -431,10 +498,12 @@ class DialerRepository(rawContext: Context) {
 
         try { context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops) } catch (_: Exception) {}
         syncContacts(true)
-        syncCallLogs()
+        refreshLocalCallHistoryIdentity(previousName)
+        syncCallLogs(force = true)
     }
 
     suspend fun deleteContact(contact: Contact) = withContext(Dispatchers.IO) {
+        val previousName = contact.name
         try {
             if (contact.rawContactId > 0) {
                 context.contentResolver.delete(
@@ -453,7 +522,11 @@ class DialerRepository(rawContext: Context) {
             }
         } catch (_: Exception) {}
         dao.deleteContact(contact)
-        syncContacts()
+        // Force a full refresh: the provider count/timestamp heuristic can miss a rename or a
+        // deletion within the same second.
+        syncContacts(true)
+        refreshLocalCallHistoryIdentity(previousName)
+        syncCallLogs(force = true)
     }
 
     suspend fun deleteCallLog(id: Int) = withContext(Dispatchers.IO) {
@@ -532,17 +605,10 @@ class DialerRepository(rawContext: Context) {
                 if (cursor.moveToFirst()) return cursor.getString(0)
             }
 
-            if (cleanedNumber.length >= 7) {
-                context.contentResolver.query(
-                    phoneUri,
-                    arrayOf(Phone.CONTACT_ID),
-                    "${Phone.NUMBER} LIKE ?",
-                    arrayOf("%${cleanedNumber.takeLast(7)}"),
-                    null
-                )?.use { cursor ->
-                    if (cursor.moveToFirst()) cursor.getString(0) else null
-                }
-            } else null
+            // No suffix-only fallback: matching the last 7 digits can delete/star the wrong
+            // contact when two subscribers share a national tail. PhoneLookup above already
+            // handles country-code and formatting variants.
+            null
         } catch (_: Exception) {
             null
         }

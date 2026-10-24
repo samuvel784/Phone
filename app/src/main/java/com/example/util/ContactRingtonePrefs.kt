@@ -69,9 +69,11 @@ object ContactRingtonePrefs {
     fun get(context: Context, number: String): Assignment? = getMap(context)[number.trim()]
 
     /**
-     * Looks up an assignment for [number], matching by the last 8 digits so that
-     * "+919876543210" and "9876543210" resolve to the same assignment. Falls back to
-     * an exact match first.
+     * Looks up an assignment for [number]. Exact keys win; otherwise the shared
+     * [PhoneNumberCompat.numbersMatch] rule is used, which compares full digits (or the
+     * significant 10-digit tail when both numbers carry a country code). Short suffix-only
+     * matches are deliberately not accepted: they can apply one contact's ringtone to a
+     * different subscriber.
      */
     fun find(context: Context, number: String): Assignment? {
         val map = getMap(context)
@@ -82,17 +84,8 @@ object ContactRingtonePrefs {
             ?.value
     }
 
-    /** Robust number comparison handling country codes and formatting differences. */
-    fun numbersMatch(a: String, b: String): Boolean {
-        val da = a.filter { it.isDigit() }
-        val db = b.filter { it.isDigit() }
-        if (da.isEmpty() || db.isEmpty()) return false
-        if (da == db) return true
-        val minLen = minOf(da.length, db.length)
-        if (minLen < 4) return false
-        if (da.endsWith(db) || db.endsWith(da)) return true
-        return minLen >= 7 && (da.takeLast(7) == db.takeLast(7))
-    }
+    /** Number comparison shared with the rest of the dialer (formatted/country-code aware). */
+    fun numbersMatch(a: String, b: String): Boolean = PhoneNumberCompat.numbersMatch(a, b)
 
     fun set(context: Context, number: String, ringtoneUri: String?, pattern: String) {
         val key = number.trim()

@@ -7,6 +7,7 @@ package com.example.util
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.example.data.AppDatabase
 import com.example.data.DatabaseKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -71,6 +72,41 @@ class AppResetTest {
         assertNull(prefs.getString("test_pref_key", null))
 
         // Assert Database Key material is cleared
+        assertFalse(DatabaseKeyManager.hasPersistedKey(context))
+    }
+
+    @Test
+    fun `resetApp archives the database and recovery artifacts before clearing the key`() = runBlocking {
+        AppDatabase.closeInstance()
+        val dbFile = context.getDatabasePath(AppDatabase.DATABASE_NAME)
+        dbFile.parentFile?.mkdirs()
+        dbFile.writeText("encrypted-user-data")
+        File("${dbFile.absolutePath}-wal").writeText("pending-wal")
+        val unreadableBackup = File(dbFile.parentFile, "${dbFile.name}_unreadable_bak.db").apply {
+            writeText("recoverable-user-data")
+        }
+
+        val result = AppResetManager.resetApp(context)
+        assertTrue(result)
+
+        // Active database and sidecars are gone...
+        assertFalse("Active database must not remain after a reset", dbFile.exists())
+        assertFalse("WAL sidecar must not remain after a reset", File("${dbFile.absolutePath}-wal").exists())
+
+        // ...but the bytes are archived, not destroyed.
+        val archived = File(dbFile.parentFile, "recovery_archive")
+            .walkTopDown()
+            .filter { it.isFile }
+            .toList()
+        assertTrue(
+            "The active database must be preserved in recovery_archive",
+            archived.any { it.name == dbFile.name && it.readText() == "encrypted-user-data" }
+        )
+        assertTrue(
+            "Recovery artifacts must be preserved in recovery_archive",
+            archived.any { it.name == unreadableBackup.name && it.readText() == "recoverable-user-data" }
+        )
+
         assertFalse(DatabaseKeyManager.hasPersistedKey(context))
     }
 }
