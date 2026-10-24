@@ -175,6 +175,12 @@ object CallManager {
     private val _callerName = MutableStateFlow("")
     val callerName: StateFlow<String> = _callerName.asStateFlow()
 
+    @androidx.annotation.VisibleForTesting
+    fun setCallerDetailsForTesting(number: String, name: String) {
+        _callerNumber.value = number
+        _callerName.value = name
+    }
+
     private val _callerCnapName = MutableStateFlow("")
     val callerCnapName: StateFlow<String> = _callerCnapName.asStateFlow()
 
@@ -669,26 +675,40 @@ object CallManager {
         recomputeMultiCallState()
     }
 
+    private var callerDetailsJob: Job? = null
+
     private fun resolveCallerDetailsAsync(number: String, cnap: String) {
         val ctx = appContext ?: inCallService?.applicationContext ?: return
-        scope.launch {
+        callerDetailsJob?.cancel()
+        callerDetailsJob = scope.launch {
             val resolvedName = getContactNameFromNumber(ctx, number)
+            if (_callerNumber.value != number) return@launch
+
             if (!resolvedName.isNullOrBlank()) {
                 _callerName.value = resolvedName
                 val contact = ContactCache.getContact(number)
                 if (contact != null) {
-                    if (contact.photoUri.isNotBlank()) _callerPhotoUri.value = contact.photoUri
-                    if (contact.label.isNotBlank()) _callerLabel.value = contact.label
+                    _callerPhotoUri.value = contact.photoUri
+                    _callerLabel.value = contact.label
                 }
                 return@launch
             }
             if (cnap.isNotBlank()) {
                 _callerName.value = cnap
+                _callerPhotoUri.value = ""
+                _callerLabel.value = ""
                 return@launch
             }
             val dbCnap = getSavedCnapName(ctx, number)
+            if (_callerNumber.value != number) return@launch
             if (!dbCnap.isNullOrBlank()) {
                 _callerName.value = dbCnap
+                _callerPhotoUri.value = ""
+                _callerLabel.value = ""
+            } else {
+                _callerName.value = ""
+                _callerPhotoUri.value = ""
+                _callerLabel.value = ""
             }
         }
     }

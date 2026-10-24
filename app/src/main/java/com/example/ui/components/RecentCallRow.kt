@@ -48,6 +48,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.ContactCache
 import com.example.R
 import com.example.model.CallRecord
 import com.example.model.CallRecording
@@ -98,6 +99,17 @@ fun RecentCallRow(
 
     val isRowSwipeEnabled by viewModel.isRowSwipeEnabled
 
+    val allContacts by viewModel.allContactsFlow.collectAsStateWithLifecycle()
+    val currentContact = remember(record.number, allContacts) {
+        if (record.number.isNotBlank()) ContactCache.getContact(record.number) else null
+    }
+    val resolvedName = currentContact?.name
+        ?: if (record.name == "Unknown" || record.name.isBlank() || record.number.isBlank() || record.name in listOf("-1", "-2", "-3")) {
+            stringResource(R.string.unknown)
+        } else {
+            record.number
+        }
+
     // Prepared once for the whole list (see RecentsLookup): a row only does cheap map lookups.
     val lookup = LocalRecentsLookup.current
 
@@ -124,11 +136,7 @@ fun RecentCallRow(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = if (record.name == "Unknown" || record.name.isBlank() || record.name in listOf("-1", "-2", "-3")) {
-                                        stringResource(R.string.unknown)
-                                    } else {
-                                        record.name
-                                    },
+                                    text = resolvedName,
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Medium,
                                     lineHeight = 18.sp,

@@ -74,12 +74,7 @@ interface DialerDao {
     @Query("DELETE FROM contacts WHERE id = :id")
     suspend fun deleteContactById(id: Long)
 
-    @Query("""
-        SELECT * FROM contacts 
-        WHERE number = :number 
-           OR (length(:number) >= 7 AND number LIKE '%' || substr(:number, -7)) 
-        LIMIT 1
-    """)
+    @Query("SELECT * FROM contacts WHERE number = :number LIMIT 1")
     suspend fun getContactByNumber(number: String): Contact?
 
     // ================= CALL HISTORY =================

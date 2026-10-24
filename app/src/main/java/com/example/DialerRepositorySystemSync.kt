@@ -384,7 +384,6 @@ suspend fun DialerRepository.fetchSystemCallLogs(): List<CallRecord> = withConte
             CallLog.Calls.CONTENT_URI,
             arrayOf(
                 CallLog.Calls._ID,
-                CallLog.Calls.CACHED_NAME,
                 CallLog.Calls.NUMBER,
                 CallLog.Calls.TYPE,
                 CallLog.Calls.DATE,
@@ -394,7 +393,6 @@ suspend fun DialerRepository.fetchSystemCallLogs(): List<CallRecord> = withConte
             null, null, "${CallLog.Calls.DATE} DESC"
         )?.use { cursor ->
             val idIdx = cursor.getColumnIndex(CallLog.Calls._ID)
-            val nameIdx = cursor.getColumnIndex(CallLog.Calls.CACHED_NAME)
             val numIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER)
             val typeIdx = cursor.getColumnIndex(CallLog.Calls.TYPE)
             val dateIdx = cursor.getColumnIndex(CallLog.Calls.DATE)
@@ -403,7 +401,6 @@ suspend fun DialerRepository.fetchSystemCallLogs(): List<CallRecord> = withConte
 
             while (cursor.moveToNext()) {
                 val num = if (numIdx != -1) cursor.getString(numIdx) ?: "" else ""
-                val cachedName = if (nameIdx != -1) cursor.getString(nameIdx) else null
 
                 // FIXED: Uses instant in-memory ContactCache instead of querying SQLite on every loop
                 val matchingContact = if (num.isNotBlank()) ContactCache.getContact(num) else null
@@ -419,12 +416,11 @@ suspend fun DialerRepository.fetchSystemCallLogs(): List<CallRecord> = withConte
                         rawNumTrimmed.equals("p", ignoreCase = true) ||
                         rawNumTrimmed.equals("0", ignoreCase = true)
 
-                val isSavedContact = (matchingContact != null) || (!cachedName.isNullOrBlank() && !cachedName.equals(num, ignoreCase = true) && !isUnknownNum)
+                val isSavedContact = matchingContact != null
                 val isVerified = !isSavedContact && !matchingCnapName.isNullOrBlank()
 
                 val name = when {
                     matchingContact != null -> matchingContact.name
-                    !cachedName.isNullOrBlank() && !cachedName.equals(num, ignoreCase = true) -> cachedName
                     !matchingCnapName.isNullOrBlank() -> matchingCnapName
                     isUnknownNum -> "Unknown"
                     else -> num

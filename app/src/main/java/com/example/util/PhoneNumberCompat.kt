@@ -19,9 +19,6 @@ import android.telephony.TelephonyManager
  */
 object PhoneNumberCompat {
 
-    private const val MIN_MATCH_DIGITS = 7
-    private const val MAX_MATCH_DIGITS = 10
-
     /**
      * Returns true when two numbers refer to the same subscriber.
      *
@@ -34,9 +31,10 @@ object PhoneNumberCompat {
         val db = b.filter { it.isDigit() }
         if (da.isEmpty() || db.isEmpty()) return false
         if (da == db) return true
-        if (da.length < MIN_MATCH_DIGITS || db.length < MIN_MATCH_DIGITS) return false
-        val tail = minOf(da.length, db.length, MAX_MATCH_DIGITS)
-        return da.takeLast(tail) == db.takeLast(tail)
+        if (da.length >= 10 && db.length >= 10) {
+            return da.takeLast(10) == db.takeLast(10)
+        }
+        return false
     }
 
     /**
