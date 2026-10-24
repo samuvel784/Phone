@@ -922,8 +922,12 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 try { nm.deleteNotificationChannel("incoming_call_channel_v2") } catch (_: Exception) {}
                 try { nm.deleteNotificationChannel("incoming_call_channel_v3") } catch (_: Exception) {}
 
-                val incomingChannel = NotificationChannel(CHANNEL_INCOMING, "Incoming Calls", NotificationManager.IMPORTANCE_HIGH).apply {
-                    description = "Incoming call alerts and full screen notifications"
+                val incomingChannel = NotificationChannel(
+                    CHANNEL_INCOMING,
+                    context.getString(R.string.notification_channel_incoming),
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = context.getString(R.string.notification_channel_incoming_desc)
                     setSound(null, null)
                     enableVibration(false)
                     lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
@@ -932,12 +936,20 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
                 nm.createNotificationChannels(listOf(
                     incomingChannel,
-                    NotificationChannel(CHANNEL_ACTIVE, "Active Calls", NotificationManager.IMPORTANCE_LOW).apply {
-                        description = "Ongoing call controls"
+                    NotificationChannel(
+                        CHANNEL_ACTIVE,
+                        context.getString(R.string.notification_channel_active),
+                        NotificationManager.IMPORTANCE_LOW
+                    ).apply {
+                        description = context.getString(R.string.notification_channel_active_desc)
                         setShowBadge(false)
                     },
-                    NotificationChannel(CHANNEL_MISSED, "Missed Calls", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                        description = "Missed call notifications"
+                    NotificationChannel(
+                        CHANNEL_MISSED,
+                        context.getString(R.string.notification_channel_missed),
+                        NotificationManager.IMPORTANCE_DEFAULT
+                    ).apply {
+                        description = context.getString(R.string.notification_channel_missed_desc)
                     }
                 ))
             }

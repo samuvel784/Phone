@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">Para acceder, cargar, editar y llamar a los contactos de su teléfono, habilite el permiso de Contactos.</string>
     <string name="call_log_perm_desc">Para acceder, cargar y llamar al historial de llamadas real de su teléfono, habilite el permiso del Registro de llamadas.</string>
 
+    <string name="permission_disclosure_title">Permisos y privacidad de los datos locales</string>
+    <string name="permission_disclosure_body">Nova Dialer necesita acceso a los contactos, incluida su edición, para identificar llamadas, mostrar nombres en Recientes y permitirle crear o actualizar un contacto. Para mostrar y gestionar el historial de llamadas, Android exige que Nova Dialer sea tu aplicación de Teléfono predeterminada y que concedas acceso al historial de llamadas, incluido el borrado de entradas cuando lo solicites. En un dispositivo con más de una SIM, el acceso al estado del teléfono permite a Nova Dialer identificar cada SIM y dirigir una llamada a la SIM que elijas. Las notificaciones muestran la pantalla de llamada entrante y los avisos de llamadas perdidas. Toda la información se procesa en este dispositivo y nunca se sube ni se comparte.</string>
+    <string name="call_log_disclosure_title">Acceso al historial de llamadas</string>
+    <string name="call_log_disclosure_body">Nova Dialer ya es tu aplicación de Teléfono predeterminada. Android exige acceso al historial de llamadas para que Nova Dialer pueda mostrar tus llamadas recientes y permitirte borrar entradas o vaciar el historial cuando lo solicites. Los datos del historial de llamadas permanecen en este dispositivo y nunca se suben ni se comparten.</string>
+    <string name="permission_disclosure_continue">Continuar</string>
+    <string name="permission_disclosure_not_now">Ahora no</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Llamadas entrantes</string>
+    <string name="notification_channel_incoming_desc">Avisos de llamadas entrantes y notificaciones de llamada a pantalla completa</string>
+    <string name="notification_channel_active">Llamadas activas</string>
+    <string name="notification_channel_active_desc">Controles de llamadas en curso</string>
+    <string name="notification_channel_missed">Llamadas perdidas</string>
+    <string name="notification_channel_missed_desc">Notificaciones de llamadas perdidas</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">No se encontraron contactos</string>
     <string name="no_contacts_subtitle">Toque \'Añadir nuevo\' para crear un contacto</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">Más opciones</string>
+    <string name="dismiss">Descartar</string>
+    <string name="remove_field">Quitar campo</string>
+    <string name="speed_dial_and_voicemail">Marcación rápida y buzón de voz</string>
 </resources>

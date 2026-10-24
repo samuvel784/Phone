@@ -113,7 +113,7 @@ fun CallHistoryDetailsScreen(
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = null
+                            contentDescription = stringResource(R.string.more_options)
                         )
                     }
                     DropdownMenu(

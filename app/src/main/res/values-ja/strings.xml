@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">電話帳の連絡先を表示・編集・発信するのには、連絡先へのアクセス権限を許可してください。</string>
     <string name="call_log_perm_desc">通話履歴を表示・発信するのには、通話履歴へのアクセス権限を許可してください。</string>
 
+    <string name="permission_disclosure_title">権限とローカルデータのプライバシー</string>
+    <string name="permission_disclosure_body">Nova Dialer は、発信者の識別、履歴での名前の表示、連絡先の作成・更新のため、連絡先の編集を含む連絡先へのアクセスを必要とします。通話履歴を表示・管理するには、Android の要件により Nova Dialer を既定の電話アプリに設定し、通話履歴へのアクセス（依頼に応じた項目の削除を含む）を許可する必要があります。SIM が複数ある端末では、電話の状態へのアクセスにより Nova Dialer が各 SIM を識別し、選択した SIM に通話を振り分けられます。通知には着信画面と不在着信のアラートが表示されます。すべての情報はこの端末上で処理され、アップロードや共有は行われません。</string>
+    <string name="call_log_disclosure_title">通話履歴へのアクセス</string>
+    <string name="call_log_disclosure_body">Nova Dialer は現在、既定の電話アプリです。Android の要件により、Nova Dialer が最近の通話を表示し、依頼に応じて項目の削除や履歴の消去を行うために、通話履歴へのアクセスが必要です。通話履歴データはこの端末上に保持され、アップロードや共有は行われません。</string>
+    <string name="permission_disclosure_continue">続行</string>
+    <string name="permission_disclosure_not_now">後で</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">着信</string>
+    <string name="notification_channel_incoming_desc">着信アラートと全画面の通話通知</string>
+    <string name="notification_channel_active">通話中</string>
+    <string name="notification_channel_active_desc">進行中の通話の操作</string>
+    <string name="notification_channel_missed">不在着信</string>
+    <string name="notification_channel_missed_desc">不在着信の通知</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">連絡先が見つかりません</string>
     <string name="no_contacts_subtitle">「新規追加」をタップして作成します</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">その他のオプション</string>
+    <string name="dismiss">閉じる</string>
+    <string name="remove_field">項目を削除</string>
+    <string name="speed_dial_and_voicemail">短縮ダイヤルとボイスメール</string>
 </resources>

@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">Pour accéder, charger, modifier et appeler les vrais contacts de votre téléphone, veuillez autoriser l\'accès aux Contacts.</string>
     <string name="call_log_perm_desc">Pour accéder, charger et appeler votre historique d\'appels réel, veuillez autoriser l\'accès au Journal d\'appels.</string>
 
+    <string name="permission_disclosure_title">Autorisations et confidentialité des données locales</string>
+    <string name="permission_disclosure_body">Nova Dialer a besoin d\'accéder aux contacts, y compris de les modifier, pour identifier les appelants, afficher les noms dans Récents et vous permettre de créer ou de mettre à jour un contact. Pour afficher et gérer l\'historique des appels, Android exige que Nova Dialer soit votre application Téléphone par défaut et que vous accordiez l\'accès à l\'historique des appels, y compris la suppression d\'entrées à votre demande. Sur un appareil doté de plusieurs SIM, l\'accès à l\'état du téléphone permet à Nova Dialer d\'identifier chaque SIM et d\'acheminer un appel vers la SIM de votre choix. Les notifications affichent l\'écran d\'appel entrant et les alertes d\'appels manqués. Toutes les informations sont traitées sur cet appareil et ne sont jamais téléchargées ni partagées.</string>
+    <string name="call_log_disclosure_title">Accès à l\'historique des appels</string>
+    <string name="call_log_disclosure_body">Nova Dialer est maintenant votre application Téléphone par défaut. Android exige l\'accès à l\'historique des appels pour que Nova Dialer puisse afficher vos appels récents et vous permettre de supprimer des entrées ou d\'effacer l\'historique à votre demande. Les données d\'historique des appels restent sur cet appareil et ne sont jamais téléchargées ni partagées.</string>
+    <string name="permission_disclosure_continue">Continuer</string>
+    <string name="permission_disclosure_not_now">Pas maintenant</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Appels entrants</string>
+    <string name="notification_channel_incoming_desc">Alertes d\'appels entrants et notifications d\'appel en plein écran</string>
+    <string name="notification_channel_active">Appels actifs</string>
+    <string name="notification_channel_active_desc">Commandes des appels en cours</string>
+    <string name="notification_channel_missed">Appels manqués</string>
+    <string name="notification_channel_missed_desc">Notifications d\'appels manqués</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">Aucun contact trouvé</string>
     <string name="no_contacts_subtitle">Appuyez sur \'Ajouter\' pour créer un contact</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">Plus d\'options</string>
+    <string name="dismiss">Ignorer</string>
+    <string name="remove_field">Supprimer le champ</string>
+    <string name="speed_dial_and_voicemail">Numérotation rapide et messagerie vocale</string>
 </resources>

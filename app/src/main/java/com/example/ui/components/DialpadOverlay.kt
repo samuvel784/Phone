@@ -261,19 +261,28 @@ fun DialpadOverlay(
                 .padding(horizontal = 24.dp, vertical = sheetPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // The visible grabber is a 40x4 dp pill, but the touch target is a full 48 dp so it
+            // can be dismissed reliably (and reached by TalkBack).
             Box(
                 modifier = Modifier
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(AppShapes.Chip)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
-                    .clickable {
+                    .width(48.dp)
+                    .height(48.dp)
+                    .clickable(onClickLabel = stringResource(R.string.close)) {
                         RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
                         onClose()
-                    }
-            )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(AppShapes.Chip)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(if (compactHeight) 4.dp else 8.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 0.dp else 4.dp))
 
             Box(
                 modifier = Modifier
@@ -525,7 +534,7 @@ fun DialpadOverlay(
                         IconButton(onClick = { showSpeedDialMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.PersonAdd,
-                                contentDescription = "Speed Dial / Voicemail",
+                                contentDescription = stringResource(R.string.speed_dial_and_voicemail),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

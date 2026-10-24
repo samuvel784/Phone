@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">Um Ihre Kontakte anzuzeigen, zu laden, zu bearbeiten und anzurufen, aktivieren Sie bitte die Kontaktberechtigung.</string>
     <string name="call_log_perm_desc">Um Ihre Anrufliste anzuzeigen, zu laden und anzurufen, aktivieren Sie bitte die Anruflisten-Berechtigung.</string>
 
+    <string name="permission_disclosure_title">Berechtigungen &amp; lokaler Datenschutz</string>
+    <string name="permission_disclosure_body">Nova Dialer benötigt Zugriff auf Kontakte, einschließlich des Bearbeitens von Kontakten, um Anrufer zu erkennen, Namen unter „Letzte Anrufe“ anzuzeigen und Ihnen das Erstellen oder Aktualisieren eines Kontakts zu ermöglichen. Um die Anrufliste anzuzeigen und zu verwalten, verlangt Android, dass Nova Dialer Ihre Standard-Telefon-App ist und Sie Zugriff auf die Anrufliste erteilen, einschließlich des Löschens von Einträgen auf Ihre Anforderung. Auf einem Gerät mit mehr als einer SIM ermöglicht der Zugriff auf den Telefonstatus Nova Dialer, jede SIM zu identifizieren und einen Anruf an die von Ihnen gewählte SIM zu leiten. Benachrichtigungen zeigen den eingehenden Anruf und Erinnerungen an verpasste Anrufe. Alle Informationen werden auf diesem Gerät verarbeitet und niemals hochgeladen oder geteilt.</string>
+    <string name="call_log_disclosure_title">Zugriff auf die Anrufliste</string>
+    <string name="call_log_disclosure_body">Nova Dialer ist jetzt Ihre Standard-Telefon-App. Android verlangt Zugriff auf die Anrufliste, damit Nova Dialer Ihre letzten Anrufe anzeigen und Einträge oder den gesamten Verlauf auf Ihre Anforderung löschen kann. Die Anruflistendaten bleiben auf diesem Gerät und werden niemals hochgeladen oder geteilt.</string>
+    <string name="permission_disclosure_continue">Weiter</string>
+    <string name="permission_disclosure_not_now">Nicht jetzt</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Eingehende Anrufe</string>
+    <string name="notification_channel_incoming_desc">Benachrichtigungen für eingehende Anrufe und Vollbild-Anrufe</string>
+    <string name="notification_channel_active">Aktive Anrufe</string>
+    <string name="notification_channel_active_desc">Steuerung laufender Anrufe</string>
+    <string name="notification_channel_missed">Verpasste Anrufe</string>
+    <string name="notification_channel_missed_desc">Benachrichtigungen über verpasste Anrufe</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">Keine Kontakte gefunden</string>
     <string name="no_contacts_subtitle">Tippen Sie auf \'Neu hinzufügen\', um einen Kontakt zu erstellen</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">Weitere Optionen</string>
+    <string name="dismiss">Schließen</string>
+    <string name="remove_field">Feld entfernen</string>
+    <string name="speed_dial_and_voicemail">Kurzwahl und Voicemail</string>
 </resources>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
         <!-- no white or grey flash before the first frame is drawn -->
@@ -8,7 +8,10 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <!-- Draw into the display cutout so landscape/notch devices keep the controls visible.
-             Each screen still applies safe-drawing insets to its content. -->
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+             Each screen still applies safe-drawing insets to its content. Older platforms
+             simply ignore this attribute. -->
+        <item
+            name="android:windowLayoutInDisplayCutoutMode"
+            tools:targetApi="27">shortEdges</item>
     </style>
 </resources>

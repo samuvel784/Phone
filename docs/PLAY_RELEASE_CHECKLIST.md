@@ -15,19 +15,19 @@ still needs the declarations and assets below.
       (`com.aistudio.novadial.kpxm`) or update it before the first upload.
 - [ ] Keep the upload key backed up. Losing it requires Play App Signing key reset.
 
-**Local candidate (23 October 2026, not uploaded):** `bundleRelease` produced a signed
-`app/build/outputs/bundle/release/app-release.aab` (10,563,556 bytes, SHA-256
-`0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`). `jarsigner -verify -verbose -certs`
-returned exit 0 and reported `jar verified`, with self-signed/no-timestamp and
-JarFile/JarInputStream consistency warnings; the AAB manifest was inspected and contains no
-`INTERNET` permission. `assembleRelease` produced the
-universal `app/build/outputs/apk/release/app-release.apk` (11,169,577 bytes, SHA-256
-`B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`), verified with
-`apksigner` (APK Signature Scheme v2). The packaged identity is
-`com.aistudio.novadial.kpxm`, versionCode 4, versionName 2.1.0, minSdk 24, targetSdk 36.
-The upload signer certificate SHA-256 is
-`af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`. The unchecked Play-side
-items below still require access to Play Console.
+**Local candidate (25 October 2026, not uploaded):** `bundleRelease` produced a signed
+`app/build/outputs/bundle/release/app-release.aab` (10,602,611 bytes, SHA-256
+`40F78EFEA8F43D8B28743D1CC9D6CB540E8F8BEEC9E38E8373C828CB2E7B5174`). `jarsigner -verify` returned
+exit 0 and reported `jar verified`, with self-signed/no-timestamp and JarFile/JarInputStream
+consistency warnings; the AAB contains no `INTERNET` permission. `assembleRelease` produced the
+universal `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
+`B6E3DCDD6E8B2B413F3FC7DBADF626D805C660C6AB38C06B3D764BBCA98889A2`), verified with
+`apksigner` (APK Signature Scheme v2) and `zipalign -c -P 16 -v 4` (16 KB page alignment).
+The packaged identity is `com.aistudio.novadial.kpxm`, versionCode 5, versionName 2.1.1, minSdk 24,
+targetSdk 36. The upload signer certificate SHA-256 is
+`af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`. The R8 mapping is
+51,555,979 bytes, SHA-256 `9B3853CD3620B449DF4FFF0FE6E4B440475CF4CF4B6E7F347D8AE1E53B4D20FB`.
+The unchecked Play-side items below still require access to Play Console.
 
 ## 2. Policy declarations
 
@@ -214,3 +214,65 @@ than suppressing `UnusedResources`.
 | Version/toolchain: `GradleDependency` (14), `NewerVersionAvailable` (9), `AndroidGradlePluginVersion` (1), `OldTargetApi` (1) | 25 | Maintenance/upgrade suggestions; regression risk if upgraded without full testing | Not fixed. Upgrades are outside this audit and require a separate dependency/test cycle. |
 | `UnusedResources` — `record` (release analysis only; referenced by `CallOnlyModeTest`) | 1 | Harmless; the string is used by a JVM assertion, not shipped UI | Not removed. Removing it would break the restricted-call test; keep until the test is refactored. |
 | **Total** | **27 debug / 28 release** | | **0 errors; no lint rules disabled.** |
+
+## 9. Responsive and Play-safety pass (25 October 2026)
+
+This pass fixed existing behaviour only; it added no product features.
+
+### Responsive behaviour
+
+- Shared breakpoints and helpers live in `app/src/main/java/com/example/ui/Responsive.kt`
+  (`Compact`/`Medium`/`Expanded`, compact-height detection, adaptive padding, centred content
+  frame, responsive column count).
+- Main content, settings, the in-call surface and the dialpad are centred and width-capped instead
+  of stretching across tablets/Chromebooks. Favourites flow into as many columns as fit; the
+  bottom navigation stays a readable 720 dp strip.
+- The dialpad, in-call controls, lock screen, SIM picker and note dialog grow with the user's font
+  scale instead of clipping; the dialpad is scrollable in landscape and applies IME insets.
+- Display-cutout `shortEdges` mode is declared, both activities keep fold/resize/font-density
+  changes, and the manifest stays `resizeableActivity=true` with no orientation lock.
+- `ResponsiveLayoutTest` (8 tests) locks the breakpoints; `ResponsiveUiMatrixTest` (6 tests)
+  renders at 320×480, 640×360, 1280×800 and 800×1280, including a 2.0 font scale, and checks every
+  dialpad key, the call action, all five bottom tabs and all core in-call controls are reachable.
+
+### Play-safety hardening
+
+- Prominent disclosure and call-log disclosure are localized strings and explicitly cover editing
+  contacts, phone state for multi-SIM routing, notifications, and deleting/clearing call history.
+- Notification channel names/descriptions are localized.
+- Android 11+ package visibility is narrowly scoped to the two Xiaomi settings packages instead of
+  requesting broad visibility; `resizeableActivity` is explicit.
+- `DialerRepository.deleteCallLog` now deletes a provider row only when `_ID`, `NUMBER` and `DATE`
+  match the local row, so a restored local id cannot delete an unrelated system call.
+  `CallLogDeleteIdentityTest` proves both the matching and colliding-id cases.
+- The dead system-call-log writer was replaced with a local-only insert, so non-Telecom paths cannot
+  duplicate or overwrite provider history.
+- Icon-only controls have content descriptions (overflow menu, remove-field buttons, dismiss, speed
+  dial). The dialpad grabber keeps its small visual pill but now has a 48 dp touch target.
+- `ManifestPolicyTest` (8 tests) fails on `INTERNET`, an unexpected permission, a new exported
+  component, backup enabled, a missing telephony-optional feature, an orientation lock, unscoped
+  package visibility, or removal of the standard dialer intent actions.
+- Version bumped to `versionCode 5` / `versionName 2.1.1`.
+
+### Verification results
+
+- `:app:testDebugUnitTest`: **56 suites, 387 tests, 0 failures, 0 errors, 0 skipped**.
+- `:app:lintRelease`: **0 errors, 42 warnings** (dependency/toolchain housekeeping, unused
+  resources, two plural candidates, `UseKtx`, `ApplySharedPref`, one `OldTargetApi`). No lint rule
+  was disabled; the previous `QueryPermissionsNeeded` warning disappeared because package
+  visibility is now scoped.
+- `:app:assembleRelease` and `:app:bundleRelease`: successful.
+- `zipalign -c -P 16 -v 4 app-release.apk`: **Verification successful**.
+- Every packaged `.so` (SQLCipher and `androidx.graphics.path`, all four ABIs) was parsed from the
+  APK: every `PT_LOAD` segment has `p_align >= 16384` and matching file/virtual offsets.
+- `apksigner verify`: v2 scheme true, signer SHA-256
+  `af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`.
+- `jarsigner -verify`: exit 0, `jar verified`.
+- Merged release manifest: no `INTERNET`, no `RECORD_AUDIO`, no `debuggable`, no `testOnly`,
+  `allowBackup=false`, `extractNativeLibs=false`; exported components are `MainActivity`,
+  the `BIND_INCALL_SERVICE`-protected `MyInCallService`, and the androidx `DUMP`-protected
+  `ProfileInstallReceiver`. Room's service, `InitializationProvider` and the FileProvider are
+  `exported=false`.
+- **Device tests remain NOT RUN:** `adb devices` returned no attached device. Telecom, lock-screen,
+  notification, audio-route, multi-SIM, keystore/SQLCipher and visual responsive checks still need
+  the physical-device matrix in [`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).

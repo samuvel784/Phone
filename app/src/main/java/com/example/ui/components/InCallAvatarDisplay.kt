@@ -37,11 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.ContactCache
+import com.example.R
 import com.example.model.Contact
 import com.example.model.getInitials
 import com.example.ui.theme.AppShapes
@@ -137,7 +139,7 @@ fun InCallAvatarDisplay(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Spam Call Warning",
+                        contentDescription = stringResource(R.string.in_call_spam_detected),
                         tint = Color.Red,
                         modifier = Modifier.size(72.dp)
                     )

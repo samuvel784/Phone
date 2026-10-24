@@ -241,7 +241,11 @@ fun ContactEditorScreen(
                             )
                             if (phoneNumbers.size > 1) {
                                 IconButton(onClick = { phoneNumbers.removeAt(index) }) {
-                                    Icon(Icons.Default.RemoveCircle, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    Icon(
+                                        Icons.Default.RemoveCircle,
+                                        contentDescription = stringResource(R.string.remove_field),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
                                 }
                             }
                         }
@@ -290,7 +294,7 @@ fun ContactEditorScreen(
                                 shape = AppShapes.Card
                             )
                             IconButton(onClick = { emails.removeAt(index) }) {
-                                Icon(Icons.Default.RemoveCircle, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Icon(Icons.Default.RemoveCircle, contentDescription = stringResource(R.string.remove_field), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -338,7 +342,7 @@ fun ContactEditorScreen(
                                 shape = AppShapes.Card
                             )
                             IconButton(onClick = { addresses.removeAt(index) }) {
-                                Icon(Icons.Default.RemoveCircle, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Icon(Icons.Default.RemoveCircle, contentDescription = stringResource(R.string.remove_field), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }

@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">Para acessar, carregar, editar e ligar para os contatos reais do seu telefone, ative a permissão de Contatos.</string>
     <string name="call_log_perm_desc">Para acessar, carregar e ligar para o histórico de chamadas real do seu telefone, ative a permissão de Registro de chamadas.</string>
 
+    <string name="permission_disclosure_title">Permissões e privacidade de dados locais</string>
+    <string name="permission_disclosure_body">O Nova Dialer precisa de acesso aos contactos, incluindo a edição de contactos, para identificar chamadas, mostrar nomes em Recentes e permitir criar ou atualizar um contacto. Para mostrar e gerir o histórico de chamadas, o Android exige que o Nova Dialer seja a sua aplicação Telefone predefinida e que conceda acesso ao histórico de chamadas, incluindo a eliminação de entradas quando pedir. Num dispositivo com mais de um SIM, o acesso ao estado do telefone permite ao Nova Dialer identificar cada SIM e encaminhar uma chamada para o SIM que escolher. As notificações mostram o ecrã de chamada recebida e alertas de chamadas perdidas. Todas as informações são processadas neste dispositivo e nunca são carregadas ou partilhadas.</string>
+    <string name="call_log_disclosure_title">Acesso ao histórico de chamadas</string>
+    <string name="call_log_disclosure_body">O Nova Dialer é agora a sua aplicação Telefone predefinida. O Android exige acesso ao histórico de chamadas para que o Nova Dialer possa mostrar as suas chamadas recentes e permitir eliminar entradas ou limpar o histórico quando pedir. Os dados do histórico de chamadas permanecem neste dispositivo e nunca são carregados ou partilhados.</string>
+    <string name="permission_disclosure_continue">Continuar</string>
+    <string name="permission_disclosure_not_now">Agora não</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Chamadas recebidas</string>
+    <string name="notification_channel_incoming_desc">Alertas de chamadas recebidas e notificações de chamadas em ecrã inteiro</string>
+    <string name="notification_channel_active">Chamadas ativas</string>
+    <string name="notification_channel_active_desc">Controlos de chamadas em curso</string>
+    <string name="notification_channel_missed">Chamadas perdidas</string>
+    <string name="notification_channel_missed_desc">Notificações de chamadas perdidas</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">Nenhum contato encontrado</string>
     <string name="no_contacts_subtitle">Toque em \'Adicionar novo\' para criar um contato</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">Mais opções</string>
+    <string name="dismiss">Dispensar</string>
+    <string name="remove_field">Remover campo</string>
+    <string name="speed_dial_and_voicemail">Marcação rápida e voicemail</string>
 </resources>

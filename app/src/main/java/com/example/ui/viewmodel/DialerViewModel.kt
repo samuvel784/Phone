@@ -1055,7 +1055,7 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun logCall(name: String, number: String, type: CallType, durationSeconds: Long, simSlot: Int = 1) {
         viewModelScope.launch {
-            repository.insertManualCallRecord(name, number, type, durationSeconds, simSlot)
+            repository.insertLocalCallRecord(name, number, type, durationSeconds, simSlot)
             syncData()
         }
     }

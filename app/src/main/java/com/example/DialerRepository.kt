@@ -32,7 +32,6 @@ import com.example.data.AppDatabase
 import com.example.model.*
 import com.example.ui.theme.*
 import com.example.util.CallScreenPermissionHelper
-import com.example.util.SimCallTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -530,13 +529,17 @@ class DialerRepository(rawContext: Context) {
     }
 
     suspend fun deleteCallLog(id: Int) = withContext(Dispatchers.IO) {
+        // Read the row before deleting it: the Room primary key only mirrors a system
+        // CallLog _ID for rows imported from the provider. A restored or legacy row can
+        // reuse the same integer, so the provider delete must prove it is the same call.
+        val record = dao.getCallLogById(id)
         dao.deleteCallLog(id)
-        if (!CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
+        if (record == null || !CallScreenPermissionHelper.isDefaultDialer(context)) return@withContext
         try {
             context.contentResolver.delete(
                 CallLog.Calls.CONTENT_URI,
-                "${CallLog.Calls._ID} = ?",
-                arrayOf(id.toString())
+                "${CallLog.Calls._ID} = ? AND ${CallLog.Calls.NUMBER} = ? AND ${CallLog.Calls.DATE} = ?",
+                arrayOf(record.id.toString(), record.number, record.timestampMs.toString())
             )
         } catch (_: Exception) {}
     }
@@ -614,53 +617,43 @@ class DialerRepository(rawContext: Context) {
         }
     }
 
-    suspend fun insertManualCallRecord(
-        name: String, 
-        number: String, 
-        type: CallType, 
-        durationSeconds: Long, 
+    /**
+     * Stores a call that the platform did not add to the system CallLog (diagnostics/tests).
+     *
+     * This is deliberately local-only: it never inserts into [CallLog.Calls], so a manual entry
+     * cannot duplicate or overwrite a real provider record. Production call history comes from
+     * the Telecom-driven sync.
+     */
+    suspend fun insertLocalCallRecord(
+        name: String,
+        number: String,
+        type: CallType,
+        durationSeconds: Long,
         simSlot: Int = 1
     ) = withContext(Dispatchers.IO) {
-        val timestampMs = System.currentTimeMillis()
-        SimCallTracker.recordOutgoingCall(context, number, simSlot)
-        if (CallScreenPermissionHelper.isDefaultDialer(context)) {
-            try {
-                val systemType = when (type) {
-                    CallType.MISSED -> CallLog.Calls.MISSED_TYPE
-                    CallType.OUTGOING -> CallLog.Calls.OUTGOING_TYPE
-                    CallType.INCOMING -> CallLog.Calls.INCOMING_TYPE
-                }
-                val values = ContentValues().apply {
-                    put(CallLog.Calls.NUMBER, number)
-                    put(CallLog.Calls.CACHED_NAME, name)
-                    put(CallLog.Calls.TYPE, systemType)
-                    put(CallLog.Calls.DATE, timestampMs)
-                    put(CallLog.Calls.DURATION, durationSeconds)
-                    put(CallLog.Calls.IS_READ, 1)
-                }
-                context.contentResolver.insert(CallLog.Calls.CONTENT_URI, values)
-            } catch (_: Exception) {}
-        }
-
         try {
+            val timestampMs = System.currentTimeMillis()
             val sdf = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
             val colors = listOf(AvatarBlue to AvatarBlueText, AvatarOrange to AvatarOrangeText, AvatarGreen to AvatarGreenText)
             val pair = colors[abs(name.hashCode()) % colors.size]
-            val record = CallRecord(
-                name = name,
-                number = number,
-                label = "Mobile",
-                timestamp = sdf.format(Date(timestampMs)),
-                type = type,
-                avatarText = getInitials(name),
-                avatarBgValue = pair.first.value.toLong(),
-                avatarTextColorValue = pair.second.value.toLong(),
-                duration = durationSeconds,
-                hasVoicemail = false,
-                timestampMs = timestampMs,
-                simSlot = simSlot
+            dao.insertCallLogs(
+                listOf(
+                    CallRecord(
+                        name = name,
+                        number = number,
+                        label = "Mobile",
+                        timestamp = sdf.format(Date(timestampMs)),
+                        type = type,
+                        avatarText = getInitials(name),
+                        avatarBgValue = pair.first.value.toLong(),
+                        avatarTextColorValue = pair.second.value.toLong(),
+                        duration = durationSeconds,
+                        hasVoicemail = false,
+                        timestampMs = timestampMs,
+                        simSlot = simSlot
+                    )
+                )
             )
-            dao.insertCallLogs(listOf(record))
         } catch (_: Exception) {}
     }
 

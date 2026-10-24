@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">若要访问、加载、编辑手机上的真实联系人并拨打电话，请授予联系人权限。</string>
     <string name="call_log_perm_desc">若要访问、加载手机上的真实通话记录并拨打电话，请授予通话记录权限。</string>
 
+    <string name="permission_disclosure_title">权限与本地数据隐私</string>
+    <string name="permission_disclosure_body">Nova Dialer 需要访问联系人（包括编辑联系人），以便识别来电者、在最近记录中显示姓名，并让您创建或更新联系人。为显示和管理通话记录，Android 要求 Nova Dialer 成为您的默认电话应用，并授予通话记录访问权限，包括按您的要求删除条目。在具有多张 SIM 卡的设备上，电话状态访问权限可让 Nova Dialer 识别每张 SIM 卡，并将通话转接到您选择的 SIM 卡。通知会显示来电界面和未接来电提醒。所有信息均在本设备上处理，绝不会上传或共享。</string>
+    <string name="call_log_disclosure_title">通话记录访问权限</string>
+    <string name="call_log_disclosure_body">Nova Dialer 现在是您的默认电话应用。Android 要求授予通话记录访问权限，以便 Nova Dialer 显示您的最近通话，并按您的要求删除条目或清除记录。通话记录数据保留在本设备上，绝不会上传或共享。</string>
+    <string name="permission_disclosure_continue">继续</string>
+    <string name="permission_disclosure_not_now">暂不</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">来电</string>
+    <string name="notification_channel_incoming_desc">来电提醒和全屏通话通知</string>
+    <string name="notification_channel_active">通话中</string>
+    <string name="notification_channel_active_desc">进行中的通话控制</string>
+    <string name="notification_channel_missed">未接来电</string>
+    <string name="notification_channel_missed_desc">未接来电通知</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">未找到联系人</string>
     <string name="no_contacts_subtitle">点按“新建”以创建联系人</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">更多选项</string>
+    <string name="dismiss">关闭</string>
+    <string name="remove_field">移除字段</string>
+    <string name="speed_dial_and_voicemail">快速拨号和语音信箱</string>
 </resources>

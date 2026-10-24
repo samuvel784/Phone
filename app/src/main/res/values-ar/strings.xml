@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">للوصول إلى جهات الاتصال الحقيقية وتحميلها وتعديلها والاتصال بها، يرجى تفعيل إذن جهات الاتصال.</string>
     <string name="call_log_perm_desc">للوصول إلى سجل المكالمات الحقيقي وتحميله والاتصال به، يرجى تفعيل إذن سجل المكالمات.</string>
 
+    <string name="permission_disclosure_title">الأذونات وخصوصية البيانات المحلية</string>
+    <string name="permission_disclosure_body">يحتاج Nova Dialer إلى الوصول إلى جهات الاتصال، بما في ذلك تعديلها، لتحديد هوية المتصلين وعرض الأسماء في المكالمات الأخيرة وتمكينك من إنشاء جهة اتصال أو تحديثها. لعرض سجل المكالمات وإدارته، يتطلب Android أن يكون Nova Dialer تطبيق الهاتف الافتراضي لديك وأن تمنح الوصول إلى سجل المكالمات، بما في ذلك حذف الإدخالات عند طلبك. على جهاز يحتوي على أكثر من شريحة SIM، يتيح الوصول إلى حالة الهاتف لـ Nova Dialer تحديد كل شريحة SIM وتوجيه المكالمة إلى الشريحة التي تختارها. تعرض الإشعارات شاشة المكالمة الواردة وتنبيهات المكالمات الفائتة. تتم معالجة جميع المعلومات على هذا الجهاز ولا يتم رفعها أو مشاركتها أبدًا.</string>
+    <string name="call_log_disclosure_title">الوصول إلى سجل المكالمات</string>
+    <string name="call_log_disclosure_body">أصبح Nova Dialer الآن تطبيق الهاتف الافتراضي لديك. يتطلب Android الوصول إلى سجل المكالمات حتى يتمكن Nova Dialer من عرض مكالماتك الأخيرة وتمكينك من حذف الإدخالات أو مسح السجل عند طلبك. تظل بيانات سجل المكالمات على هذا الجهاز ولا يتم رفعها أو مشاركتها أبدًا.</string>
+    <string name="permission_disclosure_continue">متابعة</string>
+    <string name="permission_disclosure_not_now">ليس الآن</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">المكالمات الواردة</string>
+    <string name="notification_channel_incoming_desc">تنبيهات المكالمات الواردة وإشعارات المكالمات بملء الشاشة</string>
+    <string name="notification_channel_active">المكالمات النشطة</string>
+    <string name="notification_channel_active_desc">عناصر التحكم في المكالمات الجارية</string>
+    <string name="notification_channel_missed">المكالمات الفائتة</string>
+    <string name="notification_channel_missed_desc">إشعارات المكالمات الفائتة</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">لم يتم العثور على جهات اتصال</string>
     <string name="no_contacts_subtitle">انقر على \'إضافة جديد\' لإنشاء جهة اتصال</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">خيارات أكثر</string>
+    <string name="dismiss">تجاهل</string>
+    <string name="remove_field">إزالة الحقل</string>
+    <string name="speed_dial_and_voicemail">الاتصال السريع والبريد الصوتي</string>
 </resources>

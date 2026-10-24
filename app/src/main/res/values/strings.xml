@@ -37,6 +37,20 @@
     <string name="enable_call_log_perm">Enable Call Log</string>
     <string name="contacts_perm_desc">To access, load, edit, and call real contacts on your device, please enable the Contacts Permission.</string>
     <string name="call_log_perm_desc">To access, load, and call real call history on your device, please enable the Call Log Permission.</string>
+    <string name="permission_disclosure_title">Permissions &amp; Local Data Privacy</string>
+    <string name="permission_disclosure_body">Nova Dialer needs contacts access, including editing contacts, so it can identify callers, show names in Recents, and let you create or update a contact. To display and manage call history, Android requires Nova Dialer to be your default Phone app and to grant call-history access, including deleting entries when you ask. On a device with more than one SIM, phone-state access lets Nova Dialer identify each SIM and route a call to the SIM you choose. Notifications show the incoming-call screen and missed-call alerts. All information is processed on this device and is never uploaded or shared.</string>
+    <string name="call_log_disclosure_title">Call History Access</string>
+    <string name="call_log_disclosure_body">Nova Dialer is now your default Phone app. Android requires call-history access so Nova Dialer can display your recent calls and let you delete entries or clear the history when you ask. Call-history data stays on this device and is never uploaded or shared.</string>
+    <string name="permission_disclosure_continue">Continue</string>
+    <string name="permission_disclosure_not_now">Not Now</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Incoming calls</string>
+    <string name="notification_channel_incoming_desc">Incoming call alerts and full-screen call notifications</string>
+    <string name="notification_channel_active">Active calls</string>
+    <string name="notification_channel_active_desc">Ongoing call controls</string>
+    <string name="notification_channel_missed">Missed calls</string>
+    <string name="notification_channel_missed_desc">Missed call notifications</string>
 
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">No contacts found</string>
@@ -450,4 +464,10 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">More options</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="remove_field">Remove field</string>
+    <string name="speed_dial_and_voicemail">Speed dial and voicemail</string>
 </resources>

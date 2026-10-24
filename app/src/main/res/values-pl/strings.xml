@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">Aby uzyskiwać dostęp, ładować, edytować i dzwonić do rzeczywistych kontaktów na swoim urządzeniu, włącz uprawnienie do Kontaktów.</string>
     <string name="call_log_perm_desc">Aby uzyskiwać dostęp, ładować i dzwonić do numerów z rzeczywistej historii połączeń na swoim urządzeniu, włącz uprawnienie do Rejestru połączeń.</string>
 
+    <string name="permission_disclosure_title">Uprawnienia i prywatność danych lokalnych</string>
+    <string name="permission_disclosure_body">Nova Dialer potrzebuje dostępu do kontaktów, w tym ich edycji, aby identyfikować dzwoniących, wyświetlać nazwy w ostatnich połączeniach oraz umożliwiać tworzenie i aktualizowanie kontaktów. Aby wyświetlać historię połączeń i nią zarządzać, Android wymaga, aby Nova Dialer był domyślną aplikacją Telefon i aby przyznać dostęp do historii połączeń, w tym usuwanie wpisów na Twoje żądanie. Na urządzeniu z więcej niż jedną kartą SIM dostęp do stanu telefonu pozwala Nova Dialer zidentyfikować każdą kartę SIM i skierować połączenie do wybranej karty. Powiadomienia pokazują ekran połączenia przychodzącego i alerty nieodebranych połączeń. Wszystkie informacje są przetwarzane na tym urządzeniu i nigdy nie są przesyłane ani udostępniane.</string>
+    <string name="call_log_disclosure_title">Dostęp do historii połączeń</string>
+    <string name="call_log_disclosure_body">Nova Dialer jest teraz domyślną aplikacją Telefon. Android wymaga dostępu do historii połączeń, aby Nova Dialer mógł wyświetlać ostatnie połączenia i umożliwiać usuwanie wpisów lub czyszczenie historii na Twoje żądanie. Dane historii połączeń pozostają na tym urządzeniu i nigdy nie są przesyłane ani udostępniane.</string>
+    <string name="permission_disclosure_continue">Kontynuuj</string>
+    <string name="permission_disclosure_not_now">Nie teraz</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">Połączenia przychodzące</string>
+    <string name="notification_channel_incoming_desc">Alerty połączeń przychodzących i powiadomienia o połączeniach pełnoekranowych</string>
+    <string name="notification_channel_active">Aktywne połączenia</string>
+    <string name="notification_channel_active_desc">Sterowanie trwającymi połączeniami</string>
+    <string name="notification_channel_missed">Nieodebrane połączenia</string>
+    <string name="notification_channel_missed_desc">Powiadomienia o nieodebranych połączeniach</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">Nie znaleziono kontaktów</string>
     <string name="no_contacts_subtitle">Dotknij „Dodaj nowy”, aby utworzyć kontakt</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">Więcej opcji</string>
+    <string name="dismiss">Odrzuć</string>
+    <string name="remove_field">Usuń pole</string>
+    <string name="speed_dial_and_voicemail">Szybkie wybieranie i poczta głosowa</string>
 </resources>

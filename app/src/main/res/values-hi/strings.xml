@@ -38,6 +38,21 @@
     <string name="contacts_perm_desc">अपने फोन के वास्तविक संपर्कों को एक्सेस और कॉल करने के लिए कृपया संपर्क अनुमति सक्षम करें।</string>
     <string name="call_log_perm_desc">अपनी कॉल हिस्ट्री देखने और कॉल करने के लिए कृपया कॉल लॉग अनुमति सक्षम करें।</string>
 
+    <string name="permission_disclosure_title">अनुमतियाँ और स्थानीय डेटा गोपनीयता</string>
+    <string name="permission_disclosure_body">Nova Dialer को कॉलर की पहचान करने, हाल की सूची में नाम दिखाने और आपको संपर्क बनाने या अपडेट करने देने के लिए संपर्कों तक पहुँच चाहिए, जिसमें संपर्कों को संपादित करना भी शामिल है। कॉल इतिहास दिखाने और प्रबंधित करने के लिए Android आवश्यक करता है कि Nova Dialer आपका डिफ़ॉल्ट फ़ोन ऐप हो और आप कॉल-इतिहास पहुँच दें, जिसमें आपके अनुरोध पर प्रविष्टियाँ हटाना भी शामिल है। एक से अधिक SIM वाले डिवाइस पर, फ़ोन-स्थिति पहुँच Nova Dialer को प्रत्येक SIM की पहचान करने और कॉल को आपके चुने हुए SIM पर भेजने देती है। सूचनाएँ इनकमिंग कॉल स्क्रीन और छूटी कॉल अलर्ट दिखाती हैं। सभी जानकारी इस डिवाइस पर संसाधित होती है और कभी अपलोड या साझा नहीं की जाती।</string>
+    <string name="call_log_disclosure_title">कॉल इतिहास पहुँच</string>
+    <string name="call_log_disclosure_body">Nova Dialer अब आपका डिफ़ॉल्ट फ़ोन ऐप है। Android को कॉल-इतिहास पहुँच चाहिए ताकि Nova Dialer आपके हाल के कॉल दिखा सके और आपके अनुरोध पर प्रविष्टियाँ हटा सके या इतिहास साफ़ कर सके। कॉल-इतिहास डेटा इस डिवाइस पर रहता है और कभी अपलोड या साझा नहीं किया जाता।</string>
+    <string name="permission_disclosure_continue">जारी रखें</string>
+    <string name="permission_disclosure_not_now">अभी नहीं</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_incoming">इनकमिंग कॉल</string>
+    <string name="notification_channel_incoming_desc">इनकमिंग कॉल अलर्ट और फ़ुल-स्क्रीन कॉल सूचनाएँ</string>
+    <string name="notification_channel_active">सक्रिय कॉल</string>
+    <string name="notification_channel_active_desc">चालू कॉल के नियंत्रण</string>
+    <string name="notification_channel_missed">छूटी कॉल</string>
+    <string name="notification_channel_missed_desc">छूटी कॉल सूचनाएँ</string>
+
     <!-- Contacts Management & Details -->
     <string name="no_contacts_title">कोई संपर्क नहीं मिला</string>
     <string name="no_contacts_subtitle">नया संपर्क बनाने के लिए \'नया जोड़ें\' पर टैप करें</string>
@@ -450,4 +465,9 @@
     <string name="progress_exporting_contacts">Exporting contacts&#8230;</string>
     <string name="progress_importing_contacts">Importing contacts&#8230;</string>
     <string name="progress_reading_file">Reading file&#8230;</string>
+    <!-- Accessibility labels for icon-only controls -->
+    <string name="more_options">और विकल्प</string>
+    <string name="dismiss">खारिज करें</string>
+    <string name="remove_field">फ़ील्ड हटाएँ</string>
+    <string name="speed_dial_and_voicemail">स्पीड डायल और वॉइसमेल</string>
 </resources>

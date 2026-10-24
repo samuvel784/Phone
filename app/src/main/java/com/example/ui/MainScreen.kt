@@ -442,10 +442,15 @@ fun MainScreen(
             if (showProminentDisclosure) {
                 AlertDialog(
                     onDismissRequest = { showProminentDisclosure = false },
-                    title = { Text("Permissions & Local Data Privacy", fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            stringResource(R.string.permission_disclosure_title),
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     text = {
                         Text(
-                            "Nova Dialer needs Contacts access to identify callers and let you dial. To show and manage call history, Android requires Nova Dialer to be your default Phone app and to grant Call Log access. On a device with more than one SIM, Nova Dialer also requests phone-state access so it can identify your SIMs and route a call to the SIM you choose. All data is processed locally on your device and is never uploaded or shared.",
+                            text = stringResource(R.string.permission_disclosure_body),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -470,12 +475,12 @@ fun MainScreen(
                                 }
                             }
                         ) {
-                            Text("Continue")
+                            Text(stringResource(R.string.permission_disclosure_continue))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showProminentDisclosure = false }) {
-                            Text("Not Now")
+                            Text(stringResource(R.string.permission_disclosure_not_now))
                         }
                     }
                 )
@@ -484,10 +489,15 @@ fun MainScreen(
             if (showCallLogDisclosure && isDefaultDialer && !hasCallLogPermission) {
                 AlertDialog(
                     onDismissRequest = { showCallLogDisclosure = false },
-                    title = { Text("Call History Access", fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            stringResource(R.string.call_log_disclosure_title),
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     text = {
                         Text(
-                            "Nova Dialer is now your default Phone app. Android requires Call Log access so Nova Dialer can display, create, and manage your call history. Call log data stays on this device and is not uploaded.",
+                            text = stringResource(R.string.call_log_disclosure_body),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -498,12 +508,12 @@ fun MainScreen(
                                 permissionLauncher.launch(buildPermissionRequest(includeCallLog = true))
                             }
                         ) {
-                            Text("Continue")
+                            Text(stringResource(R.string.permission_disclosure_continue))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showCallLogDisclosure = false }) {
-                            Text("Not Now")
+                            Text(stringResource(R.string.permission_disclosure_not_now))
                         }
                     }
                 )
