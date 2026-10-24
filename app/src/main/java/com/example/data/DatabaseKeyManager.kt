@@ -40,6 +40,24 @@ object DatabaseKeyManager {
     }
 
     @Synchronized
+    fun clearKey(context: Context) {
+        cachedKey = null
+        try {
+            val directBootContext = context.createDeviceProtectedStorageContext()
+            val prefs = directBootContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit(commit = true) {
+                clear()
+            }
+        } catch (_: Exception) {}
+        try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            if (keyStore.containsAlias(KEY_ALIAS)) {
+                keyStore.deleteEntry(KEY_ALIAS)
+            }
+        } catch (_: Exception) {}
+    }
+
+    @Synchronized
     fun getDatabaseKey(context: Context): ByteArray {
         // 1. Fast-path: return cached key if already unlocked in memory
         cachedKey?.let {

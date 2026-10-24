@@ -30,14 +30,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 object ContactCache {
     private val fullNumMap = ConcurrentHashMap<String, Contact>()
-    private val nationalNumMap = ConcurrentHashMap<String, Contact>()
     private val ambiguousNumbers = ConcurrentHashMap.newKeySet<String>()
-
     private val cnapMap = ConcurrentHashMap<String, String>()
 
     fun init(contacts: List<Contact>, settings: List<AppSetting>) {
         fullNumMap.clear()
-        nationalNumMap.clear()
         ambiguousNumbers.clear()
 
         for (contact in contacts) {
@@ -52,13 +49,13 @@ object ContactCache {
                     fullNumMap[clean] = contact
                 }
 
-                if (clean.length >= 10) {
-                    val national = clean.takeLast(10)
-                    val existingNational = nationalNumMap[national]
-                    if (existingNational != null && (existingNational.name != contact.name || existingNational.number != contact.number)) {
+                if (clean.length == 11 && clean.startsWith("1")) {
+                    val national = clean.substring(1)
+                    val existingNat = fullNumMap[national]
+                    if (existingNat != null && (existingNat.name != contact.name || existingNat.number != contact.number)) {
                         ambiguousNumbers.add(national)
                     } else {
-                        nationalNumMap[national] = contact
+                        fullNumMap[national] = contact
                     }
                 }
             }
@@ -75,9 +72,6 @@ object ContactCache {
                 val cleanKey = setting.key.substring(prefix.length).filter { it.isDigit() }
                 if (cleanKey.isNotEmpty()) {
                     cnapMap[cleanKey] = setting.value
-                    if (cleanKey.length >= 10) {
-                        cnapMap[cleanKey.takeLast(10)] = setting.value
-                    }
                 }
             }
         }
@@ -86,11 +80,7 @@ object ContactCache {
     fun putCnapName(number: String, cnapName: String) {
         val clean = number.filter { it.isDigit() }
         if (clean.isEmpty() || cnapName.isBlank()) return
-
         cnapMap[clean] = cnapName
-        if (clean.length >= 10) {
-            cnapMap[clean.takeLast(10)] = cnapName
-        }
     }
 
     fun getContact(number: String): Contact? {
@@ -101,11 +91,11 @@ object ContactCache {
         val fullMatch = fullNumMap[clean]
         if (fullMatch != null) return fullMatch
 
-        if (clean.length >= 10) {
-            val national = clean.takeLast(10)
+        if (clean.length == 11 && clean.startsWith("1")) {
+            val national = clean.substring(1)
             if (ambiguousNumbers.contains(national)) return null
-            val nationalMatch = nationalNumMap[national]
-            if (nationalMatch != null) return nationalMatch
+            val natMatch = fullNumMap[national]
+            if (natMatch != null) return natMatch
         }
 
         return null
@@ -114,9 +104,7 @@ object ContactCache {
     fun getCnapName(number: String): String? {
         val clean = number.filter { it.isDigit() }
         if (clean.isEmpty()) return null
-
         return cnapMap[clean]
-            ?: (if (clean.length >= 10) cnapMap[clean.takeLast(10)] else null)
     }
 }
 

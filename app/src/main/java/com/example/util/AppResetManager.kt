@@ -9,6 +9,8 @@ import android.app.Activity
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import com.example.CallManager
 import com.example.data.AppDatabase
 import kotlinx.coroutines.Dispatchers
@@ -31,13 +33,31 @@ object AppResetManager {
                 db.close()
             } catch (_: Exception) {}
 
-            // Delete database file and WAL/SHM sidecars
+            // Clear database key material so next launch generates a fresh key
+            try {
+                com.example.data.DatabaseKeyManager.clearKey(context)
+            } catch (_: Exception) {}
+
+            // Delete database file, WAL/SHM sidecars, and recovery artifacts
             try {
                 val dbFile = context.getDatabasePath(AppDatabase.DATABASE_NAME)
                 if (dbFile.exists()) dbFile.delete()
-                listOf("-wal", "-shm", "-journal").forEach {
-                    File("${dbFile.absolutePath}$it").delete()
+                val parent = dbFile.parentFile ?: File(".")
+                val name = dbFile.name
+                val artifactsToDelete = listOf(
+                    "-wal", "-shm", "-journal",
+                    "_encrypted_temp.db", "_swap_original.db",
+                    "_plaintext_bak.db", "_unreadable_bak.db"
+                )
+                artifactsToDelete.forEach { suffix ->
+                    val f = if (suffix.startsWith("-")) File("${dbFile.absolutePath}$suffix") else File(parent, "${name}$suffix")
+                    if (f.exists()) try { f.delete() } catch (_: Exception) {}
                 }
+            } catch (_: Exception) {}
+
+            // Clear in-memory ContactCache
+            try {
+                com.example.ContactCache.init(emptyList(), emptyList())
             } catch (_: Exception) {}
 
             // Clear SharedPreferences
@@ -58,8 +78,19 @@ object AppResetManager {
                 notificationManager?.cancelAll()
             } catch (_: Exception) {}
 
-            // Restart app to initial fresh-install state
-            withContext(Dispatchers.Main) {
+            // Restart app to initial fresh-install state. This must never suspend: dispatching
+            // onto Dispatchers.Main from a caller that already blocks the main thread deadlocks
+            // (which is exactly how the unit-test suite used to hang for hours).
+            restartApp(context)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun restartApp(context: Context) {
+        val restart = Runnable {
+            try {
                 val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -69,10 +100,13 @@ object AppResetManager {
                     context.finishAffinity()
                 }
                 Runtime.getRuntime().exit(0)
-            }
-            true
-        } catch (_: Exception) {
-            false
+            } catch (_: Exception) {}
+        }
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            restart.run()
+        } else {
+            Handler(Looper.getMainLooper()).post(restart)
         }
     }
 

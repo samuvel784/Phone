@@ -412,17 +412,21 @@ data class CallGroup(
     val calls: List<CallRecord>
 )
 
-// FIXED: Key ties strictly to normalized number to prevent different people with common names from merging
-private fun normalizePhoneNumberForKey(number: String, name: String): String {
-    val cleanName = name.trim().lowercase(Locale.ROOT)
-    val digits = number.filter { it.isDigit() }
-    val normalizedNumber = if (digits.length >= 7) digits.takeLast(10) else digits.ifEmpty { number.trim() }
+private fun normalizePhoneNumberForKey(number: String): String {
+    val clean = number.filter { it.isDigit() }
+    if (clean.isEmpty()) return number.trim().lowercase(Locale.ROOT)
+    // Fall back to the significant national tail so "+1 415 555 0100", "09876543210" and
+    // "9876543210" land in the same bucket.
+    return if (clean.length >= 10) clean.takeLast(10) else clean
+}
 
-    return if (cleanName.isNotBlank() && cleanName != "unknown") {
-        "${normalizedNumber}_$cleanName"
-    } else {
-        normalizedNumber
-    }
+/**
+ * Recents grouping key: same subscriber *and* same displayed name. Records that only share a
+ * number but show different names (e.g. a saved contact vs. a CNAP label) stay separate.
+ */
+private fun callGroupKey(record: CallRecord): String {
+    val nameKey = record.name.trim().lowercase(Locale.ROOT)
+    return "${normalizePhoneNumberForKey(record.number)}|$nameKey"
 }
 
 fun groupCallRecords(
@@ -453,7 +457,7 @@ fun groupCallRecords(
             if (!matchesQuery) continue
         }
 
-        val key = normalizePhoneNumberForKey(record.number, record.name)
+        val key = callGroupKey(record)
         val list = groupedMap.getOrPut(key) { ArrayList() }
         list.add(record)
     }

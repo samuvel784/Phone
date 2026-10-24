@@ -1,4 +1,5 @@
 import java.io.File
+import java.time.Duration
 import java.util.Properties
 
 plugins {
@@ -18,21 +19,21 @@ if (signingPropertiesFile.exists() && signingPropertiesFile.isFile) {
     }
 }
 
-val releaseKeystorePath = signingProperties.getProperty("storeFile")
-val releaseStorePassword = signingProperties.getProperty("storePassword")
-val releaseKeyAlias = signingProperties.getProperty("keyAlias")
-val releaseKeyPassword = signingProperties.getProperty("keyPassword")
+val releaseKeystorePath: String? = signingProperties.getProperty("storeFile")
+val releaseStorePassword: String? = signingProperties.getProperty("storePassword")
+val releaseKeyAlias: String? = signingProperties.getProperty("keyAlias")
+val releaseKeyPassword: String? = signingProperties.getProperty("keyPassword")
 
 val releaseKeystoreFile = releaseKeystorePath
     ?.takeIf { it.isNotBlank() }
     ?.let { File(it) }
 
 val hasReleaseSigningCredentials =
-    releaseKeystoreFile != null &&
-    releaseKeystoreFile.exists() &&
-    !releaseStorePassword.isNullOrBlank() &&
-    !releaseKeyAlias.isNullOrBlank() &&
-    !releaseKeyPassword.isNullOrBlank()
+    ((releaseKeystoreFile != null) &&
+        releaseKeystoreFile.exists() &&
+        (!releaseStorePassword.isNullOrBlank()) &&
+        (!releaseKeyAlias.isNullOrBlank()) &&
+        (!releaseKeyPassword.isNullOrBlank()))
 
 android {
     namespace = "com.example"
@@ -71,7 +72,7 @@ android {
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
 
             if (hasReleaseSigningCredentials) {
@@ -108,6 +109,16 @@ android {
     }
 }
 
+// A single hung Robolectric test used to block the build for hours (no JUnit timeouts were set).
+// A hard task timeout turns that into a clear failure instead of a silent 5-hour run.
+tasks.withType<Test>().configureEach {
+    timeout.set(Duration.ofMinutes(25))
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
 // Validate by exact packaging task, not by substring-matching whatever the user typed on the
 // command line. This keeps release/test aggregate invocations from being misclassified while
 // still failing closed before an unsigned release artifact can be produced.
@@ -119,6 +130,7 @@ val releasePackagingTaskNames = setOf(
     "signReleaseBundle"
 )
 val validateReleaseSigning = tasks.register("validateReleaseSigning") {
+    description = "Validates release signing credentials for release packaging tasks."
     // Store the result as a task input so the action never captures the Gradle script object.
     inputs.property("signingCredentialsPresent", hasReleaseSigningCredentials)
     doLast {

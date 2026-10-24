@@ -48,19 +48,30 @@ object ContactShareUtils {
                 fos.write(vCardString.toByteArray(StandardCharsets.UTF_8))
             }
 
-            val uri: Uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                vCardFile
-            )
+            val uri: Uri? = try {
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    vCardFile
+                )
+            } catch (e: Exception) {
+                // A missing/misconfigured provider must not lose the share entirely.
+                android.util.Log.e("ContactShareUtils", "FileProvider unavailable, sharing as text", e)
+                null
+            }
 
             val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/x-vcard"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, contact.name)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                clipData = ClipData.newUri(context.contentResolver, "vCard", uri)
+                putExtra(Intent.EXTRA_SUBJECT, contact.name)
+                if (uri != null) {
+                    type = "text/x-vcard"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    clipData = ClipData.newUri(context.contentResolver, "vCard", uri)
+                } else {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, vCardString)
+                }
             }
 
             val chooser = Intent.createChooser(intent, context.getString(R.string.share_recording)).apply {
@@ -68,7 +79,8 @@ object ContactShareUtils {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(chooser)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.e("ContactShareUtils", "Failed to share vCard", e)
             Toast.makeText(context, context.getString(R.string.share_recording), Toast.LENGTH_SHORT).show()
         }
     }
