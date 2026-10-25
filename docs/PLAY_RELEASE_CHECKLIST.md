@@ -16,17 +16,17 @@ still needs the declarations and assets below.
 - [ ] Keep the upload key backed up. Losing it requires Play App Signing key reset.
 
 **Local candidate (25 October 2026, not uploaded):** `bundleRelease` produced a signed
-`app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
-`9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). `jarsigner -verify` returned
+`app/build/outputs/bundle/release/app-release.aab` (10,626,879 bytes, SHA-256
+`E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`). `jarsigner -verify` returned
 exit 0 and reported `jar verified`, with self-signed/no-timestamp and JarFile/JarInputStream
 consistency warnings; the AAB contains no `INTERNET` permission. `assembleRelease` produced the
 universal `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
-`1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`), verified with
+`D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`), verified with
 `apksigner` (APK Signature Scheme v2) and `zipalign -c -P 16 -v 4` (16 KB page alignment).
 The packaged identity is `com.aistudio.novadial.kpxm`, versionCode 5, versionName 2.1.1, minSdk 24,
 targetSdk 36. The upload signer certificate SHA-256 is
 `af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`. The R8 mapping is
-51,738,664 bytes, SHA-256 `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
+51,771,588 bytes, SHA-256 `A0859243F8B760B2748D306344AF4A3AFDB89154A6EBA14328C423BAD361025D`.
 The unchecked Play-side items below still require access to Play Console.
 
 ## 2. Policy declarations
@@ -109,23 +109,23 @@ background-work behavior. The remaining blockers are Play-side declarations, ass
 physical-device validation.
 
 - **Automated verification (25 October 2026, final source).** `testDebugUnitTest --rerun-tasks
-  --no-build-cache`: **417 tests in 60 classes, 0 failures, 0 errors, 0 skipped**.
+  --no-build-cache`: **422 tests in 62 classes, 0 failures, 0 errors, 0 skipped**.
   `connectedDebugAndroidTest` is **NOT RUN** for this build because no emulator or device was
   attached; the 22 October 2026 run recorded 8 tests on API 37 `emulator-5554` for the previous
   build. `lintDebug` completed with **0 errors and 39 warnings**; `lintRelease` completed with
   **0 errors and 40 warnings**. `assembleDebug`, `assembleRelease` and `bundleRelease` completed
   successfully. The APK (11,209,221 bytes, SHA-256
-  `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`) is a single universal
+  `D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`) is a single universal
   signed APK; `apksigner` reports a valid APK Signature Scheme v2 signature and
   `zipalign -c -P 16 -v 4` reports `Verification successful`. The AAB
-  (10,621,828 bytes, SHA-256
-  `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`) was checked with
+  (10,626,879 bytes, SHA-256
+  `E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`) was checked with
   `jarsigner -verify` (exit 0, `jar verified`, with self-signed/no-timestamp and
   JarFile/JarInputStream consistency warnings); its manifest contains no `INTERNET` permission.
   The signer SHA-256 matches the intended upload certificate, and the packaged manifest reports
   package `com.aistudio.novadial.kpxm`, version `2.1.1`/`5`, minSdk `24`, targetSdk `36`. The mapping is
-  51,738,664 bytes with SHA-256
-  `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
+  51,771,588 bytes with SHA-256
+  `A0859243F8B760B2748D306344AF4A3AFDB89154A6EBA14328C423BAD361025D`.
 - **Current source audit fixes.** Database recovery now inspects the full SQLCipher file family,
   restores interrupted swaps (including stale-sidecar quarantine), validates plaintext-to-SQLCipher
   migration snapshots by integrity and row count, and fails closed instead of replacing a database.
@@ -311,13 +311,13 @@ Source defects fixed in this pass (no new product features, no new runtime depen
 
 ### Final verification
 
-- `:app:testDebugUnitTest --rerun-tasks --no-build-cache`: **60 suites, 417 tests, 0 failures,
+- `:app:testDebugUnitTest --rerun-tasks --no-build-cache`: **62 suites, 422 tests, 0 failures,
   0 errors, 0 skipped**.
 - `:app:lintDebug`: **0 errors, 39 warnings**; `:app:lintRelease`: **0 errors, 40 warnings**.
-- `assembleDebug`, `assembleRelease`, `bundleRelease`: successful. AAB 10,621,828 bytes / SHA-256
-  `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`; APK 11,209,221 bytes /
-  SHA-256 `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`; mapping 51,738,664
-  bytes / SHA-256 `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
+- `assembleDebug`, `assembleRelease`, `bundleRelease`: successful. AAB 10,626,879 bytes / SHA-256
+  `E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`; APK 11,209,221 bytes /
+  SHA-256 `D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`; mapping 51,771,588
+  bytes / SHA-256 `A0859243F8B760B2748D306344AF4A3AFDB89154A6EBA14328C423BAD361025D`.
 - `apksigner` v2 verification, `zipalign -c -P 16` and `jarsigner -verify` all passed; the packaged
   manifest reports 2.1.1/5, minSdk 24, targetSdk 36, no `INTERNET`, `allowBackup=false`,
   `extractNativeLibs=false`.
@@ -325,3 +325,49 @@ Source defects fixed in this pass (no new product features, no new runtime depen
   behaviour on a device, reset-on-device, notification/lock-screen, audio routes and visual
   checks. `adb devices` reported no attached device. Play Console declarations, Data safety,
   content rating, store assets and the public privacy URL remain external blockers.
+
+## 11. Header menu and caller-identity pass (25 October 2026)
+
+Source changes in this pass (no new runtime dependencies, no manifest or signing change):
+
+- **Tab header policy.** The search field stays on Home, Recents and Favourites, but the settings
+  menu is now shown only on Home. `headerMenuVisibleForTab` in `MainScreen.kt` owns the policy.
+  `HeaderSearchBar` reserves a fixed 48 dp leading slot when the menu is hidden, so the search icon
+  and text keep the same x-position instead of jumping between tabs. `HeaderTabMenuPolicyTest` and
+  `HeaderSearchBarTest` pin visibility, click, absence and alignment (4 tests).
+- **Caller identity.** In-call, locked-screen and notification names are resolved from the saved
+  contact record only; a carrier `CallerDisplayName`/CNAP value is no longer substituted for a
+  caller name. Carrier CNAP is still persisted for recents labelling, but it cannot impersonate a
+  caller during a call. `CallManager.onContactsChanged()` re-resolves the live caller after an
+  address-book sync, and the asynchronous resolver pins its result to the live `Call` reference,
+  call id and number so a stale lookup cannot overwrite a newer caller.
+- **Transactional reset.** `AppResetManager` records each stage and the staged-file manifest in a
+  device-protected journal. A failed key erasure rolls the database back only while the key is
+  still usable; once the key is gone the reset fails closed with the evidence preserved instead of
+  restoring an unreadable database. `DatabaseFileGuard` now treats a non-empty `reset_pending`
+  directory as recoverable material, never as a fresh install.
+- **Unchanged protections.** Application ID, version 2.1.1/5, the upload keystore, SQLCipher
+  fail-closed inspection, `allowBackup=false`, and document-picker exports (which live outside
+  app-private storage) are unchanged.
+
+### Final verification
+
+- `:app:testDebugUnitTest --rerun-tasks --no-build-cache`: **62 suites, 422 tests, 0 failures,
+  0 errors, 0 skipped**.
+- `:app:lintDebug`: **0 errors, 39 warnings**; `:app:lintRelease`: **0 errors, 40 warnings**.
+- `assembleDebug`, `assembleRelease`, `bundleRelease`: successful. AAB 10,626,879 bytes / SHA-256
+  `E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`; APK 11,209,221 bytes /
+  SHA-256 `D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`; mapping 51,771,588
+  bytes / SHA-256 `A0859243F8B760B2748D306344AF4A3AFDB89154A6EBA14328C423BAD361025D`.
+- `apksigner` v2 verification, `zipalign -c -P 16` and `jarsigner -verify` all passed; the packaged
+  manifest reports 2.1.1/5, minSdk 24, targetSdk 36, no `INTERNET`, `allowBackup=false`,
+  `extractNativeLibs=false`.
+- **NOT RUN:** instrumentation, real SQLCipher reopen, Telecom/call-waiting, contact-provider
+  behaviour on a device, reset-on-device, notification/lock-screen, audio routes and visual
+  checks. `adb devices` reported no attached device. Play Console declarations, Data safety,
+  content rating, store assets and the public privacy URL remain external blockers.
+
+> **Post-verification layout change:** the bottom navigation bar was moved from the tab content
+> `Column` into `Scaffold(bottomBar = ...)`, and the content now receives the bar height through
+> `PaddingValues`. This landed after the test/build record above, so the JVM suite, release
+> build, hashes and landscape/portrait device checks must be repeated before upload.

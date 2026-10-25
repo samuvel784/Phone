@@ -53,13 +53,10 @@ fun CallOnlyCallSurface(
     val number = call.details?.handle?.schemeSpecificPart
         .orEmpty()
         .ifBlank { fallbackNumber }
-    val directName = call.details?.callerDisplayName.orEmpty()
     val cachedName = if (number.isNotBlank()) ContactCache.getContact(number)?.name else null
     val displayName = cachedName
         ?.takeIf { it.isNotBlank() }
-        ?: directName.takeIf { it.isNotBlank() }
-        ?: fallbackName.takeIf { it.isNotBlank() }
-        ?: number
+        ?: number.ifBlank { "Unknown" }
 
     val state = call.safeState
     val presentation = remember(state, pendingAnswerCallId, callId) {

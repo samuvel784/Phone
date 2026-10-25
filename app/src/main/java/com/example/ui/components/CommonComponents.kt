@@ -104,16 +104,21 @@ fun HeaderSearchBar(
                 .height(52.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (menuVisible) {
-                IconButton(onClick = onMenuClick) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = stringResource(R.string.settings_title),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+            // Keep the slot reserved when the menu is hidden so the search icon and text do not
+            // jump sideways when the user switches tabs.
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (menuVisible) {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = stringResource(R.string.settings_title),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
-            } else {
-                Spacer(modifier = Modifier.width(8.dp))
             }
             Icon(
                 imageVector = Icons.Default.Search,

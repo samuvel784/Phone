@@ -147,4 +147,34 @@ class AppResetTest {
         assertTrue(status.success)
         assertFalse(DatabaseKeyManager.hasPersistedKey(context))
     }
+
+    @Test
+    fun `transaction journal write read and restorePending structured result`() {
+        val entry = AppResetManager.ManifestEntry("/path/to/orig.db", "/path/to/staged.db")
+        val tx = AppResetManager.ResetTransaction(
+            stage = AppResetManager.ResetStage.STAGED_TO_PENDING,
+            timestampMs = 123456789L,
+            manifest = listOf(entry)
+        )
+        assertTrue(AppResetManager.writeTransaction(context, tx))
+
+        val readBack = AppResetManager.readTransaction(context)
+        assertEquals(AppResetManager.ResetStage.STAGED_TO_PENDING, readBack?.stage)
+        assertEquals(123456789L, readBack?.timestampMs)
+        assertEquals(1, readBack?.manifest?.size)
+        assertEquals("/path/to/orig.db", readBack?.manifest?.get(0)?.originalPath)
+
+        val origFile = File(context.cacheDir, "orig_test.db")
+        val stagedFile = File(context.cacheDir, "staged_test.db")
+        stagedFile.writeText("test_content")
+
+        val restoreResult = AppResetManager.restorePending(context, listOf(origFile to stagedFile))
+        assertTrue(restoreResult.isSuccess)
+        assertTrue(origFile.exists())
+        assertEquals("test_content", origFile.readText())
+        assertFalse(stagedFile.exists())
+
+        origFile.delete()
+        AppResetManager.deleteTransactionJournal(context)
+    }
 }

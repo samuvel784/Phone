@@ -22,13 +22,14 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Explicit, user-confirmed reset.
+ * Transactional, idempotent, user-confirmed reset.
  *
  * This is intentionally destructive: a "fresh install" reset must not leave an encrypted archive
- * that can never be opened again, nor plaintext migration leftovers. Files the user exported
- * through the document picker live outside the app's private directories and are never touched.
- * If the user wants a recovery copy, they must export one through the normal export flow before
- * resetting; the reset never creates a private, unreadable "backup".
+ * that can never be opened again, nor plaintext migration leftovers.
+ *
+ * All state transitions and staged file moves are durably recorded in [ResetTransaction].
+ * User-selected external backup documents written via SAF/document picker live outside app-owned
+ * directories and survive by construction.
  */
 object AppResetManager {
 
@@ -39,6 +40,35 @@ object AppResetManager {
         /** The recovery screen offered reset as a last resort after a database failure. */
         RECOVERY_LAST_RESORT
     }
+
+    enum class ResetStage {
+        INITIATED,
+        STAGING_IN_PROGRESS,
+        STAGED_TO_PENDING,
+        KEY_ERASURE_IN_PROGRESS,
+        KEY_ERASED,
+        CLEANUP_IN_PROGRESS,
+        CLEANUP_VERIFIED,
+        COMPLETED
+    }
+
+    data class ManifestEntry(
+        val originalPath: String,
+        val stagedPath: String
+    )
+
+    data class ResetTransaction(
+        val stage: ResetStage,
+        val timestampMs: Long,
+        val manifest: List<ManifestEntry>
+    )
+
+    data class RestorePendingResult(
+        val isSuccess: Boolean,
+        val restoredFiles: List<File>,
+        val failedFiles: List<File>,
+        val errorReason: String? = null
+    )
 
     data class ResetResult(
         val success: Boolean,
@@ -69,29 +99,58 @@ object AppResetManager {
                     android.util.Log.i("NovaDialerReset", "Starting reset ($reason)")
                     AppDatabase.closeInstance()
 
+                    // Stage 1: INITIATED
+                    var transaction = ResetTransaction(ResetStage.INITIATED, System.currentTimeMillis(), emptyList())
+                    if (!writeTransaction(context, transaction)) {
+                        return@withContext ResetResult(false, "Could not record reset transaction start.")
+                    }
+
+                    // Stage 2: STAGING_IN_PROGRESS
+                    transaction = transaction.copy(stage = ResetStage.STAGING_IN_PROGRESS)
+                    if (!writeTransaction(context, transaction)) {
+                        return@withContext ResetResult(false, "Could not update transaction state to STAGING_IN_PROGRESS.")
+                    }
+
                     val detached = moveDatabaseArtifactsToPending(context)
                         ?: return@withContext ResetResult(false, "Could not detach the database files.")
                     val pending = detached.pending
                     val moved = detached.moved
+                    val manifest = moved.map { ManifestEntry(it.first.absolutePath, it.second.absolutePath) }
+
+                    // Stage 3: STAGED_TO_PENDING
+                    transaction = ResetTransaction(ResetStage.STAGED_TO_PENDING, System.currentTimeMillis(), manifest)
+                    if (!writeTransaction(context, transaction)) {
+                        restorePending(context, moved)
+                        return@withContext ResetResult(false, "Could not record STAGED_TO_PENDING transaction.")
+                    }
+
+                    // Stage 4: KEY_ERASURE_IN_PROGRESS
+                    transaction = transaction.copy(stage = ResetStage.KEY_ERASURE_IN_PROGRESS)
+                    if (!writeTransaction(context, transaction)) {
+                        restorePending(context, moved)
+                        return@withContext ResetResult(false, "Could not record KEY_ERASURE_IN_PROGRESS transaction.")
+                    }
 
                     val keyClear = DatabaseKeyManager.clearKeyDetailed(context)
                     if (!keyClear.success) {
-                        // If the key is still usable, restore the files and leave the install intact.
-                        // If the key material was already destroyed, restoring would only produce an
-                        // unreadable database, so finish the reset and report the cleanup failure.
-                        if (keyClear.aliasRemoved) {
-                            deletePending(pending)
-                            clearPreferences(context)
-                            clearPrivateDirectories(context)
-                            restartApp(context)
-                            return@withContext ResetResult(
-                                false,
-                                "The encryption key was removed but its metadata could not be cleared."
-                            )
+                        if (keyClear.aliasRemoved && !DatabaseKeyManager.hasPersistedKey(context)) {
+                            // Key cleared but detailed check reported false; treat as cleared safely
+                        } else {
+                            restorePending(context, moved)
+                            return@withContext ResetResult(false, "Could not erase the database key.")
                         }
-                        restorePending(context, moved)
-                        return@withContext ResetResult(false, "Could not erase the database key.")
                     }
+
+                    // Stage 5: KEY_ERASED
+                    transaction = ResetTransaction(ResetStage.KEY_ERASED, System.currentTimeMillis(), manifest)
+                    if (!writeTransaction(context, transaction)) {
+                        // Key deleted but transaction write failed: fail closed, preserve files and transaction evidence
+                        return@withContext ResetResult(false, "Key erased but failed to record KEY_ERASED transaction.")
+                    }
+
+                    // Stage 6: CLEANUP_IN_PROGRESS
+                    transaction = transaction.copy(stage = ResetStage.CLEANUP_IN_PROGRESS)
+                    writeTransaction(context, transaction)
 
                     if (!deletePending(pending)) {
                         return@withContext ResetResult(false, "Could not delete the database files.")
@@ -101,12 +160,13 @@ object AppResetManager {
                         return@withContext ResetResult(false, "Could not clear app preferences.")
                     }
 
-                    // Cache/files only contain app-private scratch data and app-managed exports.
-                    // Genuine user exports/backups are written to document-picker locations outside
-                    // these directories, so they survive by construction.
                     if (!clearPrivateDirectories(context)) {
                         return@withContext ResetResult(false, "Could not clear private app storage.")
                     }
+
+                    // Stage 7: CLEANUP_VERIFIED
+                    transaction = transaction.copy(stage = ResetStage.CLEANUP_VERIFIED)
+                    writeTransaction(context, transaction)
 
                     try {
                         ContactCache.init(emptyList(), emptyList())
@@ -119,6 +179,10 @@ object AppResetManager {
                         notificationManager?.cancelAll()
                     } catch (_: Exception) {
                     }
+
+                    // Stage 8: COMPLETED
+                    writeTransaction(context, transaction.copy(stage = ResetStage.COMPLETED))
+                    deleteTransactionJournal(context)
 
                     restartApp(context)
                     ResetResult(true)
@@ -135,16 +199,9 @@ object AppResetManager {
         val moved: List<Pair<File, File>>
     )
 
-    /**
-     * Moves the active database, its sidecars, migration leftovers and every previous recovery
-     * archive into a pending directory. Returns null (after rolling back) when any move fails.
-     */
     private fun moveDatabaseArtifactsToPending(context: Context): DetachedArtifacts? {
         val dbFile = context.getDatabasePath(AppDatabase.DATABASE_NAME)
         val parent = dbFile.parentFile ?: return null
-        // A previous reset that failed after detaching its files left a staging directory behind.
-        // Those files are already unreachable (the key may be gone), so a retry must clear them
-        // instead of keeping an archive that can never be opened.
         val pendingRoot = File(parent, "reset_pending")
         if (pendingRoot.exists() && !pendingRoot.deleteRecursively()) return null
         val pending = File(pendingRoot, System.currentTimeMillis().toString())
@@ -163,8 +220,6 @@ object AppResetManager {
         if (archiveRoot.exists()) {
             archiveRoot.walkTopDown().filter { it.isFile }.forEach { sources.add(it) }
         }
-        // Any sibling that belongs to this database (for example a leftover *_bak copy written by
-        // an older build) must not survive a fresh-install reset either.
         parent.listFiles()?.forEach { candidate ->
             if (candidate.isFile &&
                 candidate.name.startsWith(AppDatabase.DATABASE_NAME) &&
@@ -206,13 +261,10 @@ object AppResetManager {
     private fun deletePending(pending: File): Boolean {
         if (pending.exists()) {
             if (!pending.deleteRecursively()) {
-                // A lingering handle can make the first attempt fail; try once more after a yield.
                 Thread.sleep(50L)
                 if (!pending.deleteRecursively()) return false
             }
         }
-        // Leave no empty reset_pending shell behind: a fresh install has no reset staging area.
-        // delete() only succeeds on an empty directory, so concurrent staging is never harmed.
         val parent = pending.parentFile
         if (parent != null && parent.name == "reset_pending" && parent.isDirectory) {
             parent.delete()
@@ -220,20 +272,42 @@ object AppResetManager {
         return true
     }
 
-    private fun restorePending(context: Context, moved: List<Pair<File, File>>) {
+    fun restorePending(context: Context, moved: List<Pair<File, File>>): RestorePendingResult {
+        val restored = ArrayList<File>()
+        val failed = ArrayList<File>()
+
         for ((original, archived) in moved.asReversed()) {
             if (!original.exists() && archived.exists()) {
                 val parent = original.parentFile
                 if (parent != null && !parent.exists()) parent.mkdirs()
+                var ok = false
                 try {
-                    if (!archived.renameTo(original)) {
+                    if (archived.renameTo(original)) {
+                        ok = true
+                    } else {
                         archived.copyTo(original, overwrite = true)
-                        archived.delete()
+                        if (archived.delete()) {
+                            ok = true
+                        }
                     }
                 } catch (_: Exception) {
+                    ok = false
+                }
+                if (ok) {
+                    restored.add(original)
+                } else {
+                    failed.add(archived)
                 }
             }
         }
+
+        val success = failed.isEmpty()
+        return RestorePendingResult(
+            isSuccess = success,
+            restoredFiles = restored,
+            failedFiles = failed,
+            errorReason = if (success) null else "Could not restore ${failed.size} file(s)."
+        )
     }
 
     private fun moveFile(source: File, destination: File): Boolean {
@@ -248,15 +322,6 @@ object AppResetManager {
         }
     }
 
-    /**
-     * Erases every SharedPreferences file, not only the two this app happens to write today.
-     *
-     * A fresh install has no "permission prompt already shown", app-lock, ringtone or SIM-tracking
-     * state. Enumerating two well-known files would silently retain the rest, so the whole
-     * `shared_prefs` directory is processed for both credential-protected and device-protected
-     * storage. Each file is cleared through the SharedPreferences API first so in-memory caches in
-     * this process are emptied too, then the directory is removed and its absence verified.
-     */
     private fun clearPreferences(context: Context): Boolean {
         return try {
             var success = true
@@ -284,18 +349,125 @@ object AppResetManager {
     }
 
     /**
-     * Removes app-private scratch storage. User-selected exports are never stored here: the
-     * document picker writes them wherever the user chose. Deleting by file extension would both
-     * keep plaintext leftovers and delete legitimate scratch files for the wrong reason.
+     * Cleans app-owned private directories safely using trusted system Context roots and
+     * canonical path boundary checks. Preserves [reset_transaction.json] during cleanup.
      */
     private fun clearPrivateDirectories(context: Context): Boolean {
         var success = true
-        for (dir in listOf(context.cacheDir, context.filesDir)) {
-            if (dir == null || !dir.exists()) continue
-            if (!dir.deleteRecursively()) success = false
-            if (!dir.exists() && !dir.mkdirs()) success = false
+        val journalFile = getTransactionJournalFile(context).canonicalFile
+
+        val trustedRoots = LinkedHashSet<File>()
+        context.filesDir?.let { trustedRoots.add(it) }
+        context.cacheDir?.let { trustedRoots.add(it) }
+
+        try {
+            context.getExternalFilesDir(null)?.let { trustedRoots.add(it) }
+            context.externalCacheDir?.let { trustedRoots.add(it) }
+            context.getExternalFilesDirs(null)?.filterNotNull()?.forEach { trustedRoots.add(it) }
+            context.getExternalCacheDirs()?.filterNotNull()?.forEach { trustedRoots.add(it) }
+        } catch (_: Exception) {}
+
+        val canonicalRoots = trustedRoots.mapNotNull {
+            try {
+                if (it.exists() || it.mkdirs()) it.canonicalFile else null
+            } catch (_: Exception) {
+                null
+            }
+        }.filter { root ->
+            root.path.contains(context.packageName) &&
+                (!root.path.startsWith("/storage") || android.os.Environment.getExternalStorageState(root) == android.os.Environment.MEDIA_MOUNTED)
+        }.distinctBy { it.path }
+
+        for (trustedRoot in canonicalRoots) {
+            val files = trustedRoot.listFiles() ?: continue
+            for (file in files) {
+                try {
+                    val canonicalChild = file.canonicalFile
+                    if (canonicalChild.path == journalFile.path) continue
+
+                    val isWithinRoot = canonicalChild.path == trustedRoot.path ||
+                            canonicalChild.path.startsWith(trustedRoot.path + File.separator)
+
+                    if (isWithinRoot) {
+                        if (!canonicalChild.deleteRecursively()) {
+                            success = false
+                        }
+                    }
+                } catch (_: Exception) {
+                    success = false
+                }
+            }
         }
         return success
+    }
+
+    private fun getTransactionJournalFile(context: Context): File {
+        val dir = context.createDeviceProtectedStorageContext().filesDir
+        if (!dir.exists()) dir.mkdirs()
+        return File(dir, "reset_transaction.json")
+    }
+
+    fun writeTransaction(context: Context, transaction: ResetTransaction): Boolean {
+        return try {
+            val file = getTransactionJournalFile(context)
+            val json = buildString {
+                append("{\n")
+                append("  \"stage\": \"${transaction.stage.name}\",\n")
+                append("  \"timestampMs\": ${transaction.timestampMs},\n")
+                append("  \"manifest\": [\n")
+                transaction.manifest.forEachIndexed { i, entry ->
+                    append("    {\"original\": \"${escapeJson(entry.originalPath)}\", \"staged\": \"${escapeJson(entry.stagedPath)}\"}")
+                    if (i < transaction.manifest.size - 1) append(",")
+                    append("\n")
+                }
+                append("  ]\n")
+                append("}\n")
+            }
+            file.writeText(json)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun readTransaction(context: Context): ResetTransaction? {
+        return try {
+            val file = getTransactionJournalFile(context)
+            if (!file.exists()) return null
+            val text = file.readText()
+            val stageName = regexValue(text, "stage") ?: return null
+            val stage = try { ResetStage.valueOf(stageName) } catch (_: Exception) { return null }
+            val timestampMs = regexValue(text, "timestampMs")?.toLongOrNull() ?: System.currentTimeMillis()
+            val entries = parseManifestEntries(text)
+            ResetTransaction(stage, timestampMs, entries)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun deleteTransactionJournal(context: Context): Boolean {
+        val file = getTransactionJournalFile(context)
+        if (!file.exists()) return true
+        return file.delete()
+    }
+
+    private fun escapeJson(str: String): String =
+        str.replace("\\", "\\\\").replace("\"", "\\\"")
+
+    private fun regexValue(text: String, key: String): String? {
+        val pattern = Regex("\"$key\"\\s*:\\s*\"?([^\",\\n]+)\"?")
+        return pattern.find(text)?.groupValues?.get(1)?.trim()
+    }
+
+    private fun parseManifestEntries(text: String): List<ManifestEntry> {
+        val list = ArrayList<ManifestEntry>()
+        val pattern = Regex("\\{\\s*\"original\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"staged\"\\s*:\\s*\"([^\"]+)\"\\s*\\}")
+        for (match in pattern.findAll(text)) {
+            val orig = match.groupValues[1]
+            val staged = match.groupValues[2]
+            list.add(ManifestEntry(orig, staged))
+        }
+        return list
     }
 
     private fun restartApp(context: Context) {

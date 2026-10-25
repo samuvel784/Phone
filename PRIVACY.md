@@ -96,6 +96,8 @@ Information can leave your device through Android and the people you contact:
 
 Information remains on your device until you delete it. You can delete contacts, call-history entries, call notes, and settings inside Nova Dialer, subject to the relevant permissions.
 
+**Reset App:** When you perform an explicit "Reset App" in Nova Dialer, all app-owned local storage — including the encrypted database, encryption keys, preferences, and private application caches (across internal and app-specific external storage) — is durably and permanently erased. Files that you exported through Android's Storage Access Framework or document picker to public directories (such as Downloads) live outside the app's private directories and are preserved.
+
 Uninstalling Nova Dialer removes its private data (the encrypted database, preferences, and caches). It does **not** remove information stored in Android's Contacts Provider, the system call log, or files you previously exported to public storage. Delete those separately if you wish.
 
 ## 8. Permissions and User Choices

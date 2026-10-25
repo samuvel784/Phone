@@ -80,6 +80,7 @@ Package: `com.aistudio.novadial.kpxm` - minSdk 24 - targetSdk 36 - version 2.1.1
   a password.
 - Data leaves the device only when the user explicitly exports, shares or restores it.
 - `allowBackup=false`, so Android cloud backup does not copy app data.
+- App Reset: Explicitly clearing app data erases Nova Dialer's local encrypted database, encryption keys, preferences, and private caches while preserving user-selected exports in document-picker locations.
 - Nova Dialer holds **no SMS permission** and never sends SMS itself. A decline reply uses
   Android's decline-with-message, or hands a pre-filled draft to your own messaging app once the
   call is no longer ringing. Call Log access is requested only after Nova Dialer holds the default
@@ -180,6 +181,8 @@ A new design system, applied to every page, plus a round of performance work.
   call timer. Hindi, Chinese, Japanese, Arabic and other scripts use the system font automatically.
 - **New chrome:** pill search bar with an animated focus ring; bottom navigation with a sliding spring pill and
   outline-to-filled icons, flush at the bottom edge; gradient keypad button with a soft glow that pops in on a spring.
+  The search field is shared by all three tabs, while the settings menu appears on Home only and reserves its
+  leading slot elsewhere, so the field does not jump when tabs change.
 - **Pages:** soft glow page background, tonal contact and call cards, gradient call button on the dialpad, keys that
   light up in the accent colour, solid on/off tiles on the call screen, gradient ring around the caller photo,
   gradient lock badge, matching settings cards.
@@ -229,22 +232,25 @@ A new design system, applied to every page, plus a round of performance work.
 - The `reference/` archive and the separate design-files copy. `PORTING_PLAN.md` moved to `docs/`.
   Local IDE metadata under `.idea/` is git-ignored and is not part of the repository.
 
-> Automated verification on 25 October 2026: **417 JVM unit tests in 60 classes** (0 failures,
+> Automated verification on 25 October 2026: **422 JVM unit tests in 62 classes** (0 failures,
 > 0 errors, 0 skipped), `lintDebug` with **0 errors and 39 warnings**, `lintRelease` with
 > **0 errors and 40 warnings**, and successful `assembleDebug`, `assembleRelease` and
 > `bundleRelease` runs. Instrumentation was **NOT RUN** for this build
 > because no emulator or device was attached; the earlier 22 October emulator run is historical
 > evidence only. The signed local APK is a single universal
 > `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
-> `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`); the AAB is
-> `app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
-> `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). `apksigner` verified
+> `D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`); the AAB is
+> `app/build/outputs/bundle/release/app-release.aab` (10,626,879 bytes, SHA-256
+> `E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`). `apksigner` verified
 > the APK with APK Signature Scheme v2. `jarsigner -verify` returned exit 0 and
 > reported `jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream
 > consistency warnings; the AAB manifest contains no `INTERNET` permission. The mapping is
-> `app/build/outputs/mapping/release/mapping.txt` (51,738,664 bytes, SHA-256
-> `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`). Nothing has been
+> `app/build/outputs/mapping/release/mapping.txt` (51,771,588 bytes, SHA-256
+> `A0859243F8B760B2748D306344AF4A3AFDB89154A6EBA14328C423BAD361025D`). Nothing has been
 > uploaded to Play.
+> **After these runs,** the bottom navigation bar was moved from the tab content `Column` into
+> `Scaffold(bottomBar = ...)`, with the bar height now delivered through `PaddingValues`. Re-run the
+> JVM suite, rebuild the AAB/APK and repeat the portrait/landscape device checks before upload.
 > The app has not been tested on a physical phone in this environment, so Telecom,
 > full-screen intent handling, multi-call transitions and OEM background restrictions still need
 > the checklist below and the full matrix in `docs/DEVICE_TEST_MATRIX.md`.

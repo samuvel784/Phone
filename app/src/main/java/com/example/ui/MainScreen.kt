@@ -73,6 +73,13 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PHONE_STATE_PROMPT_PREF = "phone_state_prompted"
+private const val HOME_TAB_KEY = "HOME"
+
+/**
+ * Settings is a Home-tab destination. Recents and Favourites keep the search field but not the
+ * settings menu, so the same hamburger does not appear on every tab.
+ */
+internal fun headerMenuVisibleForTab(tabKey: String): Boolean = tabKey == HOME_TAB_KEY
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -175,7 +182,6 @@ fun MainScreen(
     val systemCallState by CallManager.callState.collectAsStateWithLifecycle()
     val systemAudioState by CallManager.audioState.collectAsStateWithLifecycle()
     val systemCallerNumber by CallManager.callerNumber.collectAsStateWithLifecycle()
-    val systemCallerCnapName by CallManager.callerCnapName.collectAsStateWithLifecycle()
 
     var toneGenerator by remember { mutableStateOf<ToneGenerator?>(null) }
     DisposableEffect(Unit) {
@@ -311,7 +317,7 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(systemActiveCall, systemCallState, systemCallerNumber, systemCallerCnapName) {
+    LaunchedEffect(systemActiveCall, systemCallState, systemCallerNumber) {
         if (systemActiveCall != null) {
             isCallActive = true
             if (systemCallState == android.telecom.Call.STATE_RINGING) {
@@ -320,15 +326,8 @@ fun MainScreen(
             if (systemCallerNumber.isNotEmpty()) {
                 callingContactNumber = systemCallerNumber
                 val contactName = getContactNameFromNumber(context, systemCallerNumber)
-                if (contactName != null) {
-                    callingContactName = contactName
-                } else if (systemCallerCnapName.isNotEmpty()) {
-                    callingContactName = systemCallerCnapName
-                } else {
-                    val savedCnap = getSavedCnapName(context, systemCallerNumber)
-                    callingContactName = savedCnap ?: systemCallerNumber
-                }
-                CallManager.setCallerName(callingContactName)
+                callingContactName = contactName ?: systemCallerNumber
+                CallManager.setCallerName(contactName ?: "")
             }
         } else {
             if (isCallActive) {
@@ -352,13 +351,12 @@ fun MainScreen(
 
         var resolvedName = name
         val memoryContact = getContactNameFromNumber(context, number)
-        val memoryCnap = ContactCache.getCnapName(number)
 
         if (resolvedName == "Unknown" || resolvedName.isEmpty() || resolvedName == number) {
             if (memoryContact != null) {
                 resolvedName = memoryContact
-            } else if (!memoryCnap.isNullOrBlank()) {
-                resolvedName = memoryCnap
+            } else {
+                resolvedName = number
             }
         }
 
@@ -405,17 +403,77 @@ fun MainScreen(
         }
     }
 
+    // Hoisted above the Scaffold so the bottom bar, which lives in the Scaffold's bottom slot,
+    // can drive the same pager as the tab content.
+    val tabSlots = listOf("HOME", "RECENTS", "FAVORITES")
+    val activeTabKey = tabSlots.getOrElse(selectedTab) { HOME_TAB_KEY }
+    val pagerState = rememberPagerState(
+        initialPage = selectedTab.coerceIn(0, tabSlots.size - 1)
+    ) { tabSlots.size }
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (selectedTab != pagerState.currentPage) {
+            selectedTab = pagerState.currentPage
+        }
+    }
+
+    LaunchedEffect(selectedTab) {
+        if (pagerState.currentPage != selectedTab) {
+            pagerState.animateScrollToPage(selectedTab)
+        }
+    }
+
+    val isFullScreenCall = isCallActive && !isCallMinimized
+    val isContactEditorVisible = isAddContactDialogVisible || isEditContactDialogVisible
+    // Settings, the contact editor, the dialpad and a full-screen call all paint over the content
+    // area. The bar is a Scaffold bottom slot now, so it must step aside for those surfaces
+    // instead of being drawn above them (or over the keyboard).
+    val showBottomBar = !WindowInsets.isImeVisible &&
+        !isSettingsVisible &&
+        !isDialpadVisible &&
+        !isFullScreenCall &&
+        !isContactEditorVisible
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        // Keep the top/cutout/IME insets on the content, but let the bottom navigation bar handle
-        // its own gesture-bar inset so the tabs sit flush with the bottom of the screen.
+        // Keep the top/cutout/horizontal insets on the content. The bottom slot owns the
+        // navigation-bar inset, and Scaffold adds the bar's full height to the content padding,
+        // so the list never scrolls underneath the tabs.
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        )
+        ),
+        bottomBar = {
+            if (showBottomBar) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (isCallActive && isCallMinimized) {
+                        MinimizedCallBanner(
+                            contactName = callingContactName,
+                            contactNumber = callingContactNumber,
+                            callState = systemCallState,
+                            onExpand = { isCallMinimized = false },
+                            onHangUp = {
+                                CallManager.disconnect()
+                                isCallActive = false
+                            }
+                        )
+                    }
+                    // Bottom navigation (Home / Recent / Favourites). The component adds the
+                    // system navigation-bar inset itself, so it stays above the gesture area.
+                    BottomNavBar(
+                        selectedTab = selectedTab,
+                        onTabSelected = { targetTab ->
+                            selectedTab = targetTab
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(targetTab)
+                            }
+                        },
+                        tabSlots = tabSlots
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
-        val tabSlots = listOf("HOME", "RECENTS", "FAVORITES")
-
         val defaultTabKey = viewModel.defaultStartupTabKey.value
         val defaultTabIndex = listOf("HOME", "RECENTS", "FAVORITES").indexOf(defaultTabKey).coerceAtLeast(0)
 
@@ -552,7 +610,7 @@ fun MainScreen(
                     HeaderSearchBar(
                         searchQuery = searchQuery,
                         onQueryChange = { viewModel.onSearchQueryChange(it) },
-                        menuVisible = true,
+                        menuVisible = headerMenuVisibleForTab(activeTabKey),
                         onMenuClick = {
                             settingsInitialTab = 0
                             isSettingsVisible = true
@@ -560,20 +618,8 @@ fun MainScreen(
                     )
                 }
 
-                // FIXED: Standard, accessible 3-page pager eliminates infinite carousel jumps and TalkBack bugs
-                val pagerState = rememberPagerState(initialPage = selectedTab.coerceIn(0, tabSlots.size - 1)) { tabSlots.size }
-
-                LaunchedEffect(pagerState.currentPage) {
-                    if (selectedTab != pagerState.currentPage) {
-                        selectedTab = pagerState.currentPage
-                    }
-                }
-
-                LaunchedEffect(selectedTab) {
-                    if (pagerState.currentPage != selectedTab) {
-                        pagerState.animateScrollToPage(selectedTab)
-                    }
-                }
+                // Standard, accessible 3-page pager eliminates infinite carousel jumps and TalkBack bugs.
+                // The state is hoisted above the Scaffold so the bottom bar can scroll it too.
 
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     // Floats stay aligned with the centred content column on tablets instead of
@@ -730,33 +776,6 @@ fun MainScreen(
                             )
                         }
                     }
-                }
-
-                if (isCallActive && isCallMinimized) {
-                    MinimizedCallBanner(
-                        contactName = callingContactName,
-                        contactNumber = callingContactNumber,
-                        callState = systemCallState,
-                        onExpand = { isCallMinimized = false },
-                        onHangUp = {
-                            CallManager.disconnect()
-                            isCallActive = false
-                        }
-                    )
-                }
-
-                // Bottom navigation (Home / Recent / Favourites).
-                if (!WindowInsets.isImeVisible) {
-                    BottomNavBar(
-                        selectedTab = selectedTab,
-                        onTabSelected = { targetTab ->
-                            selectedTab = targetTab
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(targetTab)
-                            }
-                        },
-                        tabSlots = tabSlots
-                    )
                 }
             }
 

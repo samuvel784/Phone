@@ -54,8 +54,7 @@ fun InCallWaitingCallDialog(
     val waitingName = remember(waitingNumber, contacts) {
         ContactCache.getContact(waitingNumber)?.name
             ?: contacts.find { it.number == waitingNumber }?.name
-            ?: waitingCall.details?.callerDisplayName?.takeIf { it.isNotBlank() }
-            ?: waitingNumber
+            ?: waitingNumber.ifBlank { "Unknown" }
     }
 
     val initials = getInitials(waitingName)

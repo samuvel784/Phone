@@ -634,20 +634,16 @@ object CallManager {
             val number = call.details?.handle?.schemeSpecificPart ?: ""
             _callerNumber.value = number
             val cnap = call.details?.callerDisplayName ?: ""
+            val token = callId(call)
 
-            // 1. Immediate resolution from in-memory ContactCache
+            // 1. Immediate resolution from in-memory ContactCache (saved contact ONLY)
             val cachedContact = if (number.isNotEmpty()) ContactCache.getContact(number) else null
             if (cachedContact != null && cachedContact.name.isNotBlank()) {
                 _callerName.value = cachedContact.name
                 _callerPhotoUri.value = cachedContact.photoUri
                 _callerLabel.value = cachedContact.label
-            } else if (cnap.isNotBlank()) {
-                _callerName.value = cnap
-                _callerPhotoUri.value = ""
-                _callerLabel.value = ""
             } else {
-                val cachedCnap = if (number.isNotEmpty()) ContactCache.getCnapName(number) else null
-                _callerName.value = cachedCnap ?: ""
+                _callerName.value = ""
                 _callerPhotoUri.value = ""
                 _callerLabel.value = ""
             }
@@ -681,8 +677,8 @@ object CallManager {
             }
 
             // 2. Asynchronous contact resolution via system ContactsProvider if needed
-            if (number.isNotEmpty() && (_callerName.value.isEmpty() || _callerName.value == number)) {
-                resolveCallerDetailsAsync(number, cnap)
+            if (number.isNotEmpty() && _callerName.value.isEmpty()) {
+                resolveCallerDetailsAsync(call, token, number)
             }
         } else {
             stopDtmf()
@@ -701,12 +697,17 @@ object CallManager {
 
     private var callerDetailsJob: Job? = null
 
-    private fun resolveCallerDetailsAsync(number: String, cnap: String) {
+    private fun resolveCallerDetailsAsync(call: Call, token: Long, number: String) {
         val ctx = appContext ?: inCallService?.applicationContext ?: return
         callerDetailsJob?.cancel()
-        callerDetailsJob = scope.launch {
+        callerDetailsJob = scope.launch(Dispatchers.IO) {
             val resolvedName = getContactNameFromNumber(ctx, number)
-            if (_callerNumber.value != number) return@launch
+
+            // Reject stale async result unless live call reference, token, and number match
+            val current = _currentCall.value
+            if (current == null || current != call || callId(current) != token || _callerNumber.value != number) {
+                return@launch
+            }
 
             if (!resolvedName.isNullOrBlank()) {
                 _callerName.value = resolvedName
@@ -715,24 +716,28 @@ object CallManager {
                     _callerPhotoUri.value = contact.photoUri
                     _callerLabel.value = contact.label
                 }
-                return@launch
-            }
-            if (cnap.isNotBlank()) {
-                _callerName.value = cnap
-                _callerPhotoUri.value = ""
-                _callerLabel.value = ""
-                return@launch
-            }
-            val dbCnap = getSavedCnapName(ctx, number)
-            if (_callerNumber.value != number) return@launch
-            if (!dbCnap.isNullOrBlank()) {
-                _callerName.value = dbCnap
-                _callerPhotoUri.value = ""
-                _callerLabel.value = ""
             } else {
                 _callerName.value = ""
                 _callerPhotoUri.value = ""
                 _callerLabel.value = ""
+            }
+        }
+    }
+
+    fun onContactsChanged() {
+        val call = _currentCall.value ?: return
+        val number = _callerNumber.value
+        val cachedContact = if (number.isNotEmpty()) ContactCache.getContact(number) else null
+        if (cachedContact != null && cachedContact.name.isNotBlank()) {
+            _callerName.value = cachedContact.name
+            _callerPhotoUri.value = cachedContact.photoUri
+            _callerLabel.value = cachedContact.label
+        } else {
+            _callerName.value = ""
+            _callerPhotoUri.value = ""
+            _callerLabel.value = ""
+            if (number.isNotEmpty()) {
+                resolveCallerDetailsAsync(call, callId(call), number)
             }
         }
     }

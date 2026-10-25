@@ -124,11 +124,17 @@ internal object DatabaseFileGuard {
             )
         }
 
-        if (artifacts.isNotEmpty() || hasPersistedKey) {
+        val parent = family.active.parentFile ?: File(".")
+        val pendingRoot = File(parent, "reset_pending")
+        val pendingExists = ops.exists(pendingRoot) && (pendingRoot.listFiles()?.isNotEmpty() == true)
+
+        if (artifacts.isNotEmpty() || hasPersistedKey || pendingExists) {
+            val allArtifacts = ArrayList(artifacts)
+            if (pendingExists) allArtifacts.add(pendingRoot)
             return DatabaseFilePlan.FailClosed(
-                reason = "The dialer database is missing, but previous database material still " +
-                    "exists. It was left untouched so it can be recovered instead of replaced.",
-                preservedArtifacts = artifacts
+                reason = "The dialer database is missing, but previous database material or reset staging files still " +
+                    "exist. It was left untouched so it can be recovered instead of replaced.",
+                preservedArtifacts = allArtifacts
             )
         }
 

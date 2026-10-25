@@ -866,6 +866,10 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
             if (force) _contactsLoadFailed.value = false
             try {
                 repository.syncContacts(force)
+                // A call can be on screen while the address book changes. Refresh the live caller
+                // identity from the freshly synced cache instead of leaving the old name until
+                // the next call.
+                CallManager.onContactsChanged()
                 _contactsLoadFailed.value = false
             } catch (_: Exception) {
                 // A denial is rendered as the permission prompt, not as an error card. Keep the

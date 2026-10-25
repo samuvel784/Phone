@@ -393,7 +393,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
             }
         })
 
-        resolveCallerDisplayNameAsync(call, num) { resolved ->
+        resolveCallerDisplayNameAsync(num) { resolved ->
             trace.mark(CallTimingLogger.Event.CONTACT_RESOLVED)
             val live = CallManager.calls.value.any { it === call } &&
                 call.safeState != Call.STATE_DISCONNECTED
@@ -411,43 +411,34 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         }
     }
 
-    private fun resolveCallerDisplayNameAsync(call: Call, number: String, onResolved: (String) -> Unit) {
-        if (number.isBlank() && call.details?.callerDisplayName.isNullOrBlank()) {
+    private fun resolveCallerDisplayNameAsync(number: String, onResolved: (String) -> Unit) {
+        if (number.isBlank()) {
             onResolved("Unknown")
             return
         }
-        val cached = cachedCallerDisplayName(call, number)
+        val cached = cachedCallerDisplayName(number)
         if (cached != null) {
             onResolved(cached)
             return
         }
-        serviceScope.launch {
+        serviceScope.launch(Dispatchers.IO) {
             val resolved = try {
                 val contactName = getContactNameFromNumber(this@MyInCallService, number)
-                when {
-                    !contactName.isNullOrBlank() -> contactName
-                    !call.details?.callerDisplayName.isNullOrBlank() -> call.details!!.callerDisplayName.toString()
-                    else -> getSavedCnapName(this@MyInCallService, number) ?: number
-                }
+                contactName.takeIf { !it.isNullOrBlank() } ?: number.ifBlank { "Unknown" }
             } catch (_: Exception) {
-                number
+                number.ifBlank { "Unknown" }
             }
             withContext(Dispatchers.Main) { onResolved(resolved) }
         }
     }
 
-    private fun cachedCallerDisplayName(call: Call, number: String): String? {
+    private fun cachedCallerDisplayName(number: String): String? {
         if (number.isBlank()) {
-            return call.details?.callerDisplayName?.takeIf { it.isNotBlank() }
-                ?: resolvedCallerNames[CallManager.callId(call)]?.takeIf { it.isNotBlank() }
-                ?: "Unknown"
+            return "Unknown"
         }
         val contactName = ContactCache.getContact(number)?.name
         if (!contactName.isNullOrBlank()) return contactName
-        val cnapName = call.details?.callerDisplayName
-        if (!cnapName.isNullOrBlank()) return cnapName
-        ContactCache.getCnapName(number)?.takeIf { it.isNotBlank() }?.let { return it }
-        return resolvedCallerNames[CallManager.callId(call)]?.takeIf { it.isNotBlank() }
+        return null
     }
 
     override fun onCallRemoved(call: Call) {
@@ -621,7 +612,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     private fun showIncomingCallNotification(call: Call, isCallWaiting: Boolean = false) {
         val number = call.details?.handle?.schemeSpecificPart ?: ""
-        val displayName = resolveCallerDisplayName(call, number)
+        val displayName = resolveCallerDisplayName(number)
         val callId = CallManager.callId(call)
 
         val requestCodeBase = (callId % 100_000L).toInt() * 10
@@ -778,7 +769,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
                 return
             }
             val number = call.details?.handle?.schemeSpecificPart ?: ""
-            val displayName = resolveCallerDisplayName(call, number)
+            val displayName = resolveCallerDisplayName(number)
             val activeCallId = CallManager.callId(call)
 
             val contentPendingIntent = PendingIntent.getActivity(
@@ -842,7 +833,7 @@ class MyInCallService : InCallService(), CallAudioRouteController {
 
     private fun showMissedCallNotification(call: Call) {
         val number = call.details?.handle?.schemeSpecificPart ?: "Unknown"
-        val displayName = resolveCallerDisplayName(call, number)
+        val displayName = resolveCallerDisplayName(number)
 
         val contentPendingIntent = PendingIntent.getActivity(
             this, 301,
@@ -875,8 +866,8 @@ class MyInCallService : InCallService(), CallAudioRouteController {
         nm.notify(NOTIFICATION_ID_MISSED, notification)
     }
 
-    private fun resolveCallerDisplayName(call: Call, number: String): String =
-        cachedCallerDisplayName(call, number) ?: number.ifBlank { "Unknown" }
+    private fun resolveCallerDisplayName(number: String): String =
+        cachedCallerDisplayName(number) ?: number.ifBlank { "Unknown" }
 
     private fun persistCnapIfPresent(call: Call) {
         val number = call.details?.handle?.schemeSpecificPart ?: return

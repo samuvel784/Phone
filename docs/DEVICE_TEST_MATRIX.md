@@ -8,20 +8,31 @@ Every test card below remains **NOT RUN** until a human records a result on a re
 
 Target build: **Nova Dialer 2.1.1** (versionCode 5), `com.aistudio.novadial.kpxm`,
 minSdk 24, targetSdk 36. The current local release candidate is
-`app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
-`9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). For direct sideload
+`app/build/outputs/bundle/release/app-release.aab` (10,626,879 bytes, SHA-256
+`E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`). For direct sideload
 testing use the universal APK
 `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
-`1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`). Re-check the relevant hash
+`D5B813645F6C4A39B8C59604518C0110AEBF9193CE22C845622445DF32D16217`). Re-check the relevant hash
 before installing so the report and the tested artifact cannot drift apart.
 
 ## Automated verification (25 October 2026)
 
 These are the only automated results recorded in this file. They are not physical-device results.
 
-- **JVM:** `:app:testDebugUnitTest --rerun-tasks --no-build-cache` completed with **417 tests in
-  60 classes, 0 failures, 0 errors, 0 skipped**. This includes the new contact-identity,
+> **Post-verification layout change:** the bottom navigation bar was moved from the tab content
+> `Column` into `Scaffold(bottomBar = …)`, with the bar height delivered to the content through
+> `PaddingValues`. That change landed after the results below were recorded, so the JVM suite,
+> release build and device orientation/inset checks must be repeated before upload.
+
+- **JVM:** `:app:testDebugUnitTest --rerun-tasks --no-build-cache` completed with **422 tests in
+  62 classes, 0 failures, 0 errors, 0 skipped**. This includes the new contact-identity,
   recent-row, reset, number-normalizer and startup-recovery suites.
+- **Header menu policy:** `HeaderTabMenuPolicyTest` asserts the settings menu is exposed only on the
+  Home tab, and `HeaderSearchBarTest` asserts the search field remains present, the menu is
+  clickable when enabled, absent when disabled, and keeps the same x-position in both states.
+- **Transactional reset journal:** `AppResetTest` writes and reads the reset journal, checks the
+  stage/timestamp/manifest round trip, and verifies a structured `restorePending` result restores
+  a staged file and reports failure instead of silently dropping it.
 - **Recovery-screen proof:** `StartupRecoveryTest` creates throwing `AndroidViewModel` subclasses
   through a real `androidx.lifecycle.ViewModelProvider` (including AndroidX's reflective
   `RuntimeException`/`InvocationTargetException` wrapper) and verifies that only database/key
@@ -45,7 +56,9 @@ These are the only automated results recorded in this file. They are not physica
 - **Contact identity/reset:** JVM tests cover unique/ambiguous provider ids, permission denial,
   rename/deletion, national/international identity, no suffix matching, recents grouping, and a
   destructive reset that removes the database family, stale staging directories, all shared
-  preferences and private storage while keeping a document-picker export.
+  preferences and private storage while keeping a document-picker export. Source review also
+  confirms live call, lock-screen and notification names come only from saved contacts; carrier
+  CNAP is no longer substituted for a caller name.
 - **Lint:** `:app:lintDebug` completed with **0 errors and 39 warnings**; `:app:lintRelease`
   completed with **0 errors and 40 warnings**. Remaining warnings are Gradle/dependency version
   housekeeping (24), unused resources (11 debug / 12 release), two plural-candidate suggestions,
@@ -1119,7 +1132,7 @@ carrier limitations rather than app defects.
   `com.aistudio.novadial.kpxm`, versionName `2.1.1`, versionCode `5`, minSdk `24`, targetSdk `36`,
   and the expected permissions/components; the Play Console identity was not checked. Signer
   SHA-256 `AF:42:B7:27:BA:4A:94:CF:C3:21:C5:B7:BE:2F:00:82:66:D9:3F:92:3B:75:99:0F:0E:9E:70:17:6D:5A:4B:40`;
-  AAB SHA-256 `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`._
+  AAB SHA-256 `E1B666D7E94AF27662E391A75A5742FD528A166C56BE4C3726B6609BF0187B26`._
 - **Status:** `NOT RUN` — repeat before any upload; Play Console check remains outstanding.
 - **Evidence:** `E-I4-01` — verification transcript; `E-I4-02` — Play Console identity.
 - **Recovery if it fails:** Do not upload. Rebuild only from the verified source and signing

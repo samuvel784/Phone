@@ -162,16 +162,15 @@ fun RestrictedCallSurface(
     // answer/decline buttons are on screen.
     val selectedNumber = liveCall?.details?.handle?.schemeSpecificPart.orEmpty()
     val number = if (liveCall != null) selectedNumber else fallbackNumber
-    val directName = liveCall?.details?.callerDisplayName.orEmpty()
     val cachedName = if (selectedNumber.isNotBlank() && liveCall != null) {
         ContactCache.getContact(selectedNumber)?.name.orEmpty()
     } else {
         ""
     }
     val name = if (liveCall != null) {
-        cachedName.ifBlank { directName }.ifBlank { number }
+        cachedName.ifBlank { number.ifBlank { "Unknown" } }
     } else {
-        fallbackName.ifBlank { fallbackNumber }
+        fallbackName.ifBlank { fallbackNumber.ifBlank { "Unknown" } }
     }
 
     Surface(
