@@ -234,7 +234,7 @@ fun BottomNavBar(
                 Row(
                     modifier = Modifier
                         .width(navWidth)
-                        .fillMaxHeight()
+                        .wrapContentHeight()
                         .align(Alignment.Center)
                 ) {
                     tabSlots.forEachIndexed { index, slotKey ->
