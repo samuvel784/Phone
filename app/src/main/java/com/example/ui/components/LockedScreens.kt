@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -39,6 +40,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -324,8 +328,10 @@ fun RestrictedCallSurface(
 @Composable
 fun DatabaseRecoveryRequiredScreen(
     errorMessage: String?,
-    onResetApp: () -> Unit
+    onResetApp: () -> Unit,
+    resetFailureMessage: String? = null
 ) {
+    var confirmReset by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxSize().novaCanvas(),
         color = MaterialTheme.colorScheme.background
@@ -362,19 +368,64 @@ fun DatabaseRecoveryRequiredScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = errorMessage.takeUnless { it.isNullOrBlank() }
-                    ?: "Nova Dialer detected a database encryption key or file integrity issue. Your original database and recovery artifacts have been preserved safely on your device.",
+                    ?: "Nova Dialer could not open its encrypted database because the key or database files are inconsistent.",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "A fresh start deletes the unusable private database and key. " +
+                    "Export anything you still need from another device before continuing; " +
+                    "exports you already saved through the document picker are not affected.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!resetFailureMessage.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = resetFailureMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = onResetApp,
+                onClick = { confirmReset = true },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
                 Text("Reset App & Start Fresh")
             }
         }
+    }
+
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("Reset and delete private data?") },
+            text = {
+                Text(
+                    "This permanently deletes the app's private database, encryption key, " +
+                        "call history, contacts synced into the app and recordings. " +
+                        "Files you exported through the document picker are kept."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmReset = false
+                    onResetApp()
+                }) {
+                    Text("Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmReset = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

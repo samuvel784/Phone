@@ -206,10 +206,14 @@ object CallManager {
     fun setCallerNameForCall(call: Call?, name: String): Boolean {
         if (call == null || name.isBlank()) return false
         val current = _currentCall.value ?: return false
+        val resolvedNumber = call.details?.handle?.schemeSpecificPart.orEmpty()
+        val currentNumber = current.details?.handle?.schemeSpecificPart.orEmpty()
         val applied = CallerIdentityGuard.canApplyResolvedName(
             resolvedCallId = callId(call),
             currentCallId = callId(current),
-            currentCallState = current.safeState
+            currentCallState = current.safeState,
+            resolvedNumber = resolvedNumber,
+            currentNumber = currentNumber
         ) && call.safeState != Call.STATE_DISCONNECTED
         if (!applied) return false
         _callerName.value = name

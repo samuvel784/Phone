@@ -16,17 +16,17 @@ still needs the declarations and assets below.
 - [ ] Keep the upload key backed up. Losing it requires Play App Signing key reset.
 
 **Local candidate (25 October 2026, not uploaded):** `bundleRelease` produced a signed
-`app/build/outputs/bundle/release/app-release.aab` (10,602,611 bytes, SHA-256
-`40F78EFEA8F43D8B28743D1CC9D6CB540E8F8BEEC9E38E8373C828CB2E7B5174`). `jarsigner -verify` returned
+`app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
+`9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). `jarsigner -verify` returned
 exit 0 and reported `jar verified`, with self-signed/no-timestamp and JarFile/JarInputStream
 consistency warnings; the AAB contains no `INTERNET` permission. `assembleRelease` produced the
 universal `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
-`B6E3DCDD6E8B2B413F3FC7DBADF626D805C660C6AB38C06B3D764BBCA98889A2`), verified with
+`1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`), verified with
 `apksigner` (APK Signature Scheme v2) and `zipalign -c -P 16 -v 4` (16 KB page alignment).
 The packaged identity is `com.aistudio.novadial.kpxm`, versionCode 5, versionName 2.1.1, minSdk 24,
 targetSdk 36. The upload signer certificate SHA-256 is
 `af42b727ba4a94cfc321c5b7be2f008266d93f923b75990f0e9e70176d5a4b40`. The R8 mapping is
-51,555,979 bytes, SHA-256 `9B3853CD3620B449DF4FFF0FE6E4B440475CF4CF4B6E7F347D8AE1E53B4D20FB`.
+51,738,664 bytes, SHA-256 `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
 The unchecked Play-side items below still require access to Play Console.
 
 ## 2. Policy declarations
@@ -108,23 +108,24 @@ audit removed unreachable features, added the shared loading system, and tighten
 background-work behavior. The remaining blockers are Play-side declarations, assets and
 physical-device validation.
 
-- **Automated verification.** `testDebugUnitTest --rerun-tasks --no-build-cache`: **335 tests in
-  46 classes, 0 failures, 0 errors, 0 skipped**. `connectedDebugAndroidTest` is **NOT RUN** for
-  this build because no emulator or device was attached; the 22 October 2026 run recorded 8 tests
-  on API 37 `emulator-5554` for the previous build. `lintDebug` completed with **0 errors and 27
-  warnings**; `lintRelease` completed with **0 errors and 28 warnings**. `assembleDebug`,
-  `validateReleaseSigning`, `assembleRelease` and `bundleRelease` completed successfully. The APK
-  (11,169,577 bytes, SHA-256
-  `B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`) is a single universal
-  signed APK; `apksigner` reports a valid APK Signature Scheme v2 signature. The AAB
-  (10,563,556 bytes, SHA-256
-  `0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`) was checked with
-  `jarsigner -verify -verbose -certs` (exit 0, `jar verified`, with self-signed/no-timestamp and
+- **Automated verification (25 October 2026, final source).** `testDebugUnitTest --rerun-tasks
+  --no-build-cache`: **417 tests in 60 classes, 0 failures, 0 errors, 0 skipped**.
+  `connectedDebugAndroidTest` is **NOT RUN** for this build because no emulator or device was
+  attached; the 22 October 2026 run recorded 8 tests on API 37 `emulator-5554` for the previous
+  build. `lintDebug` completed with **0 errors and 39 warnings**; `lintRelease` completed with
+  **0 errors and 40 warnings**. `assembleDebug`, `assembleRelease` and `bundleRelease` completed
+  successfully. The APK (11,209,221 bytes, SHA-256
+  `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`) is a single universal
+  signed APK; `apksigner` reports a valid APK Signature Scheme v2 signature and
+  `zipalign -c -P 16 -v 4` reports `Verification successful`. The AAB
+  (10,621,828 bytes, SHA-256
+  `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`) was checked with
+  `jarsigner -verify` (exit 0, `jar verified`, with self-signed/no-timestamp and
   JarFile/JarInputStream consistency warnings); its manifest contains no `INTERNET` permission.
   The signer SHA-256 matches the intended upload certificate, and the packaged manifest reports
-  package `com.aistudio.novadial.kpxm`, version `2.1.0`/`4`, minSdk `24`, targetSdk `36`. The mapping is
-  51,336,168 bytes with SHA-256
-  `1C6E1245A4CE35BF59858F1208F6C9C0C68037835377C4E557E547864403F685`.
+  package `com.aistudio.novadial.kpxm`, version `2.1.1`/`5`, minSdk `24`, targetSdk `36`. The mapping is
+  51,738,664 bytes with SHA-256
+  `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
 - **Current source audit fixes.** Database recovery now inspects the full SQLCipher file family,
   restores interrupted swaps (including stale-sidecar quarantine), validates plaintext-to-SQLCipher
   migration snapshots by integrity and row count, and fails closed instead of replacing a database.
@@ -202,18 +203,19 @@ Additional housekeeping findings (21 October 2026):
       SIM-routing paths on a physical dual-SIM device. `FOREGROUND_SERVICE` is no longer declared;
       no app-managed foreground service exists.
 
-## 8. Lint warning disposition (23 October 2026)
+## 8. Lint warning disposition (25 October 2026)
 
-`lintDebug` reported **0 errors and 27 warnings**; `lintRelease` reported **0 errors and 28
-warnings**. No lint rule was disabled, and the source audit removed 206 orphaned strings rather
+`lintDebug` reported **0 errors and 39 warnings**; `lintRelease` reported **0 errors and 40
+warnings**. No lint rule was disabled, and the source audit removed orphaned strings rather
 than suppressing `UnusedResources`.
 
 | Group | Count | Severity / relevance | Disposition |
 |---|---:|---|---|
 | `PluralsCandidate` — `%d` followed by words in `calls_count` and `call_notes_count_badge` | 2 | Localization correctness; not a crash or release blocker | Not fixed. Proper plural resources require a coordinated change across all 10 locales and UI call sites; track for a dedicated localization pass rather than a risky release-week edit. |
 | Version/toolchain: `GradleDependency` (14), `NewerVersionAvailable` (9), `AndroidGradlePluginVersion` (1), `OldTargetApi` (1) | 25 | Maintenance/upgrade suggestions; regression risk if upgraded without full testing | Not fixed. Upgrades are outside this audit and require a separate dependency/test cycle. |
-| `UnusedResources` — `record` (release analysis only; referenced by `CallOnlyModeTest`) | 1 | Harmless; the string is used by a JVM assertion, not shipped UI | Not removed. Removing it would break the restricted-call test; keep until the test is refactored. |
-| **Total** | **27 debug / 28 release** | | **0 errors; no lint rules disabled.** |
+| `UnusedResources` | 11 debug / 12 release | Harmless; includes `record` (referenced by `CallOnlyModeTest`) and release-only resource analysis | Not removed. Removing `record` would break the restricted-call test; keep until the test is refactored. |
+| `UseKtx` | 1 | Optional KTX convenience suggestion | Not fixed; behaviour-neutral cleanup for a later pass. |
+| **Total** | **39 debug / 40 release** | | **0 errors; no lint rules disabled.** |
 
 ## 9. Responsive and Play-safety pass (25 October 2026)
 
@@ -254,7 +256,7 @@ This pass fixed existing behaviour only; it added no product features.
   package visibility, or removal of the standard dialer intent actions.
 - Version bumped to `versionCode 5` / `versionName 2.1.1`.
 
-### Verification results
+### Verification results (responsive-pass snapshot; final numbers in sections 6 and 10)
 
 - `:app:testDebugUnitTest`: **56 suites, 387 tests, 0 failures, 0 errors, 0 skipped**.
 - `:app:lintRelease`: **0 errors, 42 warnings** (dependency/toolchain housekeeping, unused
@@ -276,3 +278,50 @@ This pass fixed existing behaviour only; it added no product features.
 - **Device tests remain NOT RUN:** `adb devices` returned no attached device. Telecom, lock-screen,
   notification, audio-route, multi-SIM, keystore/SQLCipher and visual responsive checks still need
   the physical-device matrix in [`DEVICE_TEST_MATRIX.md`](DEVICE_TEST_MATRIX.md).
+
+## 10. Contact identity, reset and recovery pass (25 October 2026)
+
+Source defects fixed in this pass (no new product features, no new runtime dependencies):
+
+- **Contact identity authority.** Number identity is now the full, region-aware E.164 subscriber
+  identity (SIM/network/locale region, exact digits only when the region cannot resolve the
+  number). There is no 7- or 10-digit suffix matching anywhere. Cache entries are keyed by stable
+  provider `CONTACT_ID`/raw-contact/local ids; the same number on two ids is ambiguous and
+  resolves to no name. Provider lookups return a name only when every matching row shares one
+  contact id; permission denial returns no name. Recents grouping uses the normalized subscriber
+  identity alone, and rows derive name/avatar/Edit-or-Add from the **current** saved contact, so a
+  deleted contact no longer keeps a stale name. CNAP/conference names use the same normalization.
+- **Fresh-install reset.** `AppResetManager` closes Room, refuses to run during a live call, moves
+  the active database, sidecars, interrupted-swap/plaintext/unreadable artifacts, legacy recovery
+  archives and stale `reset_pending` staging into one directory, verifies KeyStore alias removal
+  and key-metadata erasure, deletes the staged files and the staging shell, clears every
+  SharedPreferences file in credential and device-protected storage, and deletes private
+  `files`/`cache` content. Failures are returned to the caller and displayed on the recovery
+  screen. Files exported through the document picker live outside the private directories and are
+  preserved; the reset never creates a private archive the user could not open again.
+- **Startup recovery proof.** Failure handling moved to `StartupRecovery.resolveStartupViewModel`
+  and is tested by constructing throwing `AndroidViewModel` subclasses through a real
+  `androidx.lifecycle.ViewModelProvider`. Only `DatabaseRecoveryRequiredException` and key-related
+  `IllegalStateException`s open the recovery screen; unrelated failures are rethrown. The screen
+  requires an explicit confirmation before deleting private data and now shows a reset failure
+  instead of silently staying put.
+- **No reversible protections were removed.** SQLCipher fail-closed inspection, the application ID,
+  the upload key/signing configuration, `allowBackup=false`, `FLAG_SECURE`, and the document-picker
+  export path are unchanged.
+
+### Final verification
+
+- `:app:testDebugUnitTest --rerun-tasks --no-build-cache`: **60 suites, 417 tests, 0 failures,
+  0 errors, 0 skipped**.
+- `:app:lintDebug`: **0 errors, 39 warnings**; `:app:lintRelease`: **0 errors, 40 warnings**.
+- `assembleDebug`, `assembleRelease`, `bundleRelease`: successful. AAB 10,621,828 bytes / SHA-256
+  `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`; APK 11,209,221 bytes /
+  SHA-256 `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`; mapping 51,738,664
+  bytes / SHA-256 `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`.
+- `apksigner` v2 verification, `zipalign -c -P 16` and `jarsigner -verify` all passed; the packaged
+  manifest reports 2.1.1/5, minSdk 24, targetSdk 36, no `INTERNET`, `allowBackup=false`,
+  `extractNativeLibs=false`.
+- **NOT RUN:** instrumentation, real SQLCipher reopen, Telecom/call-waiting, contact-provider
+  behaviour on a device, reset-on-device, notification/lock-screen, audio routes and visual
+  checks. `adb devices` reported no attached device. Play Console declarations, Data safety,
+  content rating, store assets and the public privacy URL remain external blockers.

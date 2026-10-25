@@ -999,7 +999,8 @@ class DialerViewModel(application: Application) : AndroidViewModel(application) 
                 for (rec in recovered) {
                     val f = File(rec.filePath)
                     if (f.exists() && f.length() > 128L && !existingPaths.contains(rec.filePath) && !existingNames.contains(f.name)) {
-                        val contactName = getContactNameFromNumber(context, rec.number) ?: rec.name
+                        val contactName = getContactNameFromNumber(context, rec.number)
+                            ?: rec.number.ifBlank { rec.name }
                         repository.saveCallRecording(rec.copy(name = contactName))
                         newCount++
                     }

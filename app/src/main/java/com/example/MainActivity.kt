@@ -41,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.example.data.DatabaseRecoveryRequiredException
 import com.example.security.IntentGuard
 import com.example.telecom.CallAction
 import com.example.telecom.CallActionRouter
@@ -62,6 +61,7 @@ class MainActivity : ComponentActivity() {
     private var isAppStopped = false
     private var isLaunchedForCall = false
     private var databaseRecoveryReason: String? = null
+    private val databaseRecoveryResetFailure = mutableStateOf<String?>(null)
 
     private val authLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -85,27 +85,30 @@ class MainActivity : ComponentActivity() {
 
         // The database opens fail-closed when key material or files are inconsistent. That must
         // never turn into a launch crash (the user would only see "Nova Dialer keeps stopping").
-        // Resolve the ViewModel here, catch the explicit recovery signal, and show the recovery
-        // screen instead of the dialer.
-        val startupViewModel = try {
-            viewModel
-        } catch (recovery: DatabaseRecoveryRequiredException) {
-            databaseRecoveryReason = recovery.message
-                ?: "The dialer database needs recovery before it can be opened."
-            null
-        } catch (keyFailure: IllegalStateException) {
-            databaseRecoveryReason = keyFailure.message
-                ?: "The dialer database key could not be unlocked."
-            null
+        // The classification lives in StartupRecovery so it can be exercised with a real
+        // AndroidX ViewModelProvider creation (see StartupRecoveryTest), not just by inspection.
+        val startup = resolveStartupViewModel { viewModel }
+        val startupViewModel = when (startup) {
+            is StartupResult.Ready -> startup.viewModel
+            is StartupResult.RecoveryRequired -> {
+                databaseRecoveryReason = startup.reason
+                null
+            }
         }
         if (startupViewModel == null) {
             setContent {
                 MyApplicationTheme {
                     DatabaseRecoveryRequiredScreen(
                         errorMessage = databaseRecoveryReason,
+                        resetFailureMessage = databaseRecoveryResetFailure.value,
                         onResetApp = {
                             lifecycleScope.launch {
-                                AppResetManager.resetApp(this@MainActivity)
+                                databaseRecoveryResetFailure.value = null
+                                val result = AppResetManager.resetForRecovery(this@MainActivity)
+                                if (!result.success) {
+                                    databaseRecoveryResetFailure.value = result.failure
+                                        ?: "Reset failed. The app data was not fully cleared."
+                                }
                             }
                         }
                     )

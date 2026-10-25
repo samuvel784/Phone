@@ -1,26 +1,32 @@
 # Nova Dialer physical-device test matrix
 
 **Physical-device status: NOT RUN.** No physical Android device or SIM is available in this
-environment. **No emulator or device is attached for the 23 October 2026 re-audit, so
+environment. **No emulator or device is attached for the 25 October 2026 final-source rebuild, so
 instrumentation is NOT RUN for the current artifact.** The 22 October 2026 emulator results are
 kept below as historical evidence only; they do not substitute for the physical-device matrix.
 Every test card below remains **NOT RUN** until a human records a result on a real phone.
 
-Target build: **Nova Dialer 2.1.0** (versionCode 4), `com.aistudio.novadial.kpxm`,
+Target build: **Nova Dialer 2.1.1** (versionCode 5), `com.aistudio.novadial.kpxm`,
 minSdk 24, targetSdk 36. The current local release candidate is
-`app/build/outputs/bundle/release/app-release.aab` (10,563,556 bytes, SHA-256
-`0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`). For direct sideload
+`app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
+`9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). For direct sideload
 testing use the universal APK
-`app/build/outputs/apk/release/app-release.apk` (11,169,577 bytes, SHA-256
-`B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`). Re-check the relevant hash
+`app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
+`1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`). Re-check the relevant hash
 before installing so the report and the tested artifact cannot drift apart.
 
-## Automated verification (23 October 2026)
+## Automated verification (25 October 2026)
 
 These are the only automated results recorded in this file. They are not physical-device results.
 
-- **JVM:** `:app:testDebugUnitTest --rerun-tasks --no-build-cache` completed with **335 tests in
-  46 classes, 0 failures, 0 errors, 0 skipped**.
+- **JVM:** `:app:testDebugUnitTest --rerun-tasks --no-build-cache` completed with **417 tests in
+  60 classes, 0 failures, 0 errors, 0 skipped**. This includes the new contact-identity,
+  recent-row, reset, number-normalizer and startup-recovery suites.
+- **Recovery-screen proof:** `StartupRecoveryTest` creates throwing `AndroidViewModel` subclasses
+  through a real `androidx.lifecycle.ViewModelProvider` (including AndroidX's reflective
+  `RuntimeException`/`InvocationTargetException` wrapper) and verifies that only database/key
+  failures reach `StartupResult.RecoveryRequired`; an unrelated `IllegalStateException` is
+  rethrown. This is execution evidence, not source inspection.
 - **Instrumentation:** **NOT RUN for the current artifact** — `adb devices` reported no attached
   emulator or phone. The historical 22 October 2026 run used `Medium_Phone_API_37.0(AVD)`
   (`emulator-5554`, API 37) and recorded **8 tests, 0 failures, 0 errors, 0 skipped**; that result
@@ -36,14 +42,21 @@ These are the only automated results recorded in this file. They are not physica
   rerun.
 - **Telecom/imports:** JVM tests cover stale call ids, call-waiting races, ambiguous hang-up
   routing, and per-format over-limit import rejection with bounded reads.
-- **Lint:** `:app:lintDebug` completed with **0 errors and 27 warnings**; `:app:lintRelease`
-  completed with **0 errors and 28 warnings**. Remaining warnings are Gradle/dependency version
-  housekeeping and two plural-candidate suggestions.
-- **Release build:** `:app:assembleDebug`, `:app:validateReleaseSigning`, `:app:assembleRelease`
-  and `:app:bundleRelease` completed successfully. `apksigner` verified the APK with APK Signature
-  Scheme v2. `jarsigner -verify -verbose -certs` returned exit 0 and reported `jar verified` for
-  the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency warnings. The AAB
-  manifest and merged release manifest contain no `INTERNET` permission.
+- **Contact identity/reset:** JVM tests cover unique/ambiguous provider ids, permission denial,
+  rename/deletion, national/international identity, no suffix matching, recents grouping, and a
+  destructive reset that removes the database family, stale staging directories, all shared
+  preferences and private storage while keeping a document-picker export.
+- **Lint:** `:app:lintDebug` completed with **0 errors and 39 warnings**; `:app:lintRelease`
+  completed with **0 errors and 40 warnings**. Remaining warnings are Gradle/dependency version
+  housekeeping (24), unused resources (11 debug / 12 release), two plural-candidate suggestions,
+  one `UseKtx` suggestion and one `OldTargetApi` notice. No lint rule was disabled.
+- **Release build:** `:app:assembleDebug`, `:app:assembleRelease` and `:app:bundleRelease`
+  completed successfully (release packaging depends on `validateReleaseSigning`). `apksigner`
+  verified the APK with APK Signature Scheme v2, and `zipalign -c -P 16 -v 4` reported
+  `Verification successful`. `jarsigner -verify` returned exit 0 and reported `jar verified` for
+  the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency warnings. The
+  merged release manifest contains no `INTERNET` permission, `allowBackup=false`,
+  `extractNativeLibs=false`, minSdk 24 and targetSdk 36.
 - **Release APK smoke check:** **NOT RUN for this build.** The 22 October 2026 emulator install and
   `MainActivity` cold start are historical evidence only.
 - **Still NOT RUN:** a real locked-device incoming call, full-screen-intent grant/denial,
@@ -163,7 +176,7 @@ carrier limitations rather than app defects.
   3. Open **Settings → Apps → Nova Dialer → App info** and read the version and package name.
   4. Rotate the phone and return to the main screen.
 - **Expected:** Installation succeeds without a signature error. App opens to a usable main
-  screen; package is `com.aistudio.novadial.kpxm`, version 2.1.0 (versionCode 4). No crash, ANR,
+  screen; package is `com.aistudio.novadial.kpxm`, version 2.1.1 (versionCode 5). No crash, ANR,
   or blank screen. Any permission prompt is tied to a visible feature, not an unexplained
   launch-time request.
 - **Actual result:** _Not recorded._
@@ -750,7 +763,7 @@ carrier limitations rather than app defects.
   1. Install `OLD` on the test phone and create synthetic data: a test contact, a call, a note, a
      speed dial, a blocked test number, and a setting.
   2. Record the old version and confirm Nova Dialer is the default Phone app.
-  3. Upgrade to the current 2.1.0 candidate using the same signing key (for example, `adb install
+  3. Upgrade to the current 2.1.1 candidate using the same signing key (for example, `adb install
      -r` or an internal-testing track), without clearing data.
   4. Open the app and inspect contacts, Recents, notes, blocked numbers, settings, and any legacy
      reminder rows.
@@ -1042,7 +1055,7 @@ carrier limitations rather than app defects.
 - **Steps:** Dump the release manifest. Verify package/version, permissions, activities, services,
   and providers. Check for `INTERNET`, `RECORD_AUDIO`, location, SMS, overlay, and biometric
   permissions.
-- **Expected:** Package `com.aistudio.novadial.kpxm`, version 2.1.0 (4), minSdk 24, targetSdk 36.
+- **Expected:** Package `com.aistudio.novadial.kpxm`, version 2.1.1 (5), minSdk 24, targetSdk 36.
   Components include `MainActivity`, `IncomingCallActivity`, `MyInCallService`, AndroidX
   `FileProvider`, `MultiInstanceInvalidationService`, `InitializationProvider`, and
   `ProfileInstallReceiver`. Permissions are contacts, phone, call log, phone state, audio settings,
@@ -1099,14 +1112,14 @@ carrier limitations rather than app defects.
 - **Expected:** `jarsigner -verify` exits 0, `bundletool validate` exits 0, signer SHA-256 matches
   the upload certificate, and package/version match the Play Console app. The certificate is the
   expected self-signed upload certificate unless Play App Signing is configured.
-- **Actual result:** _Not recorded. Automated preflight on 23 October 2026: `apksigner` verified the
-  APK with v2; `jarsigner -verify -verbose -certs` returned exit 0 and reported `jar verified` for
+- **Actual result:** _Not recorded. Automated preflight on 25 October 2026: `apksigner` verified the
+  APK with v2; `jarsigner -verify` returned exit 0 and reported `jar verified` for
   the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency warnings. The
   packaged manifest and AAB manifest contain no `INTERNET` permission and report package
-  `com.aistudio.novadial.kpxm`, versionName `2.1.0`, versionCode `4`, minSdk `24`, targetSdk `36`,
+  `com.aistudio.novadial.kpxm`, versionName `2.1.1`, versionCode `5`, minSdk `24`, targetSdk `36`,
   and the expected permissions/components; the Play Console identity was not checked. Signer
   SHA-256 `AF:42:B7:27:BA:4A:94:CF:C3:21:C5:B7:BE:2F:00:82:66:D9:3F:92:3B:75:99:0F:0E:9E:70:17:6D:5A:4B:40`;
-  AAB SHA-256 `0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`._
+  AAB SHA-256 `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`._
 - **Status:** `NOT RUN` — repeat before any upload; Play Console check remains outstanding.
 - **Evidence:** `E-I4-01` — verification transcript; `E-I4-02` — Play Console identity.
 - **Recovery if it fails:** Do not upload. Rebuild only from the verified source and signing

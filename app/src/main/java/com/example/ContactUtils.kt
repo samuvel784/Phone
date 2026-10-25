@@ -24,41 +24,65 @@ import android.provider.ContactsContract
 import com.example.data.AppDatabase
 import com.example.model.AppSetting
 import com.example.model.Contact
+import com.example.util.PhoneNumberNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
+/** Result of resolving a number against the currently saved contacts. */
+sealed interface ContactLookup {
+    /** Exactly one saved contact owns this number. */
+    data class Unique(val contact: Contact) : ContactLookup
+
+    /** More than one saved contact owns the same number: never guess between them. */
+    data object Ambiguous : ContactLookup
+
+    /** No saved contact owns this number. */
+    data object NotSaved : ContactLookup
+}
+
+/**
+ * In-memory index of the contacts that are currently saved on the device.
+ *
+ * Identity is based on the stable contact id (or raw contact id), never on a display name or on
+ * a shared phone number. Two numbers that belong to the same contact are one identity; the same
+ * number attached to two different contacts is ambiguous and resolves to nothing.
+ */
 object ContactCache {
-    private val fullNumMap = ConcurrentHashMap<String, Contact>()
-    private val ambiguousNumbers = ConcurrentHashMap.newKeySet<String>()
+    private val numberIndex = ConcurrentHashMap<String, ConcurrentHashMap<String, Contact>>()
     private val cnapMap = ConcurrentHashMap<String, String>()
 
-    fun init(contacts: List<Contact>, settings: List<AppSetting>) {
-        fullNumMap.clear()
-        ambiguousNumbers.clear()
+    @Volatile
+    private var region: String = PhoneNumberNormalizer.defaultRegion
 
+    fun init(
+        contacts: List<Contact>,
+        settings: List<AppSetting>,
+        regionIso: String? = null
+    ) {
+        if (!regionIso.isNullOrBlank()) {
+            PhoneNumberNormalizer.setRegion(regionIso)
+        } else {
+            // Callers without a context (tests, early init) must not inherit a region that a
+            // previous operation happened to set. Production always passes the SIM region.
+            PhoneNumberNormalizer.resetToLocale()
+        }
+        region = PhoneNumberNormalizer.defaultRegion
+
+        val nextIndex = HashMap<String, MutableMap<String, Contact>>()
         for (contact in contacts) {
+            val identity = identityOf(contact)
             for (labeledNum in contact.getAllNumbers()) {
-                val clean = labeledNum.number.filter { it.isDigit() }
-                if (clean.isEmpty()) continue
-
-                val existingFull = fullNumMap[clean]
-                if (existingFull != null && (existingFull.name != contact.name || existingFull.number != contact.number)) {
-                    ambiguousNumbers.add(clean)
-                } else {
-                    fullNumMap[clean] = contact
-                }
-
-                if (clean.length == 11 && clean.startsWith("1")) {
-                    val national = clean.substring(1)
-                    val existingNat = fullNumMap[national]
-                    if (existingNat != null && (existingNat.name != contact.name || existingNat.number != contact.number)) {
-                        ambiguousNumbers.add(national)
-                    } else {
-                        fullNumMap[national] = contact
-                    }
-                }
+                val key = PhoneNumberNormalizer.key(labeledNum.number, region)
+                if (key.isEmpty()) continue
+                nextIndex.getOrPut(key) { LinkedHashMap() }[identity] = contact
             }
+        }
+
+        numberIndex.clear()
+        for ((key, byIdentity) in nextIndex) {
+            numberIndex[key] = ConcurrentHashMap(byIdentity)
         }
         initCnapFromSettings(settings)
     }
@@ -69,70 +93,128 @@ object ContactCache {
 
         for (setting in settings) {
             if (setting.key.startsWith(prefix)) {
-                val cleanKey = setting.key.substring(prefix.length).filter { it.isDigit() }
-                if (cleanKey.isNotEmpty()) {
-                    cnapMap[cleanKey] = setting.value
+                val key = PhoneNumberNormalizer.key(setting.key.substring(prefix.length), region)
+                if (key.isNotEmpty() && setting.value.isNotBlank()) {
+                    cnapMap[key] = setting.value
                 }
             }
         }
     }
 
     fun putCnapName(number: String, cnapName: String) {
-        val clean = number.filter { it.isDigit() }
-        if (clean.isEmpty() || cnapName.isBlank()) return
-        cnapMap[clean] = cnapName
+        val key = PhoneNumberNormalizer.key(number, region)
+        if (key.isEmpty() || cnapName.isBlank()) return
+        cnapMap[key] = cnapName
     }
 
-    fun getContact(number: String): Contact? {
-        val clean = number.filter { it.isDigit() }
-        if (clean.isEmpty()) return null
+    /** Full resolution, including the ambiguous case. */
+    fun lookup(number: String): ContactLookup {
+        val key = PhoneNumberNormalizer.key(number, region)
+        if (key.isEmpty()) return ContactLookup.NotSaved
 
-        if (ambiguousNumbers.contains(clean)) return null
-        val fullMatch = fullNumMap[clean]
-        if (fullMatch != null) return fullMatch
-
-        if (clean.length == 11 && clean.startsWith("1")) {
-            val national = clean.substring(1)
-            if (ambiguousNumbers.contains(national)) return null
-            val natMatch = fullNumMap[national]
-            if (natMatch != null) return natMatch
-        }
-
-        return null
+        val owners = numberIndex[key] ?: return ContactLookup.NotSaved
+        if (owners.isEmpty()) return ContactLookup.NotSaved
+        if (owners.size > 1) return ContactLookup.Ambiguous
+        return ContactLookup.Unique(owners.values.first())
     }
+
+    /** Current saved contact for this number, or null when unknown/ambiguous. */
+    fun getContact(number: String): Contact? = (lookup(number) as? ContactLookup.Unique)?.contact
 
     fun getCnapName(number: String): String? {
-        val clean = number.filter { it.isDigit() }
-        if (clean.isEmpty()) return null
-        return cnapMap[clean]
+        val key = PhoneNumberNormalizer.key(number, region)
+        if (key.isEmpty()) return null
+        return cnapMap[key]
     }
+
+    internal fun identityOf(contact: Contact): String = when {
+        contact.contactId > 0L -> "c:${contact.contactId}"
+        contact.rawContactId > 0L -> "r:${contact.rawContactId}"
+        contact.id > 0L -> "i:${contact.id}"
+        else -> "n:${contact.name.trim().lowercase(Locale.ROOT)}|${normKey(contact.number)}"
+    }
+
+    private fun normKey(number: String): String = PhoneNumberNormalizer.key(number, region)
+
+    /** Region used by this cache; exposed for tests and provider lookups. */
+    fun region(): String = region
 }
 
+/**
+ * Resolves a name for [number] from the currently saved contacts.
+ *
+ * Returns a name only when the whole lookup proves one unique contact identity. When the cache is
+ * empty or ambiguous the Contacts Provider is consulted by contact id; a provider answer with
+ * more than one contact id is treated as ambiguous. Anything else returns null so callers can
+ * display the number instead of a wrong or stale name.
+ */
 fun getContactNameFromNumber(context: Context, number: String): String? {
     if (number.isBlank()) return null
 
-    // 1. O(1) in-memory cache lookup (non-blocking)
-    ContactCache.getContact(number)?.name?.let { return it }
+    when (val cached = ContactCache.lookup(number)) {
+        is ContactLookup.Unique -> return cached.contact.name.takeIf { it.isNotBlank() }
+        // The provider may have newer data than the last sync; fall through and verify there.
+        ContactLookup.Ambiguous, ContactLookup.NotSaved -> Unit
+    }
 
-    // 2. Query System Contacts Provider
-    return try {
-        val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try { context.createAttributionContext("default") } catch (_: Exception) { context }
-        } else {
-            context
+    return queryUniqueProviderName(context, number)
+}
+
+private fun queryUniqueProviderName(context: Context, number: String): String? {
+    val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        try { context.createAttributionContext("default") } catch (_: Exception) { context }
+    } else {
+        context
+    }
+    val region = PhoneNumberNormalizer.regionFor(safeContext)
+    val variants = PhoneNumberNormalizer.lookupVariants(number, region)
+    if (variants.isEmpty()) return null
+
+    val namesByContactId = LinkedHashMap<Long, String>()
+    for (variant in variants) {
+        try {
+            val uri = Uri.withAppendedPath(
+                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(variant)
+            )
+            safeContext.contentResolver.query(
+                uri,
+                arrayOf(
+                    ContactsContract.PhoneLookup.CONTACT_ID,
+                    ContactsContract.PhoneLookup.DISPLAY_NAME
+                ),
+                null,
+                null,
+                null
+            )?.use { cursor -> collectUniqueMatches(cursor, namesByContactId) }
+                ?: continue
+        } catch (_: SecurityException) {
+            // Permission denied: never fall back to a cached or carrier-provided name.
+            return null
+        } catch (_: Exception) {
+            // Try the next representation; a malformed variant must not crash the dialer.
         }
-        val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-        safeContext.contentResolver.query(
-            uri,
-            arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+
+    if (namesByContactId.size != 1) return null
+    return namesByContactId.values.first().takeIf { it.isNotBlank() }
+}
+
+private fun collectUniqueMatches(
+    cursor: android.database.Cursor,
+    into: MutableMap<Long, String>
+) {
+    val idIndex = cursor.getColumnIndex(ContactsContract.PhoneLookup.CONTACT_ID)
+    val nameIndex = cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)
+    // Without a stable contact id uniqueness cannot be proven, so the answer is unusable.
+    if (idIndex < 0 || nameIndex < 0) return
+
+    while (cursor.moveToNext()) {
+        val contactId = cursor.getLong(idIndex)
+        val name = cursor.getString(nameIndex)?.trim().orEmpty()
+        if (contactId > 0L && name.isNotEmpty()) {
+            into.putIfAbsent(contactId, name)
         }
-    } catch (_: Exception) {
-        null
     }
 }
 
@@ -143,11 +225,12 @@ suspend fun getSavedCnapName(context: Context, number: String): String? {
     return withContext(Dispatchers.IO) {
         try {
             val clean = number.filter { it.isDigit() }
+            val normalized = PhoneNumberNormalizer.key(number)
             val db = AppDatabase.getDatabase(context)
-            // FIXED: Targeted single-row lookup instead of dumping the whole settings table
             val direct = db.dialerDao().getSetting("cnap_$clean")
+                ?: normalized.takeIf { it != clean }?.let { db.dialerDao().getSetting("cnap_$it") }
             if (!direct.isNullOrBlank()) {
-                ContactCache.putCnapName(clean, direct)
+                ContactCache.putCnapName(number, direct)
                 return@withContext direct
             }
             val settings = db.dialerDao().getAllSettingsList()

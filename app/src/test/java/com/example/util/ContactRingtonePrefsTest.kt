@@ -9,15 +9,36 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+/**
+ * Runs under Robolectric because number identity uses the platform E.164 formatter. A plain JVM
+ * test would hit the unmocked android.jar stub and silently fall back to raw digits, which would
+ * make these assertions meaningless.
+ */
+@RunWith(RobolectricTestRunner::class)
 class ContactRingtonePrefsTest {
 
+    @Before
+    fun useIndianRegion() {
+        PhoneNumberNormalizer.setRegion("IN")
+    }
+
     @Test
-    fun matchesNumbersByLastEightDigits() {
+    fun matchesFullIdentityAcrossNationalAndInternationalForms() {
         assertTrue(ContactRingtonePrefs.numbersMatch("+919876543210", "9876543210"))
         assertTrue(ContactRingtonePrefs.numbersMatch("09876543210", "+91 98765 43210"))
         assertTrue(ContactRingtonePrefs.numbersMatch("9876543210", "9876543210"))
+    }
+
+    @Test
+    fun doesNotMatchNumbersThatOnlyShareTheFinalTenDigits() {
+        // Same suffix, different subscriber. No tail length may create a match.
+        assertFalse(ContactRingtonePrefs.numbersMatch("+14155550100", "+4414155550100"))
+        assertFalse(ContactRingtonePrefs.numbersMatch("9876543210", "9876500000"))
     }
 
     @Test

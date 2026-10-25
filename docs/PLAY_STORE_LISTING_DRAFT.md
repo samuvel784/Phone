@@ -1,7 +1,7 @@
 # Nova Dialer — Google Play store listing draft
 
 **Status: DRAFT ONLY — not submitted, not approved, and not a claim of Play eligibility.**
-This draft describes only functionality that is present in the current simplified 2.1.0 source
+This draft describes only functionality that is present in the current simplified 2.1.1 source
 and shipped in the local release candidate. Anything marked **MISSING** or **DECISION REQUIRED**
 must be supplied by the developer before submission. Do not copy final marketing claims from this
 file without checking them against the tested build.
@@ -12,7 +12,7 @@ file without checking them against the tested build.
 |---|---|---|
 | App name | **Nova Dialer** | Matches `app_name` in `strings.xml`; 11 characters, within the usual 30-character app-name limit. |
 | Package / application ID | `com.aistudio.novadial.kpxm` | Current manifest and AAB. The README recommends replacing it before the first public release; **decision required** before upload. |
-| Version | 2.1.0 (versionCode 4) | Current release candidate. |
+| Version | 2.1.1 (versionCode 5) | Current release candidate. |
 | Category | Communication (phone/dialer) | Proposed; confirm in Play Console. |
 | Price | Free | README describes the project as free/open source; confirm the Play price and any future monetisation. No billing, ads, analytics, or crash-reporting dependency was found in the source. |
 | Contains ads | No | No ad SDK or ad code found in the source. Confirm in Play Console. |

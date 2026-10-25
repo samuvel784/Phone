@@ -18,6 +18,7 @@
 package com.example.ui.components
 
 import com.example.util.MultiSimManager
+import com.example.util.PhoneNumberNormalizer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
@@ -423,21 +424,19 @@ data class CallGroup(
 )
 
 private fun normalizePhoneNumberForKey(number: String): String {
-    val clean = number.filter { it.isDigit() }
-    if (clean.isEmpty()) return number.trim().lowercase(Locale.ROOT)
-    // Fall back to the significant national tail so "+1 415 555 0100", "09876543210" and
-    // "9876543210" land in the same bucket.
-    return if (clean.length >= 10) clean.takeLast(10) else clean
+    val normalized = PhoneNumberNormalizer.key(number)
+    if (normalized.isNotEmpty()) return normalized
+    return number.trim().lowercase(Locale.ROOT)
 }
 
 /**
- * Recents grouping key: same subscriber *and* same displayed name. Records that only share a
- * number but show different names (e.g. a saved contact vs. a CNAP label) stay separate.
+ * Recents grouping key: the full, region-aware subscriber identity only.
+ *
+ * Deliberately does not include the stored display name. Two different numbers must never be
+ * merged because their digits share a tail or because a cached/CNAP name happens to match, and a
+ * rename must not split one number into two groups.
  */
-private fun callGroupKey(record: CallRecord): String {
-    val nameKey = record.name.trim().lowercase(Locale.ROOT)
-    return "${normalizePhoneNumberForKey(record.number)}|$nameKey"
-}
+private fun callGroupKey(record: CallRecord): String = normalizePhoneNumberForKey(record.number)
 
 fun groupCallRecords(
     callRecords: List<CallRecord>,

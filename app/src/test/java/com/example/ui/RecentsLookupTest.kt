@@ -11,19 +11,34 @@ import com.example.ui.components.RecentsFilter
 import com.example.ui.components.RecentsLookup
 import com.example.ui.components.groupCallRecords
 import com.example.ui.components.isBlockedNumber
+import com.example.util.PhoneNumberNormalizer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Retained Recents behaviours only. Recording and spam indexes were removed from the shipped row,
  * so their old tests are gone; the legacy tables themselves are still covered by the backup and
  * schema tests.
+ *
+ * Grouping uses the platform E.164 formatter, so it must run under Robolectric; on a plain JVM the
+ * android.jar stub is unmocked and the normalizer would degrade to raw digits.
  */
+@RunWith(RobolectricTestRunner::class)
 class RecentsLookupTest {
 
     private var nextId = 1
+
+    @Before
+    fun useIndianRegion() {
+        // These fixtures are Indian national/international variants. The production app derives
+        // the region from the SIM/network; the test pins it so the assertion is deterministic.
+        PhoneNumberNormalizer.setRegion("IN")
+    }
 
     private fun record(
         number: String,
@@ -94,10 +109,23 @@ class RecentsLookupTest {
     }
 
     @Test
-    fun differentNamesOnTheSameNumberStaySeparate() {
+    fun differentStoredNamesOnTheSameNumberStillGroup() {
         val records = listOf(
             record("9876543210", name = "Amma"),
             record("9876543210", name = "Office")
+        )
+
+        // The stored call-time name is not part of identity; one number is one group.
+        val group = groupCallRecords(records, RecentsFilter.ALL, "").single()
+        assertEquals(2, group.calls.size)
+    }
+
+    @Test
+    fun differentNumbersSharingATailAreNotMerged() {
+        val records = listOf(
+            record("+14155550100", name = "US"),
+            // Same final ten digits, different country/subscriber.
+            record("+4414155550100", name = "UK")
         )
 
         assertEquals(2, groupCallRecords(records, RecentsFilter.ALL, "").size)

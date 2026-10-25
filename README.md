@@ -3,7 +3,7 @@
 A real Android default dialer. It uses your phone's own contacts, call log, SIM cards and
 voicemail — no sample data, no cloud, and no internet permission.
 
-Package: `com.aistudio.novadial.kpxm` — minSdk 24 — targetSdk 36 — version 2.1.0 (versionCode 4)
+Package: `com.aistudio.novadial.kpxm` - minSdk 24 - targetSdk 36 - version 2.1.1 (versionCode 5)
 
 > **Rebuilt, not patched.** Nova Dialer 2.0 uses the mature **Secure Dialer** codebase
 > (`com.example`, GPL-3.0-or-later) as its foundation, rebranded to Nova Dialer, with Nova Dialer's
@@ -129,7 +129,7 @@ Changing it means users must uninstall the old build (different package = differ
 data) and any external integrations keyed to the old package must be updated. The id has
 intentionally **not** been changed in this audit because it is a release-identity invariant.
 
-## Security and recovery invariants (2.1.0 audit)
+## Security and recovery invariants (2.1.0/2.1.1 audits)
 
 - **Database files fail closed.** Before asking for the SQLCipher key, the app inspects the whole
   database family (active file, `-wal`/`-shm`/`-journal`, interrupted swap, migration temp,
@@ -229,21 +229,21 @@ A new design system, applied to every page, plus a round of performance work.
 - The `reference/` archive and the separate design-files copy. `PORTING_PLAN.md` moved to `docs/`.
   Local IDE metadata under `.idea/` is git-ignored and is not part of the repository.
 
-> Automated verification on 23 October 2026: **335 JVM unit tests in 46 classes** (0 failures,
-> 0 errors, 0 skipped), `lintDebug` with **0 errors and 27 warnings**, `lintRelease` with
-> **0 errors and 28 warnings**, and successful `assembleDebug`, `validateReleaseSigning`,
-> `assembleRelease` and `bundleRelease` runs. Instrumentation was **NOT RUN** for this build
+> Automated verification on 25 October 2026: **417 JVM unit tests in 60 classes** (0 failures,
+> 0 errors, 0 skipped), `lintDebug` with **0 errors and 39 warnings**, `lintRelease` with
+> **0 errors and 40 warnings**, and successful `assembleDebug`, `assembleRelease` and
+> `bundleRelease` runs. Instrumentation was **NOT RUN** for this build
 > because no emulator or device was attached; the earlier 22 October emulator run is historical
 > evidence only. The signed local APK is a single universal
-> `app/build/outputs/apk/release/app-release.apk` (11,169,577 bytes, SHA-256
-> `B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`); the AAB is
-> `app/build/outputs/bundle/release/app-release.aab` (10,563,556 bytes, SHA-256
-> `0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`). `apksigner` verified
-> the APK with APK Signature Scheme v2. `jarsigner -verify -verbose -certs` returned exit 0 and
+> `app/build/outputs/apk/release/app-release.apk` (11,209,221 bytes, SHA-256
+> `1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`); the AAB is
+> `app/build/outputs/bundle/release/app-release.aab` (10,621,828 bytes, SHA-256
+> `9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). `apksigner` verified
+> the APK with APK Signature Scheme v2. `jarsigner -verify` returned exit 0 and
 > reported `jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream
 > consistency warnings; the AAB manifest contains no `INTERNET` permission. The mapping is
-> `app/build/outputs/mapping/release/mapping.txt` (51,336,168 bytes, SHA-256
-> `1C6E1245A4CE35BF59858F1208F6C9C0C68037835377C4E557E547864403F685`). Nothing has been
+> `app/build/outputs/mapping/release/mapping.txt` (51,738,664 bytes, SHA-256
+> `3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`). Nothing has been
 > uploaded to Play.
 > The app has not been tested on a physical phone in this environment, so Telecom,
 > full-screen intent handling, multi-call transitions and OEM background restrictions still need

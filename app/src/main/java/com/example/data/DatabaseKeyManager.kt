@@ -39,23 +39,65 @@ object DatabaseKeyManager {
         return prefs.contains(ENCRYPTED_DB_KEY) || prefs.contains(GCM_IV)
     }
 
+    /**
+     * Status of an explicit key erasure. Both halves are verified instead of assumed.
+     */
+    data class KeyClearResult(
+        val aliasRemoved: Boolean,
+        val preferencesCleared: Boolean
+    ) {
+        val success: Boolean get() = aliasRemoved && preferencesCleared
+    }
+
+    /**
+     * Deletes the KeyStore alias and the persisted key metadata, verifying both.
+     *
+     * The alias is removed first: if that fails, the key material is still intact and the caller
+     * can abort the reset without leaving an unreadable database behind.
+     */
     @Synchronized
-    fun clearKey(context: Context) {
+    fun clearKeyDetailed(context: Context): KeyClearResult {
         cachedKey = null
+
+        var aliasRemoved = true
+        val keyStore = try {
+            KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        } catch (_: Exception) {
+            // No AndroidKeyStore provider (for example a stripped test/emulator image): no alias
+            // can exist, so there is nothing to erase.
+            null
+        }
+        if (keyStore != null) {
+            try {
+                if (keyStore.containsAlias(KEY_ALIAS)) {
+                    keyStore.deleteEntry(KEY_ALIAS)
+                }
+                aliasRemoved = !keyStore.containsAlias(KEY_ALIAS)
+            } catch (_: Exception) {
+                aliasRemoved = false
+            }
+        }
+
+        if (!aliasRemoved) {
+            return KeyClearResult(aliasRemoved = false, preferencesCleared = false)
+        }
+
+        var preferencesCleared = false
         try {
             val directBootContext = context.createDeviceProtectedStorageContext()
             val prefs = directBootContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit(commit = true) {
-                clear()
-            }
-        } catch (_: Exception) {}
-        try {
-            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-            if (keyStore.containsAlias(KEY_ALIAS)) {
-                keyStore.deleteEntry(KEY_ALIAS)
-            }
-        } catch (_: Exception) {}
+            prefs.edit(commit = true) { clear() }
+            preferencesCleared = !prefs.contains(ENCRYPTED_DB_KEY) && !prefs.contains(GCM_IV)
+        } catch (_: Exception) {
+            preferencesCleared = false
+        }
+
+        return KeyClearResult(aliasRemoved = true, preferencesCleared = preferencesCleared)
     }
+
+    /** Boolean wrapper kept for callers that only need the verified success flag. */
+    @Synchronized
+    fun clearKey(context: Context): Boolean = clearKeyDetailed(context).success
 
     @Synchronized
     fun getDatabaseKey(context: Context): ByteArray {

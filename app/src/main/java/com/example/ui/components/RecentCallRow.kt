@@ -68,6 +68,38 @@ import java.util.Locale
 import androidx.core.net.toUri
 import kotlin.time.Duration.Companion.milliseconds
 
+/** What the expanded row is allowed to do with the number, based on the current contact list. */
+internal sealed interface RecentRowAction {
+    data class Edit(val contact: Contact) : RecentRowAction
+    data class Add(val number: String) : RecentRowAction
+}
+
+internal data class RecentRowIdentity(
+    val savedContact: Contact?,
+    val displayName: String,
+    val action: RecentRowAction
+)
+
+/**
+ * Current-contact resolution for one Recents row.
+ *
+ * A stored `CallRecord.name` only describes what was known when the call happened; it is never
+ * evidence that the number is still saved. After deletion the row must show the number and offer
+ * "Add contact", not "Edit" with a stale name.
+ */
+internal fun resolveRecentRowIdentity(
+    number: String,
+    currentContact: Contact?
+): RecentRowIdentity {
+    val displayName = currentContact?.name?.takeIf { it.isNotBlank() } ?: number
+    val action = if (currentContact != null) {
+        RecentRowAction.Edit(currentContact)
+    } else {
+        RecentRowAction.Add(number)
+    }
+    return RecentRowIdentity(currentContact, displayName, action)
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RecentCallRow(
@@ -103,12 +135,25 @@ fun RecentCallRow(
     val currentContact = remember(record.number, allContacts) {
         if (record.number.isNotBlank()) ContactCache.getContact(record.number) else null
     }
-    val resolvedName = currentContact?.name
+    val rowIdentity = remember(record.number, currentContact) {
+        resolveRecentRowIdentity(record.number, currentContact)
+    }
+    val resolvedName = rowIdentity.displayName
+        .takeIf { it.isNotBlank() }
         ?: if (record.name == "Unknown" || record.name.isBlank() || record.number.isBlank() || record.name in listOf("-1", "-2", "-3")) {
             stringResource(R.string.unknown)
         } else {
             record.number
         }
+
+    // The current saved contact, not the stored call-time snapshot, owns avatar and actions.
+    // After a contact is deleted this becomes null, so the row shows the number and offers
+    // "Add contact" instead of editing a contact that no longer exists.
+    val savedContact = rowIdentity.savedContact
+    val avatarPhotoUri = savedContact?.photoUri.orEmpty()
+    val avatarText = savedContact?.avatarText ?: record.avatarText
+    val avatarBg = savedContact?.avatarBg ?: record.avatarBg
+    val avatarTextColor = savedContact?.avatarTextColor ?: record.avatarTextColor
 
     // Prepared once for the whole list (see RecentsLookup): a row only does cheap map lookups.
     val lookup = LocalRecentsLookup.current
@@ -217,9 +262,10 @@ fun RecentCallRow(
                                     }
                                 }
 
+                                val contactLabel = savedContact?.label.orEmpty()
                                 val extraInfo = when {
                                     record.isVerified && record.number.isNotBlank() -> "${record.number} • "
-                                    record.label.isNotBlank() && !record.label.equals("Mobile", ignoreCase = true) -> "${localizeContactLabel(record.label)} • "
+                                    contactLabel.isNotBlank() && !contactLabel.equals("Mobile", ignoreCase = true) -> "${localizeContactLabel(contactLabel)} • "
                                     else -> ""
                                 }
                                 Text(
@@ -240,37 +286,36 @@ fun RecentCallRow(
                                 .offset(x = (-8).dp)
                                 .size(42.dp)
                                 .clip(avatarShape)
-                                .background(record.avatarBg.copy(alpha = 0.85f)),
+                                .background(avatarBg.copy(alpha = 0.85f)),
                             contentAlignment = Alignment.Center
                         ) {
                             // A stale/removed photo URI falls back to initials instead of a blank circle.
-                            var imageFailed by remember(record.photoUri) { mutableStateOf(false) }
-                            if (record.photoUri.isNotEmpty() && !imageFailed) {
+                            var imageFailed by remember(avatarPhotoUri) { mutableStateOf(false) }
+                            if (avatarPhotoUri.isNotEmpty() && !imageFailed) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(LocalContext.current)
-                                        .data(record.photoUri)
+                                        .data(avatarPhotoUri)
                                         .size(128, 128)
                                         .crossfade(false)
                                         .build(),
-                                    contentDescription = record.name,
+                                    contentDescription = resolvedName,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop,
                                     onError = { imageFailed = true }
                                 )
                             } else {
-                                val isSaved = record.name != record.number && record.name != "Unknown" && record.name.isNotBlank()
-                                if (isSaved) {
+                                if (savedContact != null) {
                                     Text(
-                                        text = record.avatarText,
+                                        text = avatarText,
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = record.avatarTextColor,
+                                        color = avatarTextColor,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 } else {
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
-                                        tint = record.avatarTextColor,
+                                        tint = avatarTextColor,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -319,7 +364,7 @@ fun RecentCallRow(
                             verticalArrangement = Arrangement.spacedBy(2.dp),
                             maxItemsInEachRow = 4
                         ) {
-                            val isContact = record.name != record.number
+                            val isContact = savedContact != null
 
                             DetailActionItem(
                                 icon = Icons.AutoMirrored.Filled.Message,
@@ -372,26 +417,20 @@ fun RecentCallRow(
                                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                                 onClick = {
                                     RichHapticEngine.performHaptic(context, RichHapticEngine.HapticStyle.KEY_TICK)
-                                    if (isContact) {
-                                        viewModel.oldContactToEdit.value = Contact(
-                                            number = record.number,
-                                            name = record.name,
-                                            label = record.label,
-                                            favorite = false,
-                                            avatarText = record.avatarText,
-                                            avatarBgValue = record.avatarBgValue,
-                                            avatarTextColorValue = record.avatarTextColorValue,
-                                            email = ""
-                                        )
-                                        viewModel.editContactName.value = record.name
-                                        viewModel.editContactNumber.value = record.number
-                                        viewModel.editContactLabel.value = record.label
-                                        viewModel.isEditContactDialogVisible.value = true
-                                    } else {
-                                        viewModel.newContactName.value = ""
-                                        viewModel.newContactNumber.value = record.number
-                                        viewModel.newContactLabel.value = "Mobile"
-                                        viewModel.isAddContactDialogVisible.value = true
+                                    when (val action = rowIdentity.action) {
+                                        is RecentRowAction.Edit -> {
+                                            viewModel.oldContactToEdit.value = action.contact
+                                            viewModel.editContactName.value = action.contact.name
+                                            viewModel.editContactNumber.value = record.number
+                                            viewModel.editContactLabel.value = action.contact.label
+                                            viewModel.isEditContactDialogVisible.value = true
+                                        }
+                                        is RecentRowAction.Add -> {
+                                            viewModel.newContactName.value = ""
+                                            viewModel.newContactNumber.value = action.number
+                                            viewModel.newContactLabel.value = "Mobile"
+                                            viewModel.isAddContactDialogVisible.value = true
+                                        }
                                     }
                                 }
                             )

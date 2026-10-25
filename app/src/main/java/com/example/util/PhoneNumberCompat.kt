@@ -22,20 +22,12 @@ object PhoneNumberCompat {
     /**
      * Returns true when two numbers refer to the same subscriber.
      *
-     * Only digits are compared, so "+1 415 555 0100" matches "4155550100". When the
-     * lengths differ the significant tail (up to 10 digits) is compared, which covers
-     * country-code / trunk-prefix differences.
+     * Matching is full identity only: the numbers are converted to E.164 with the device region
+     * when possible, otherwise their exact digit sequences must match. There is intentionally no
+     * suffix/tail comparison, so an unknown number that merely shares its final digits with a
+     * saved number is never treated as the same person.
      */
-    fun numbersMatch(a: String, b: String): Boolean {
-        val da = a.filter { it.isDigit() }
-        val db = b.filter { it.isDigit() }
-        if (da.isEmpty() || db.isEmpty()) return false
-        if (da == db) return true
-        if (da.length >= 10 && db.length >= 10) {
-            return da.takeLast(10) == db.takeLast(10)
-        }
-        return false
-    }
+    fun numbersMatch(a: String, b: String): Boolean = PhoneNumberNormalizer.sameNumber(a, b)
 
     /**
      * Emergency-number check.

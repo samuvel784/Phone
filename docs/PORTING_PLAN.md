@@ -1,7 +1,7 @@
 # Nova Dialer 2.1 — Porting Plan, Release Scope & Change Log
 
 **Current status (23 October 2026):** release candidate for the simplified v1 build,
-`2.1.0` (versionCode 4). The automated build, unit-test, lint, manifest/signing and packaging
+`2.1.1` (versionCode 5). The automated build, unit-test, lint, manifest/signing and packaging
 results are recorded in §5. No physical-device test or instrumentation run has been performed
 for this build in this environment.
 
@@ -12,7 +12,7 @@ material is kept in §5 so the derivation and the decisions behind it remain aud
 
 - **Foundation / upstream:** Secure Dialer (`com.example`, GPL-3.0-or-later)
 - **Target:** Nova Dialer (`com.aistudio.novadial.kpxm`), GPL-3.0-or-later
-- **Release:** 2.1.0 (versionCode 4), minSdk 24, targetSdk 36
+- **Release:** 2.1.1 (versionCode 5), minSdk 24, targetSdk 36
 - **Repository:** <https://github.com/samuvel784/NovaDialer>
 
 > Both projects use the `com.example` namespace, so the upstream source tree dropped into
@@ -54,7 +54,7 @@ below; the "current status" column reflects the simplified 2.1 release, not the 
 | `applicationId` | `com.aistudio.novadial.kpxm` (intentionally unchanged for this candidate; review before the first Play upload) |
 | App name (`app_name`) | `Nova Dialer` |
 | `rootProject.name` | `Nova Dialer` |
-| `versionName` / `versionCode` | `2.1.0` / `4` |
+| `versionName` / `versionCode` | `2.1.1` / `5` |
 | `minSdk` / `targetSdk` | 24 / 36 |
 | Namespace | `com.example` |
 | UI | Compose, Day / Default / Night themes with the accent picker |
@@ -204,19 +204,19 @@ The commands are:
 git diff --check
 ```
 
-Results from the 23 October 2026 verification: **335 JVM unit tests in 46 classes** (0 failures,
+Results from the 25 October 2026 verification: **417 JVM unit tests in 60 classes** (0 failures,
 0 errors, 0 skipped); instrumentation was **NOT RUN** because no emulator or device was attached.
-`lintDebug` completed with **0 errors / 27 warnings** and `lintRelease` with **0 errors / 28
-warnings**; `assembleDebug`, `validateReleaseSigning`, `assembleRelease` and `bundleRelease`
-completed successfully. The release APK is deliberately a single universal APK
-(`app-release.apk`, 11,169,577 bytes, SHA-256
-`B393004EF207EC76B8F2647CF79164A1BE28E7A34C43FCAE5B6CE8C7BB69176D`) so its output does not
+`lintDebug` completed with **0 errors / 39 warnings** and `lintRelease` with **0 errors / 40
+warnings**; `assembleDebug`, `assembleRelease` and `bundleRelease` completed successfully (release
+packaging validates signing as a dependency). The release APK is deliberately a single universal APK
+(`app-release.apk`, 11,209,221 bytes, SHA-256
+`1237FBCE4BD22845891959229C49F0F6ECB2FB7ECA814315822F3BAF31FD42AD`) so its output does not
 depend on which Gradle task is invoked; Play's ABI splitting comes from the AAB
-(`app-release.aab`, 10,563,556 bytes, SHA-256
-`0F6D23DB8BC6A83FAC94E9E66358B8D232F10FB472099B99CAD0FE543E7CDC86`). Its mapping is
-`mapping.txt` (51,336,168 bytes, SHA-256
-`1C6E1245A4CE35BF59858F1208F6C9C0C68037835377C4E557E547864403F685`). `apksigner` verified the
-APK with APK Signature Scheme v2; `jarsigner -verify -verbose -certs` returned exit 0 and reported
+(`app-release.aab`, 10,621,828 bytes, SHA-256
+`9679E2E90700033585030AA302DD3AD4164582925537FDF916C16BE8C34F9E33`). Its mapping is
+`mapping.txt` (51,738,664 bytes, SHA-256
+`3A8E3E3457AB47B027620E17EC450DB8C977AE17E59B1194F3A3CA1126E76D67`). `apksigner` verified the
+APK with APK Signature Scheme v2; `jarsigner -verify` returned exit 0 and reported
 `jar verified` for the AAB, with self-signed/no-timestamp and JarFile/JarInputStream consistency
 warnings; the AAB and merged release manifests contain no `INTERNET` permission. The local AAB has
 not been uploaded. This porting plan does not claim a physical-device pass: Telecom, full-screen

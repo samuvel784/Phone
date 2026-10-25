@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.CallManager
+import com.example.ContactCache
 import com.example.R
 import com.example.safeState
 import com.example.model.Contact
@@ -254,7 +255,8 @@ fun ActiveCallScreen(
             if (conferenceCall != null && conferenceCall.children.isNotEmpty()) {
                 conferenceCall.children.mapNotNull { child ->
                     val num = child.details?.handle?.schemeSpecificPart.orEmpty()
-                    val name = uiContacts.find { it.number == num }?.name
+                    val name = ContactCache.getContact(num)?.name
+                        ?: uiContacts.find { it.number == num }?.name
                         ?: child.details?.callerDisplayName?.takeIf { it.isNotBlank() }
                         ?: num
                     // A participant with no name and no number must not create an empty

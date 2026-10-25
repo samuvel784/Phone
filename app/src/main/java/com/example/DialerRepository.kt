@@ -32,6 +32,7 @@ import com.example.data.AppDatabase
 import com.example.model.*
 import com.example.ui.theme.*
 import com.example.util.CallScreenPermissionHelper
+import com.example.util.PhoneNumberNormalizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -186,6 +187,7 @@ class DialerRepository(rawContext: Context) {
                 putLong("last_synced_contacts_timestamp", maxTimestamp)
             }
         } catch (_: Exception) {
+            var rebuilt = false
             try {
                 val systemContacts = fetchSystemContacts()
                 if (systemContacts.isNotEmpty()) {
@@ -194,8 +196,16 @@ class DialerRepository(rawContext: Context) {
                         dao.insertContacts(systemContacts)
                     }
                     refreshContactCacheFromDatabase()
+                    rebuilt = true
                 }
             } catch (_: Exception) {}
+            if (!rebuilt) {
+                // A failed synchronization must not leave the previous contact snapshot in place
+                // as if it still described the device's current contacts.
+                try {
+                    contactCacheLock.withLock { ContactCache.init(emptyList(), emptyList()) }
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -206,10 +216,21 @@ class DialerRepository(rawContext: Context) {
     internal suspend fun refreshContactCacheFromDatabase() {
         try {
             contactCacheLock.withLock {
-                ContactCache.init(dao.getAllContactsList(), dao.getAllSettingsList())
+                ContactCache.init(
+                    dao.getAllContactsList(),
+                    dao.getAllSettingsList(),
+                    PhoneNumberNormalizer.regionFor(context)
+                )
             }
         } catch (_: Exception) {
-            // A closed/recovering database must not crash name resolution; the next sync retries.
+            // A closed/recovering database must not crash name resolution. It must also not keep
+            // the previous snapshot alive as if it were current: an empty cache resolves names to
+            // numbers until the next successful sync.
+            try {
+                contactCacheLock.withLock {
+                    ContactCache.init(emptyList(), emptyList())
+                }
+            } catch (_: Exception) {}
         }
     }
 
